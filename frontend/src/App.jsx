@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 
 import { getHealth, sendChat } from "./api";
 import { ChatInput } from "./components/ChatInput";
@@ -104,6 +104,18 @@ export default function App() {
       <Sidebar status={backendStatus} onReset={handleReset} />
 
       <section className="chat-shell" aria-label="Conversation avec Eva">
+        <header className="desktop-header">
+          <div>
+            <span className="eyebrow">Eva local core</span>
+            <h2>Assistant personnel</h2>
+          </div>
+          <div className="desktop-status">
+            <ShieldCheck size={16} aria-hidden="true" />
+            <span>{backendStatus.state === "ready" ? "Ollama connecte" : "Connexion Ollama"}</span>
+            {backendStatus.model && <span className="model-pill">{backendStatus.model}</span>}
+          </div>
+        </header>
+
         <header className="mobile-header">
           <div>
             <div className="mobile-brand">

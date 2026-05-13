@@ -4,9 +4,9 @@ import { MessageBubble } from "./MessageBubble";
 
 
 const starters = [
-  "Resume le fichier README.md",
-  "Prepare un prompt Cursor pour ameliorer Eva.",
-  "Eva, lance la commande \"dir\"",
+  "Prepare mon brief DreamLense.",
+  "Resume le fichier README.md.",
+  "Cree un prompt Cursor pour ameliorer Eva.",
 ];
 
 
