@@ -4,11 +4,9 @@ from app.actions.action_store import EvaAction, create_action
 
 
 COMMAND_PATTERNS = (
-    r"^\s*(?:eva[, ]*)?(?:lance|execute|exécute|run)\s+(?:la\s+)?commande\s+[`\"']?(?P<command>.+?)[`\"']?\s*$",
-    r"^\s*(?:eva[, ]*)?(?:lance|execute|exécute|run)\s+[`\"'](?P<command>.+?)[`\"']\s*$",
+    r"^\s*(?:eva[, ]*)?(?:lance|execute|execute|run)\s+(?:la\s+)?commande\s+[`\"']?(?P<command>.+?)[`\"']?\s*$",
+    r"^\s*(?:eva[, ]*)?(?:lance|execute|execute|run)\s+[`\"'](?P<command>.+?)[`\"']\s*$",
 )
-
-CODEX_MARKERS = ("codex", "cursor")
 
 PATH_PATTERN = r"(?P<path>[A-Za-z]:\\[^`\"'\n]+|/[^\s`\"'\n]+)"
 
@@ -25,33 +23,9 @@ def create_pending_action_from_message(message: str) -> EvaAction | None:
             return create_action(
                 action_type="command",
                 title="Executer une commande locale",
-                description="Action creee depuis le chat. Elle necessite validation avant execution.",
+                description="Action critique creee depuis le chat. Validation requise.",
                 payload={"command": command},
             )
-
-    normalized = message.lower()
-    if any(marker in normalized for marker in CODEX_MARKERS) and (
-        "prompt" in normalized or "prepare" in normalized or "prépare" in normalized
-    ):
-        return create_action(
-            action_type="codex_prompt",
-            title="Preparer un prompt Cursor/Codex",
-            description="Eva prepare un prompt, sans appeler Codex ni API OpenAI.",
-            payload={"prompt": message},
-        )
-
-    read_match = re.search(
-        rf"(?:lis|lire|ouvre|affiche).{{0,30}}{PATH_PATTERN}",
-        message,
-        flags=re.IGNORECASE,
-    )
-    if read_match:
-        return create_action(
-            action_type="read_file",
-            title="Lire un fichier local hors racines autorisees",
-            description="Lecture large demandee depuis le chat. Validation requise.",
-            payload={"path": _clean_value(read_match.group("path"))},
-        )
 
     delete_match = re.search(
         rf"(?:supprime|efface|delete).{{0,30}}{PATH_PATTERN}",

@@ -42,6 +42,9 @@ data/eva_tasks.sqlite-*
 data/eva_actions.sqlite
 data/eva_actions.sqlite-*
 data/eva_telegram_state.json
+data/gmail_credentials.json
+data/gmail_token.json
+data/gmail_token_*.json
 
 # OS / editors
 .DS_Store

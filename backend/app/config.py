@@ -18,6 +18,17 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+def _env_int(name: str, default: int) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+
+    try:
+        return int(raw_value)
+    except ValueError:
+        return default
+
+
 def _env_bool(name: str, default: bool) -> bool:
     raw_value = os.getenv(name)
     if raw_value is None:
@@ -36,6 +47,14 @@ class Settings:
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     eva_system_actions_enabled: bool = _env_bool("EVA_SYSTEM_ACTIONS_ENABLED", True)
     eva_action_timeout_seconds: float = _env_float("EVA_ACTION_TIMEOUT_SECONDS", 120.0)
+    eva_web_search_enabled: bool = _env_bool("EVA_WEB_SEARCH_ENABLED", True)
+    eva_gmail_enabled: bool = _env_bool("EVA_GMAIL_ENABLED", False)
+    eva_gmail_credentials_path: str = os.getenv(
+        "EVA_GMAIL_CREDENTIALS_PATH",
+        "data/gmail_credentials.json",
+    )
+    eva_gmail_token_path: str = os.getenv("EVA_GMAIL_TOKEN_PATH", "data/gmail_token.json")
+    eva_gmail_max_sent_examples: int = _env_int("EVA_GMAIL_MAX_SENT_EXAMPLES", 5)
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")
     eva_telegram_allowed_chat_id: str = os.getenv("EVA_TELEGRAM_ALLOWED_CHAT_ID", "")

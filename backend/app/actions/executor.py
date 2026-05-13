@@ -2,8 +2,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from app.actions.autonomy_policy import requires_confirmation
 from app.actions.action_store import EvaAction, update_action_status
 from app.config import settings
+from app.files.local_files import BLOCKED_NAMES, BLOCKED_SUFFIXES, _has_blocked_part
 
 
 class ActionExecutionError(Exception):
@@ -54,6 +56,12 @@ def _read_file(action: EvaAction) -> str:
 
     if not path.exists() or not path.is_file():
         raise ActionExecutionError("Fichier introuvable.")
+
+    if _has_blocked_part(path) or path.name.lower() in BLOCKED_NAMES:
+        raise ActionExecutionError("Fichier refuse: chemin sensible bloque.")
+
+    if path.suffix.lower() in BLOCKED_SUFFIXES:
+        raise ActionExecutionError("Fichier refuse: type non lisible en texte.")
 
     content = path.read_bytes().decode("utf-8", errors="replace")
     if len(content) > MAX_READ_CHARS:
@@ -109,7 +117,7 @@ def _codex_prompt(action: EvaAction) -> str:
     )
 
 
-def execute_action(action_id: int) -> dict[str, object]:
+def execute_action(action_id: int, require_approval: bool = True) -> dict[str, object]:
     from app.actions.action_store import action_to_dict, get_action
 
     if not settings.eva_system_actions_enabled:
@@ -117,8 +125,14 @@ def execute_action(action_id: int) -> dict[str, object]:
 
     action = get_action(action_id)
 
-    if action.status != "approved":
+    if require_approval and action.status != "approved":
         raise ActionExecutionError("Action non approuvee.")
+
+    if not require_approval and requires_confirmation(action.action_type, action.payload):
+        raise ActionExecutionError("Cette action est critique et necessite une validation.")
+
+    if not require_approval and action.status == "pending":
+        action = update_action_status(action.id, "approved")
 
     try:
         if action.action_type == "command":

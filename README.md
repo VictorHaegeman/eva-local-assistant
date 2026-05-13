@@ -9,7 +9,9 @@ Le projet utilise:
 - Ollama comme moteur IA local;
 - le modele par defaut `llama3.1:8b`.
 
-Cette V1 est limitee au chat local. Elle ne donne pas acces au disque, ne cree pas de memoire, ne connecte pas Codex a Eva, ne connecte pas WhatsApp ou Telegram, et ne lance aucune commande systeme depuis l'application Eva.
+Eva est maintenant organisee comme un assistant local evolutif: chat Ollama, profil local, memoire locale, lecture de dossiers configures, brief RSS, projets de code, actions locales avec validation et messagerie Telegram optionnelle.
+
+Elle reste gratuite a l'usage et n'utilise pas l'API OpenAI.
 
 ## Mode gratuit
 
@@ -41,9 +43,38 @@ Elle organise Eva en grandes etapes:
 - V3: agent connecte aux projets;
 - V4: messagerie avec validation humaine avant envoi.
 
+## Autonomie controlee
+
+Eva doit etre autonome pour les actions utiles et non critiques.
+
+Elle peut faire directement, sans validation a chaque fois:
+
+- repondre dans le chat local;
+- utiliser le profil et les memoires locales;
+- memoriser une information utile non sensible;
+- lire/analyser les fichiers texte dans les dossiers configures;
+- rechercher sur le web via une recherche gratuite;
+- resumer un fichier, un projet ou une source;
+- preparer un prompt Cursor/Codex;
+- creer ou lister des taches locales.
+
+Elle doit demander validation avant toute action critique:
+
+- lancer une commande systeme;
+- modifier ou supprimer un fichier;
+- ouvrir une branche ou faire une operation Git destructive;
+- faire un `git push`;
+- publier du contenu;
+- envoyer un message externe;
+- utiliser un compte externe.
+
+Route utile:
+
+- `GET /autonomy`: affiche la politique d'autonomie active.
+
 ## Mode operateur local avec validation
 
-Eva peut maintenant preparer des actions locales puissantes, mais elle ne les execute pas sans validation humaine.
+Eva peut preparer et executer des actions locales puissantes. Les actions critiques restent bloquees par validation humaine.
 
 Actions supportees:
 
@@ -56,10 +87,11 @@ Actions supportees:
 Principe:
 
 1. tu demandes une action a Eva;
-2. Eva cree une action en attente;
-3. tu valides explicitement l'action;
-4. Eva execute sur le PC;
-5. le resultat est stocke localement.
+2. si elle est non critique, Eva la traite directement;
+3. si elle est critique, Eva cree une action en attente;
+4. tu valides explicitement l'action;
+5. Eva execute sur le PC;
+6. le resultat est stocke localement.
 
 Routes utiles:
 
@@ -67,7 +99,7 @@ Routes utiles:
 - `GET /actions?status=pending`: voir les actions en attente;
 - `POST /actions`: creer une action avancee;
 - `POST /actions/command`: creer une commande locale a valider;
-- `POST /actions/codex-prompt`: creer un prompt Cursor/Codex a valider;
+- `POST /actions/codex-prompt`: creer un prompt Cursor/Codex, execute directement car non critique;
 - `POST /actions/{action_id}/approve`: valider et executer;
 - `POST /actions/{action_id}/reject`: refuser.
 - `DELETE /actions/{action_id}`: supprimer une action locale.
@@ -78,11 +110,12 @@ Stockage local:
 data/eva_actions.sqlite
 ```
 
-Les actions systeme sont activees par defaut dans `backend/.env.example`, mais elles restent toujours bloquees par la validation:
+Les actions systeme sont activees par defaut dans `backend/.env.example`, mais les actions critiques restent bloquees par la validation:
 
 ```env
 EVA_SYSTEM_ACTIONS_ENABLED=true
 EVA_ACTION_TIMEOUT_SECONDS=120
+EVA_WEB_SEARCH_ENABLED=true
 ```
 
 Exemples de chat:
@@ -92,7 +125,73 @@ Eva, lance la commande "dir"
 Eva, prepare un prompt Codex pour corriger le bug de login dans Barly
 ```
 
-Eva creera une action en attente au lieu d'executer directement.
+La commande locale sera mise en attente. Le prompt Cursor sera genere directement.
+
+## Recherche web gratuite
+
+Eva peut effectuer une recherche web simple sans API payante.
+
+Routes utiles:
+
+- `POST /web/search`: recherche web gratuite;
+- le chat declenche aussi une recherche si tu demandes par exemple `cherche sur internet ...`.
+
+La recherche web ne necessite pas de validation humaine, car elle ne modifie rien sur le PC et n'utilise aucun service payant.
+
+## Connexion Cursor et Gmail
+
+La strategie Cursor/Gmail est documentee ici:
+
+```text
+docs/CURSOR_GMAIL_CONNECTION.md
+```
+
+Cursor:
+
+- Eva prepare deja des prompts Cursor/Codex contextualises;
+- Eva peut lire les projets configures;
+- Eva ne pilote pas encore Cursor directement;
+- l'evolution propre sera un serveur MCP local Eva connecte a Cursor.
+
+Gmail:
+
+- integration optionnelle;
+- OAuth local, sans token versionne;
+- lecture inbox/envoyes en lecture seule;
+- brouillon de reponse genere par Ollama;
+- aucun envoi automatique.
+
+Routes Gmail:
+
+- `GET /gmail/status`;
+- `GET /gmail/messages`;
+- `GET /gmail/messages/{message_id}`;
+- `POST /gmail/reply-draft`.
+
+Configuration Gmail locale:
+
+```env
+EVA_GMAIL_ENABLED=true
+EVA_GMAIL_CREDENTIALS_PATH=data/gmail_credentials.json
+EVA_GMAIL_TOKEN_PATH=data/gmail_token.json
+EVA_GMAIL_MAX_SENT_EXAMPLES=5
+```
+
+Connexion Gmail:
+
+```powershell
+cd backend
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+python -m app.integrations.gmail_auth
+```
+
+Les fichiers suivants doivent rester locaux et sont ignores par Git:
+
+```text
+data/gmail_credentials.json
+data/gmail_token.json
+```
 
 ## Messagerie iPhone avec Telegram
 
@@ -346,9 +445,9 @@ data/eva_briefs.sqlite
 
 Pour l'instant, le brief est lance manuellement. L'automatisation quotidienne via le Planificateur de taches Windows viendra apres validation du format.
 
-## Projets de code
+## Projets de code et Cursor
 
-Eva dispose maintenant d'une base V3 pour lire un projet configure et preparer du travail de dev sans executer d'action sensible.
+Eva dispose d'une base V3 pour lire un projet configure et preparer du travail de dev sans executer d'action critique.
 
 Configuration exemple versionnee:
 
@@ -376,6 +475,15 @@ Routes utiles:
 - `POST /projects/{project_name}/readme-draft`: genere un brouillon README sans ecrire le fichier;
 - `POST /projects/{project_name}/pr-plan`: propose un plan de PR sans publier.
 
+Depuis le chat, tu peux aussi demander:
+
+```text
+Prepare un prompt Cursor pour ameliorer Eva
+Prepare un prompt Codex pour corriger le bug de login dans Barly
+```
+
+Eva detecte le projet quand son nom est dans la demande, lit la structure du projet et renvoie un prompt pret a coller dans Cursor.
+
 Les taches locales sont stockees dans:
 
 ```text
@@ -384,11 +492,12 @@ data/eva_tasks.sqlite
 
 Important:
 
-- Eva ne lance pas Codex;
-- Eva ne lance pas Git;
-- Eva ne cree pas de branche elle-meme;
-- Eva ne modifie pas les fichiers;
-- elle prepare seulement des analyses, plans, prompts et commandes a valider manuellement.
+- Eva ne depend pas de Codex ni de l'API OpenAI;
+- Eva peut preparer un prompt Cursor/Codex directement dans le chat;
+- Eva ne peut pas encore piloter Cursor via une API locale officielle;
+- Eva ne modifie pas les fichiers sans validation;
+- Eva ne fait pas de `git push` sans validation explicite;
+- elle peut lire/analyser les projets configures et preparer plans, prompts, README drafts et PR plans.
 
 ## Installation Ollama
 
@@ -637,8 +746,9 @@ eva-local-assistant/
 
 ## Evolutions prevues
 
-- memoire SQLite;
-- lecture de fichiers avec confirmation;
-- brief du matin;
-- integration Codex;
-- messagerie avec confirmation avant envoi.
+- interface pour gerer les memoires;
+- lecture de fichiers plus large avec garde-fous visibles;
+- automatisation du brief du matin;
+- pont local plus pousse avec Cursor quand une option fiable existe;
+- execution de taches de code avec validation avant modification;
+- messagerie avec validation avant envoi.

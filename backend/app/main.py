@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app.actions.autonomy_policy import autonomy_policy_text, requires_confirmation
 from app.actions.action_store import (
     ActionStoreError,
     action_to_dict,
@@ -28,6 +29,16 @@ from app.files.local_files import (
     read_text_file,
     roots_to_dicts,
     search_files,
+)
+from app.integrations.gmail_client import (
+    GmailIntegrationError,
+    find_sent_examples,
+    format_email_for_prompt,
+    format_sent_examples_for_prompt,
+    get_gmail_message,
+    gmail_status,
+    list_gmail_messages,
+    message_to_dict,
 )
 from app.llm.ollama_client import OllamaClientError, ask_ollama
 from app.memory.memory_store import (
@@ -57,6 +68,7 @@ from app.projects.task_store import (
     list_tasks,
     task_to_dict,
 )
+from app.web.web_search import WebSearchError, format_web_results, search_web
 
 
 class Message(BaseModel):
@@ -137,6 +149,20 @@ class CodexPromptActionRequest(BaseModel):
     title: str = Field(default="Preparer un prompt Cursor/Codex", max_length=200)
 
 
+class WebSearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=500)
+    limit: int = Field(default=5, ge=1, le=8)
+
+
+class GmailReplyDraftRequest(BaseModel):
+    message_id: str = Field(min_length=1, max_length=200)
+    instruction: str = Field(
+        default="Redige une reponse claire, directe et cordiale.",
+        min_length=1,
+        max_length=5000,
+    )
+
+
 app = FastAPI(title=settings.app_name)
 
 app.add_middleware(
@@ -182,6 +208,36 @@ async def health() -> dict[str, str]:
 @app.get("/messaging/telegram/status")
 async def telegram_status() -> dict[str, object]:
     return telegram_config_status()
+
+
+@app.get("/gmail/status")
+async def gmail_config_status() -> dict[str, object]:
+    return gmail_status()
+
+
+@app.get("/autonomy")
+async def autonomy() -> dict[str, object]:
+    return {
+        "policy": autonomy_policy_text(),
+        "safe_without_confirmation": [
+            "lecture/analyse dans les dossiers configures",
+            "recherche web gratuite",
+            "lecture Gmail si OAuth local est configure",
+            "brouillon de reponse email sans envoi",
+            "resume",
+            "creation de taches locales",
+            "preparation de prompts Cursor/Codex",
+        ],
+        "requires_confirmation": [
+            "commande systeme",
+            "modification ou suppression de fichier",
+            "git push",
+            "publication",
+            "envoi de message",
+            "envoi d'email",
+            "compte externe",
+        ],
+    }
 
 
 @app.get("/profile")
@@ -272,7 +328,11 @@ async def action_create(request: ActionCreateRequest) -> dict[str, object]:
             description=request.description,
             payload=request.payload,
         )
+        if not requires_confirmation(request.action_type, request.payload):
+            return execute_action(action.id, require_approval=False)
     except ActionStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ActionExecutionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {
@@ -310,12 +370,11 @@ async def action_codex_prompt_create(request: CodexPromptActionRequest) -> dict[
             description="Prompt Cursor/Codex local, sans appel OpenAI par Eva.",
             payload={"prompt": request.prompt, "project": request.project},
         )
+        return execute_action(action.id, require_approval=False)
     except ActionStoreError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    return {
-        "action": action_to_dict(action),
-    }
+    except ActionExecutionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/actions/{action_id}/approve")
@@ -430,6 +489,94 @@ Contenu:
             "truncated": file_payload["truncated"],
         },
         "summary": summary,
+    }
+
+
+@app.post("/web/search")
+async def web_search(request: WebSearchRequest) -> dict[str, object]:
+    try:
+        results = await search_web(request.query, limit=request.limit)
+    except WebSearchError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "query": request.query,
+        "results": [
+            {
+                "title": result.title,
+                "url": result.url,
+                "snippet": result.snippet,
+            }
+            for result in results
+        ],
+        "context": format_web_results(request.query, results),
+    }
+
+
+@app.get("/gmail/messages")
+async def gmail_messages(
+    q: str = Query(default="in:inbox newer_than:14d", min_length=1, max_length=500),
+    max_results: int = Query(default=10, ge=1, le=25),
+) -> dict[str, object]:
+    try:
+        messages = list_gmail_messages(query=q, max_results=max_results)
+    except GmailIntegrationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "query": q,
+        "messages": [message_to_dict(message) for message in messages],
+    }
+
+
+@app.get("/gmail/messages/{message_id}")
+async def gmail_message_detail(message_id: str) -> dict[str, object]:
+    try:
+        message = get_gmail_message(message_id)
+    except GmailIntegrationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "message": message_to_dict(message, include_body=True),
+    }
+
+
+@app.post("/gmail/reply-draft")
+async def gmail_reply_draft(request: GmailReplyDraftRequest) -> dict[str, object]:
+    try:
+        message = get_gmail_message(request.message_id)
+        examples = find_sent_examples(message.sender_email)
+        prompt = f"""
+Tu dois rediger un brouillon de reponse email pour Victor.
+Ne dis jamais que le mail a ete envoye.
+La reponse doit etre prete a relire, modifier et valider par Victor.
+
+Instruction de Victor:
+{request.instruction}
+
+Mail recu:
+{format_email_for_prompt(message)}
+
+Exemples de mails deja envoyes par Victor:
+{format_sent_examples_for_prompt(examples)}
+
+Donne uniquement:
+1. Objet propose;
+2. Brouillon du mail;
+3. Points a verifier avant envoi.
+""".strip()
+        draft = await ask_ollama([{"role": "user", "content": prompt}])
+    except GmailIntegrationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except OllamaClientError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "sent": False,
+        "requires_confirmation_before_send": True,
+        "source_message": message_to_dict(message),
+        "sent_examples_used": len(examples),
+        "draft": draft,
     }
 
 
