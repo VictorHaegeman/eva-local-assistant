@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "name": "Hacker News",
+      "category": "tech",
+      "url": "https://hnrss.org/frontpage"
+    },
+    {
+      "name": "TechCrunch",
+      "category": "business",
+      "url": "https://techcrunch.com/feed/"
+    },
+    {
+      "name": "The Verge",
+      "category": "tech",
+      "url": "https://www.theverge.com/rss/index.xml"
+    }
+  ],
+  "brief_focus": [
+    "business",
+    "tech",
+    "IA",
+    "finance",
+    "DreamLense"
+  ]
+}

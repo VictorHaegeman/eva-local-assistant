@@ -1,0 +1,14 @@
+{
+  "allowed_roots": [
+    {
+      "name": "Eva project",
+      "path": ".",
+      "description": "Repo Eva local"
+    }
+  ],
+  "notes": [
+    "Copie ce fichier en data/eva_allowed_paths.json pour personnaliser les dossiers lisibles.",
+    "Eva lit seulement les dossiers autorises ici.",
+    "N'ajoute pas de dossier contenant des mots de passe, tokens API ou secrets."
+  ]
+}

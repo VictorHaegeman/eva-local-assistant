@@ -1,0 +1,24 @@
+{
+  "identity": {
+    "user_name": "Votre nom",
+    "email": "vous@example.com"
+  },
+  "projects": [
+    {
+      "name": "Projet principal",
+      "description": "Description courte du projet.",
+      "website": "https://example.com",
+      "role": "Votre role"
+    }
+  ],
+  "writing_preferences": {
+    "style": "clair, direct, cordial",
+    "email_signature": "Bien a vous,\nVotre nom"
+  },
+  "safety_rules": [
+    "Toujours demander confirmation avant d'envoyer un message.",
+    "Toujours demander confirmation avant de modifier ou supprimer un fichier.",
+    "Toujours demander confirmation avant de lancer une commande systeme.",
+    "Ne jamais stocker de mot de passe en clair."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "projects": [
+    {
+      "name": "Eva",
+      "path": ".",
+      "description": "Assistant personnel local de Victor",
+      "type": "code"
+    }
+  ]
+}

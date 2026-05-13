@@ -1,0 +1,131 @@
+from typing import Literal, TypedDict
+
+import httpx
+
+from app.config import settings
+from app.memory.memory_store import MemoryStoreError, build_memory_prompt_context
+from app.memory.profile_store import ProfileStoreError, build_profile_prompt_context
+from app.prompts.system_prompt import EVA_SYSTEM_PROMPT
+
+
+class OllamaClientError(Exception):
+    """Raised when Eva cannot get a usable answer from Ollama."""
+
+
+class ChatMessage(TypedDict):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+def _extract_ollama_error(response: httpx.Response) -> str:
+    try:
+        payload = response.json()
+    except ValueError:
+        return response.text.strip()
+
+    if isinstance(payload, dict):
+        error = payload.get("error") or payload.get("detail")
+        if isinstance(error, str):
+            return error.strip()
+
+    return response.text.strip()
+
+
+def _looks_like_missing_model(error_text: str) -> bool:
+    normalized = error_text.lower()
+    return (
+        "model" in normalized
+        and (
+            "not found" in normalized
+            or "pull" in normalized
+            or "does not exist" in normalized
+            or "introuvable" in normalized
+        )
+    )
+
+
+async def ask_ollama(messages: list[ChatMessage], extra_context: str | None = None) -> str:
+    try:
+        system_prompt = (
+            f"{EVA_SYSTEM_PROMPT}\n\n"
+            f"{build_profile_prompt_context()}\n\n"
+            f"{build_memory_prompt_context()}"
+        )
+        if extra_context:
+            system_prompt = f"{system_prompt}\n\nContexte supplementaire:\n{extra_context}"
+    except (ProfileStoreError, MemoryStoreError) as exc:
+        raise OllamaClientError(str(exc)) from exc
+
+    payload = {
+        "model": settings.ollama_model,
+        "stream": False,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            *messages,
+        ],
+        "options": {
+            "temperature": settings.ollama_temperature,
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.ollama_base_url,
+            timeout=settings.ollama_timeout_seconds,
+        ) as client:
+            response = await client.post("/api/chat", json=payload)
+            response.raise_for_status()
+    except httpx.ConnectError as exc:
+        raise OllamaClientError(
+            "Ollama n'est pas lance ou n'est pas accessible sur "
+            f"{settings.ollama_base_url}. Lance Ollama, puis reessaie."
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise OllamaClientError(
+            "L'API Ollama ne repond pas dans le delai attendu. "
+            "Verifie qu'Ollama tourne correctement ou utilise un modele plus leger."
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        error_text = _extract_ollama_error(exc.response)
+        if exc.response.status_code == 404 or _looks_like_missing_model(error_text):
+            raise OllamaClientError(
+                f"Le modele Ollama '{settings.ollama_model}' n'est pas installe. "
+                f"Lance: ollama pull {settings.ollama_model}"
+            ) from exc
+
+        detail = f" Detail Ollama: {error_text}" if error_text else ""
+        raise OllamaClientError(
+            f"L'API Ollama a repondu avec une erreur HTTP "
+            f"{exc.response.status_code}.{detail}"
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise OllamaClientError(
+            "Impossible de contacter correctement l'API Ollama. "
+            "Verifie qu'Ollama est lance et accessible."
+        ) from exc
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise OllamaClientError(
+            "L'API Ollama a repondu, mais sa reponse n'est pas du JSON valide."
+        ) from exc
+
+    if isinstance(data, dict) and data.get("error"):
+        error_text = str(data["error"])
+        if _looks_like_missing_model(error_text):
+            raise OllamaClientError(
+                f"Le modele Ollama '{settings.ollama_model}' n'est pas installe. "
+                f"Lance: ollama pull {settings.ollama_model}"
+            )
+
+        raise OllamaClientError(f"Erreur Ollama: {error_text}")
+
+    if not isinstance(data, dict):
+        raise OllamaClientError("Ollama a renvoye une reponse inattendue.")
+
+    content = data.get("message", {}).get("content", "").strip()
+    if not content:
+        raise OllamaClientError("Ollama n'a pas renvoye de reponse exploitable.")
+
+    return content
