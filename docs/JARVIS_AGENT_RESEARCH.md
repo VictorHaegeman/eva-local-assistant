@@ -127,6 +127,30 @@ ou une action:
 }
 ```
 
+### 0. Runner H24 Windows
+
+Eva peut tourner en continu sur le PC, mais seulement si Windows reste ouvert et que la machine ne dort pas.
+
+Architecture retenue:
+
+- `start-eva.bat`: mode visible avec deux terminaux;
+- `start-eva-background.bat`: mode arriere-plan;
+- `install-eva-startup.bat`: ajoute Eva au demarrage Windows;
+- `stop-eva.bat`: coupe les ports `8000` et `5173`.
+
+Ce runner garde Eva locale:
+
+- pas de serveur cloud obligatoire;
+- pas d'API OpenAI;
+- Telegram fonctionne en polling local quand le backend est allume;
+- les jobs heartbeat tournent dans le process FastAPI.
+
+Limites:
+
+- si le PC est eteint ou en veille, Eva ne peut rien recevoir;
+- si Ollama n'est pas lance ou si le modele n'est pas installe, Eva peut recevoir une tache mais ne peut pas raisonner avec le LLM;
+- pour un vrai "toujours disponible", il faut configurer Windows pour eviter la veille.
+
 ### 2. Validation
 
 Avant de toucher au PC, Eva doit afficher:
@@ -206,6 +230,22 @@ Option plus tard:
 - automatisation UI Windows avec AutoHotkey ou pywinauto pour coller dans Cursor.
 
 Cette option est faisable mais fragile: si la fenetre active n'est pas la bonne, si Cursor change son interface ou si un raccourci change, l'action peut echouer. Elle doit donc rester derriere validation et commencer par un simple `Set-Clipboard`.
+
+### 5b. Boucle d'audit Cursor/Codex
+
+Objectif futur: Eva ne se contente pas de preparer un prompt, elle suit le resultat.
+
+Boucle cible:
+
+1. Eva cree un brief projet et un `CURSOR_PROMPT.md`;
+2. Eva ouvre le projet dans Cursor apres validation;
+3. Cursor/Codex travaille dans le projet;
+4. Eva relit le repo autorise;
+5. Eva compare le resultat avec le brief, les taches et les tests;
+6. Eva cree un rapport d'audit;
+7. si le resultat est insuffisant, Eva genere un nouveau prompt de correction.
+
+Cette boucle peut devenir semi-autonome sans appeler d'API payante. Les etapes de lecture, audit et generation de prompt peuvent etre automatiques. Les etapes qui modifient le disque, lancent des commandes, creent un repo, poussent sur GitHub ou pilotent une app restent derriere validation ou derriere une politique d'autonomie explicite par dossier.
 
 ### 6. Codex
 
@@ -321,6 +361,12 @@ Commandes cible:
 /status
 ```
 
+Etat actuel:
+
+- `/idea` et `/project` creent deja le paquet d'actions Project Factory;
+- `/pending`, `/approve` et `/reject` pilotent la validation depuis l'iPhone;
+- la creation repo GitHub passe par `gh` CLI et reste a valider.
+
 ### data/eva_project_templates.example.json
 
 Templates locaux:
@@ -379,6 +425,17 @@ Objectif: lancer tout le flux depuis iPhone.
 - `/project`;
 - `/approve`;
 - notifications de resultat.
+
+### Phase G - Audit loop projet
+
+Objectif: Eva devient le superviseur local du travail.
+
+- lire `PROJECT_BRIEF.md`, `TASKS.md`, `CURSOR_PROMPT.md`;
+- scanner les fichiers du projet autorise;
+- lancer des verifications en action approuvee;
+- produire `EVA_AUDIT.md`;
+- preparer un prompt de correction Cursor;
+- repeter tant que le brief n'est pas respecte.
 
 ### Phase F - WhatsApp optionnel
 

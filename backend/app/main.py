@@ -85,7 +85,7 @@ from app.projects.project_store import (
 from app.project_factory.planner import (
     ProjectFactoryError,
     build_project_plan,
-    create_project_factory_action,
+    create_project_factory_actions,
 )
 from app.projects.task_store import (
     TaskStoreError,
@@ -792,45 +792,18 @@ async def project_factory_plan(request: ProjectFactoryPlanRequest) -> dict[str, 
 @app.post("/project-factory/actions")
 async def project_factory_actions(request: ProjectFactoryPlanRequest) -> dict[str, object]:
     try:
-        bundle = create_project_factory_action(
+        bundle = create_project_factory_actions(
             idea=request.idea,
             project_name=request.project_name or None,
         )
         plan = bundle["plan"]
-        workspace_action = bundle["action"]
-        clipboard_action = create_action(
-            action_type="clipboard_set_prompt",
-            title=f"Copier le prompt Cursor pour {plan['project_name']}",
-            description="Copie le prompt dans le presse-papiers Windows. Validation obligatoire.",
-            payload={"prompt": plan["cursor_prompt"], "project_name": plan["project_name"]},
-        )
-        cursor_action = create_action(
-            action_type="cursor_open_project",
-            title=f"Ouvrir Cursor pour {plan['project_name']}",
-            description="Ouvre Cursor sur le dossier projet. Validation obligatoire.",
-            payload={"workspace_path": plan["workspace_path"]},
-        )
-        github_action = create_action(
-            action_type="github_repo_create",
-            title=f"Creer le repo GitHub {plan['repo_name']}",
-            description="Cree le repo via GitHub CLI gh. Validation obligatoire.",
-            payload={
-                "workspace_path": plan["workspace_path"],
-                "repo_name": plan["repo_name"],
-                "visibility": "private",
-            },
-        )
+        actions = bundle["actions"]
     except (ProjectFactoryError, ActionStoreError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {
         "plan": plan,
-        "actions": [
-            action_to_dict(workspace_action),
-            action_to_dict(clipboard_action),
-            action_to_dict(cursor_action),
-            action_to_dict(github_action),
-        ],
+        "actions": [action_to_dict(action) for action in actions],
         "executed": False,
         "requires_confirmation": True,
     }

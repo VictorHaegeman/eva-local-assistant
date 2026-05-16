@@ -203,3 +203,41 @@ def create_project_factory_action(idea: str, project_name: str | None = None) ->
         "plan": plan,
         "action": action,
     }
+
+
+def create_project_factory_actions(idea: str, project_name: str | None = None) -> dict[str, Any]:
+    bundle = create_project_factory_action(idea=idea, project_name=project_name)
+    plan = bundle["plan"]
+    workspace_action = bundle["action"]
+    clipboard_action = create_action(
+        action_type="clipboard_set_prompt",
+        title=f"Copier le prompt Cursor pour {plan['project_name']}",
+        description="Copie le prompt dans le presse-papiers Windows. Validation obligatoire.",
+        payload={"prompt": plan["cursor_prompt"], "project_name": plan["project_name"]},
+    )
+    cursor_action = create_action(
+        action_type="cursor_open_project",
+        title=f"Ouvrir Cursor pour {plan['project_name']}",
+        description="Ouvre Cursor sur le dossier projet. Validation obligatoire.",
+        payload={"workspace_path": plan["workspace_path"]},
+    )
+    github_action = create_action(
+        action_type="github_repo_create",
+        title=f"Creer le repo GitHub {plan['repo_name']}",
+        description="Cree le repo via GitHub CLI gh. Validation obligatoire.",
+        payload={
+            "workspace_path": plan["workspace_path"],
+            "repo_name": plan["repo_name"],
+            "visibility": "private",
+        },
+    )
+
+    return {
+        "plan": plan,
+        "actions": [
+            workspace_action,
+            clipboard_action,
+            cursor_action,
+            github_action,
+        ],
+    }

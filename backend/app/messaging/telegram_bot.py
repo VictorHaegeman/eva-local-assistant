@@ -14,6 +14,7 @@ from app.actions.action_store import (
 from app.actions.executor import ActionExecutionError, execute_action
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -106,6 +107,8 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             (
                 "Eva est connectee.\n\n"
                 "Commandes:\n"
+                "/project IDEE - preparer workspace, prompt Cursor et repo GitHub\n"
+                "/idea IDEE - alias de /project\n"
                 "/pending - voir les actions en attente\n"
                 "/approve ID - valider et executer une action\n"
                 "/reject ID - refuser une action\n"
@@ -117,6 +120,40 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
 
     if command == "/status":
         await _send_message(client, chat_id, "Eva Telegram est active sur ce PC.")
+        return True
+
+    if command in {"/project", "/idea"}:
+        if not argument:
+            await _send_message(
+                client,
+                chat_id,
+                "Usage: /project idee du projet a preparer",
+            )
+            return True
+
+        try:
+            bundle = create_project_factory_actions(argument)
+            plan = bundle["plan"]
+            actions = bundle["actions"]
+            lines = [
+                f"Project Factory pret: {plan['project_name']}",
+                f"Dossier cible: {plan['workspace_path']}",
+                f"Repo propose: {plan['repo_name']}",
+                "",
+                "Actions creees en attente:",
+            ]
+            for action in actions:
+                lines.append(f"#{action.id} [{action.action_type}] {action.title}")
+            lines.extend(
+                [
+                    "",
+                    "Valide chaque etape avec /approve ID.",
+                    "Workspace, Cursor, presse-papiers et GitHub restent derriere validation.",
+                ]
+            )
+            await _send_message(client, chat_id, "\n".join(lines))
+        except (ProjectFactoryError, ActionStoreError) as exc:
+            await _send_message(client, chat_id, f"Erreur Project Factory: {exc}")
         return True
 
     if command == "/pending":

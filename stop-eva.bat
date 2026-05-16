@@ -14,6 +14,6 @@ for %%P in (8000 5173) do (
 
 echo.
 echo Done.
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 
 endlocal

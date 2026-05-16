@@ -241,10 +241,29 @@ Commandes Telegram:
 ```text
 /start
 /status
+/project IDEE
+/idea IDEE
 /pending
 /approve ID
 /reject ID
 ```
+
+Commandes projet depuis iPhone:
+
+```text
+/project cree une app SaaS pour suivre mes prospects DreamLense
+/idea un outil local pour analyser mes devis
+```
+
+Eva cree alors des actions en attente pour:
+
+- creer le workspace local;
+- generer `README.md`, `PROJECT_BRIEF.md`, `TASKS.md` et `CURSOR_PROMPT.md`;
+- copier le prompt Cursor;
+- ouvrir le projet dans Cursor;
+- creer le repo GitHub via `gh`.
+
+Chaque action critique reste validable avec `/approve ID`.
 
 Configuration:
 
@@ -664,6 +683,48 @@ stop-eva.bat
 ```
 
 Ce script arrete les processus qui ecoutent sur les ports `8000` et `5173`.
+
+Si tu copies le `.bat` sur le Bureau, le script essaie aussi de retrouver automatiquement le projet dans:
+
+```text
+C:\Users\victo\Desktop\Cursor\eva-local-assistant
+```
+
+## Faire tourner Eva en arriere-plan sur Windows
+
+Eva peut tourner en continu sur ton PC tant que Windows est ouvert, que le PC ne dort pas et qu'Ollama est disponible.
+
+Pour lancer Eva sans garder les terminaux visibles:
+
+```text
+start-eva-background.bat
+```
+
+Ce script lance le backend et le frontend en arriere-plan, puis ouvre `http://localhost:5173`.
+Les logs sont ecrits localement dans:
+
+```text
+logs/
+```
+
+Pour lancer Eva automatiquement a l'ouverture de session Windows:
+
+```text
+install-eva-startup.bat
+```
+
+Pour supprimer ce lancement automatique:
+
+```text
+uninstall-eva-startup.bat
+```
+
+Important:
+
+- ce n'est pas un serveur cloud: si le PC est eteint ou en veille, Eva ne tourne pas;
+- Telegram, heartbeat et brief automatique ne fonctionnent que si le backend est actif;
+- garde Ollama lance ou disponible en local;
+- si besoin, desactive la mise en veille Windows pour un vrai usage "H24".
 
 ## Acces depuis un telephone sur le meme Wi-Fi
 
