@@ -1,0 +1,19 @@
+{
+  "profile_url": "https://www.linkedin.com/in/victor-haegeman/",
+  "default_voice": "clair, direct, utile, premium",
+  "default_audience": "dirigeants, independants, recruteurs, entrepreneurs et equipes commerciales",
+  "themes": [
+    "DreamLense",
+    "portraits professionnels IA",
+    "productivite",
+    "entrepreneuriat",
+    "IA appliquee aux PME",
+    "construction d'Eva"
+  ],
+  "safety_rules": [
+    "Ne jamais publier sans validation humaine.",
+    "Ne jamais envoyer de message LinkedIn sans validation humaine.",
+    "Ne pas scraper LinkedIn.",
+    "Utiliser l'API officielle uniquement si l'acces est approuve."
+  ]
+}

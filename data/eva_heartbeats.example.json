@@ -1,0 +1,25 @@
+{
+  "jobs": [
+    {
+      "key": "morning_brief",
+      "label": "Brief du matin",
+      "enabled": false,
+      "time": "08:30",
+      "description": "Genere le brief business / tech / IA / finance / DreamLense."
+    },
+    {
+      "key": "inbox_triage",
+      "label": "Tri inbox",
+      "enabled": false,
+      "time": "09:00",
+      "description": "Prepare un resume des mails recents si Gmail est connecte."
+    },
+    {
+      "key": "end_of_day_log",
+      "label": "Journal du soir",
+      "enabled": false,
+      "time": "18:30",
+      "description": "Prepare un recap de fin de jour, sans publier ni envoyer."
+    }
+  ]
+}

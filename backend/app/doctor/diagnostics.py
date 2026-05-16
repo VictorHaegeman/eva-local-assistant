@@ -1,0 +1,238 @@
+from pathlib import Path
+from typing import Any, Literal
+
+import httpx
+
+from app.config import settings
+from app.heartbeat.scheduler import HEARTBEATS_PATH
+from app.integrations.linkedin_assistant import LINKEDIN_PATH
+from app.memory.memory_store import MEMORY_DB_PATH
+from app.memory.obsidian_store import obsidian_status
+from app.memory.profile_store import PROFILE_PATH, ProfileStoreError, load_profile
+from app.skills.registry import list_skills
+
+
+CheckStatus = Literal["ok", "warning", "error"]
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _check(name: str, status: CheckStatus, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "name": name,
+        "status": status,
+        "message": message,
+        "details": details or {},
+    }
+
+
+def _overall_status(checks: list[dict[str, Any]]) -> CheckStatus:
+    statuses = {check["status"] for check in checks}
+    if "error" in statuses:
+        return "error"
+    if "warning" in statuses:
+        return "warning"
+    return "ok"
+
+
+async def _ollama_checks() -> list[dict[str, Any]]:
+    checks: list[dict[str, Any]] = []
+    try:
+        async with httpx.AsyncClient(base_url=settings.ollama_base_url, timeout=5.0) as client:
+            response = await client.get("/api/tags")
+            response.raise_for_status()
+            payload = response.json()
+    except Exception as exc:
+        return [
+            _check(
+                "ollama_accessible",
+                "error",
+                f"Ollama indisponible sur {settings.ollama_base_url}.",
+                {"error": str(exc)},
+            ),
+            _check(
+                "ollama_model_available",
+                "error",
+                f"Impossible de verifier le modele {settings.ollama_model}.",
+            ),
+        ]
+
+    checks.append(
+        _check(
+            "ollama_accessible",
+            "ok",
+            f"Ollama repond sur {settings.ollama_base_url}.",
+        )
+    )
+
+    models = payload.get("models", []) if isinstance(payload, dict) else []
+    model_names = [
+        str(model.get("name", ""))
+        for model in models
+        if isinstance(model, dict)
+    ]
+    configured_model = settings.ollama_model
+    model_available = configured_model in model_names or any(
+        name.split(":")[0] == configured_model.split(":")[0] for name in model_names
+    )
+
+    checks.append(
+        _check(
+            "ollama_model_available",
+            "ok" if model_available else "warning",
+            (
+                f"Modele {configured_model} disponible."
+                if model_available
+                else f"Modele {configured_model} non trouve dans Ollama."
+            ),
+            {"configured_model": configured_model, "installed_models": model_names},
+        )
+    )
+
+    return checks
+
+
+def _profile_check() -> dict[str, Any]:
+    try:
+        profile = load_profile()
+    except ProfileStoreError as exc:
+        return _check("profile_loaded", "error", str(exc), {"path": str(PROFILE_PATH)})
+
+    identity = profile.get("identity", {}) if isinstance(profile, dict) else {}
+    user_name = str(identity.get("user_name", "")).strip() if isinstance(identity, dict) else ""
+    return _check(
+        "profile_loaded",
+        "ok" if user_name else "warning",
+        f"Profil Eva charge pour {user_name}." if user_name else "Profil charge sans nom utilisateur.",
+        {"path": str(PROFILE_PATH)},
+    )
+
+
+def _gitignore_profile_check() -> dict[str, Any]:
+    gitignore_path = PROJECT_ROOT / ".gitignore"
+    if not gitignore_path.exists():
+        return _check("profile_gitignored", "warning", ".gitignore introuvable.")
+
+    content = gitignore_path.read_text(encoding="utf-8", errors="replace")
+    ignored = "data/eva_profile.json" in content or "data/*" in content
+    return _check(
+        "profile_gitignored",
+        "ok" if ignored else "warning",
+        (
+            "data/eva_profile.json est couvert par .gitignore."
+            if ignored
+            else "data/eva_profile.json ne semble pas ignore explicitement."
+        ),
+        {"gitignore": str(gitignore_path)},
+    )
+
+
+def _memory_check() -> dict[str, Any]:
+    exists = MEMORY_DB_PATH.exists()
+    return _check(
+        "memory_sqlite",
+        "ok" if exists else "warning",
+        "Memoire SQLite presente." if exists else "Memoire SQLite pas encore creee.",
+        {"path": str(MEMORY_DB_PATH), "exists": exists},
+    )
+
+
+def _obsidian_memory_check() -> dict[str, Any]:
+    status = obsidian_status()
+    enabled = bool(status.get("enabled"))
+    exists = bool(status.get("exists"))
+    return _check(
+        "obsidian_memory",
+        "ok" if enabled and exists else "warning",
+        (
+            "Memoire Obsidian locale active."
+            if enabled and exists
+            else "Memoire Obsidian locale inactive ou vault absent."
+        ),
+        status,
+    )
+
+
+def _instructions_check() -> dict[str, Any]:
+    expected_paths = [
+        PROJECT_ROOT / "README.md",
+        PROJECT_ROOT / "start-eva.bat",
+        PROJECT_ROOT / "backend" / "requirements.txt",
+        PROJECT_ROOT / "frontend" / "package.json",
+        PROJECT_ROOT / "frontend" / "vite.config.js",
+    ]
+    missing = [str(path.relative_to(PROJECT_ROOT)) for path in expected_paths if not path.exists()]
+    return _check(
+        "frontend_backend_instructions",
+        "ok" if not missing else "warning",
+        "Instructions et fichiers de lancement presents." if not missing else "Elements de lancement manquants.",
+        {"missing": missing},
+    )
+
+
+def _heartbeat_check() -> dict[str, Any]:
+    return _check(
+        "heartbeat_config",
+        "ok" if HEARTBEATS_PATH.exists() else "warning",
+        (
+            "Configuration heartbeat presente."
+            if HEARTBEATS_PATH.exists()
+            else "Configuration heartbeat pas encore creee."
+        ),
+        {"enabled": settings.eva_heartbeat_enabled, "path": str(HEARTBEATS_PATH)},
+    )
+
+
+def _linkedin_check() -> dict[str, Any]:
+    return _check(
+        "linkedin_assistant",
+        "ok" if LINKEDIN_PATH.exists() else "warning",
+        (
+            "Assistant LinkedIn configure en mode brouillon."
+            if LINKEDIN_PATH.exists()
+            else "Configuration LinkedIn locale pas encore creee."
+        ),
+        {
+            "enabled": settings.eva_linkedin_enabled,
+            "path": str(LINKEDIN_PATH),
+            "can_publish": False,
+        },
+    )
+
+
+def _skills_check() -> dict[str, Any]:
+    skills = list_skills()
+    enabled_count = len([skill for skill in skills if skill.get("enabled")])
+    return _check(
+        "skills_registry",
+        "ok" if enabled_count else "warning",
+        f"{enabled_count} skills Eva actives.",
+        {"enabled_count": enabled_count},
+    )
+
+
+async def run_doctor() -> dict[str, Any]:
+    checks = []
+    checks.extend(await _ollama_checks())
+    checks.append(_profile_check())
+    checks.append(_gitignore_profile_check())
+    checks.append(_memory_check())
+    checks.append(_obsidian_memory_check())
+    checks.append(_instructions_check())
+    checks.append(_heartbeat_check())
+    checks.append(_linkedin_check())
+    checks.append(_skills_check())
+
+    status = _overall_status(checks)
+    return {
+        "status": status,
+        "summary": (
+            "Eva est prete."
+            if status == "ok"
+            else "Eva fonctionne, mais certains points demandent attention."
+            if status == "warning"
+            else "Eva a un probleme bloquant a corriger."
+        ),
+        "checks": checks,
+    }

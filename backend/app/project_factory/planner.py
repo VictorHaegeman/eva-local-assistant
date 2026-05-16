@@ -1,0 +1,205 @@
+import re
+from pathlib import Path
+from typing import Any
+
+from app.actions.action_store import create_action
+from app.config import settings
+
+
+class ProjectFactoryError(Exception):
+    """Raised when Eva cannot prepare a project factory plan."""
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _safe_project_name(value: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9 _-]+", "", value).strip()
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    if not cleaned:
+        return "Nouveau Projet"
+    return cleaned[:60]
+
+
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-zA-Z0-9-]+", "-", value.strip().lower()).strip("-")
+    return slug or "nouveau-projet"
+
+
+def infer_project_name(idea: str) -> str:
+    patterns = (
+        r"(?:nomme|nommé|appelle|appelé|projet)\s+(?P<name>[A-Za-z0-9 _-]{3,60})",
+        r"(?:idee|idée|projet)\s*:\s*(?P<name>[A-Za-z0-9 _-]{3,60})",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, idea, flags=re.IGNORECASE)
+        if match:
+            return _safe_project_name(match.group("name"))
+
+    words = re.findall(r"[A-Za-z0-9]+", idea)
+    if not words:
+        return "Nouveau Projet"
+    ignored = {
+        "eva",
+        "cree",
+        "crée",
+        "faire",
+        "nouveau",
+        "nouvelle",
+        "projet",
+        "idee",
+        "idée",
+        "une",
+        "un",
+        "app",
+        "application",
+        "site",
+    }
+    useful = [word for word in words if word.lower() not in ignored]
+    return _safe_project_name(" ".join(useful[:4]) or "Nouveau Projet")
+
+
+def infer_stack(idea: str) -> dict[str, str]:
+    normalized = idea.lower()
+    if "fastapi" in normalized or "backend" in normalized:
+        return {
+            "template": "react-vite-fastapi",
+            "frontend": "React + Vite",
+            "backend": "Python FastAPI",
+            "notes": "Bon choix pour une app web locale ou SaaS.",
+        }
+    if "python" in normalized or "script" in normalized or "automation" in normalized:
+        return {
+            "template": "python-cli",
+            "frontend": "none",
+            "backend": "Python",
+            "notes": "Bon choix pour un outil local ou une automation.",
+        }
+    if "landing" in normalized or "site" in normalized:
+        return {
+            "template": "landing-page",
+            "frontend": "React + Vite",
+            "backend": "none",
+            "notes": "Bon choix pour une vitrine rapide.",
+        }
+    return {
+        "template": "saas-mvp",
+        "frontend": "React + Vite",
+        "backend": "Python FastAPI",
+        "notes": "Template par defaut pour prototype produit.",
+    }
+
+
+def _workspace_base() -> Path:
+    configured = Path(settings.eva_projects_dir).expanduser()
+    if configured.is_absolute():
+        return configured.resolve()
+    return (PROJECT_ROOT / configured).resolve()
+
+
+def _cursor_prompt(project_name: str, idea: str, stack: dict[str, str], workspace_path: Path) -> str:
+    return f"""
+Tu es Cursor dans le projet {project_name}.
+
+Chemin local cible:
+{workspace_path}
+
+Idee de Victor:
+{idea.strip()}
+
+Stack proposee:
+- template: {stack['template']}
+- frontend: {stack['frontend']}
+- backend: {stack['backend']}
+- notes: {stack['notes']}
+
+Objectif:
+Construire une V1 propre, simple et maintenable.
+
+Instructions:
+1. Lis d'abord PROJECT_BRIEF.md, TASKS.md et README.md.
+2. Propose une architecture minimale.
+3. Commence par le squelette du projet.
+4. Garde les changements scopes.
+5. N'ajoute pas d'API payante.
+6. Documente les commandes de lancement.
+7. Ne pousse rien sur GitHub sans validation de Victor.
+
+Livrable attendu:
+- code initial;
+- README clair;
+- checklist de verification;
+- prochaines etapes.
+""".strip()
+
+
+def build_project_plan(idea: str, project_name: str | None = None) -> dict[str, Any]:
+    clean_idea = idea.strip()
+    if len(clean_idea) < 8:
+        raise ProjectFactoryError("Idee projet trop courte.")
+
+    name = _safe_project_name(project_name or infer_project_name(clean_idea))
+    slug = _slugify(name)
+    stack = infer_stack(clean_idea)
+    workspace_path = _workspace_base() / slug
+    cursor_prompt = _cursor_prompt(name, clean_idea, stack, workspace_path)
+    repo_name = slug
+
+    files = {
+        "README.md": f"# {name}\n\nProjet prepare par Eva.\n\n## Idee\n\n{clean_idea}\n\n## Stack\n\n- Frontend: {stack['frontend']}\n- Backend: {stack['backend']}\n\n## Lancement\n\nA completer apres generation du projet.\n",
+        "PROJECT_BRIEF.md": f"# Brief projet - {name}\n\n## Idee\n\n{clean_idea}\n\n## Objectif V1\n\nConstruire une premiere version utilisable, simple et maintenable.\n\n## Stack proposee\n\n- Template: {stack['template']}\n- Frontend: {stack['frontend']}\n- Backend: {stack['backend']}\n- Notes: {stack['notes']}\n\n## Contraintes\n\n- Local-first quand possible.\n- Pas d'API payante obligatoire.\n- Secrets hors Git.\n- GitHub et push apres validation humaine.\n",
+        "TASKS.md": f"# Tasks - {name}\n\n- [ ] Valider le scope V1\n- [ ] Creer le squelette technique\n- [ ] Ajouter README de lancement\n- [ ] Verifier le rendu local\n- [ ] Preparer le premier commit\n",
+        "CURSOR_PROMPT.md": cursor_prompt + "\n",
+        ".gitignore": "node_modules/\ndist/\nbuild/\n.env\n.env.*\n!.env.example\n.venv/\n__pycache__/\n*.pyc\n.DS_Store\nThumbs.db\n",
+    }
+
+    commands = {
+        "open_cursor": f'cursor "{workspace_path}"',
+        "github_create_repo": f'gh repo create {repo_name} --private --source "{workspace_path}" --remote origin',
+        "git_initial_commit": f'cd /d "{workspace_path}" && git init && git add . && git commit -m "Initial project scaffold"',
+        "git_push": f'cd /d "{workspace_path}" && git push -u origin main',
+    }
+
+    return {
+        "project_name": name,
+        "slug": slug,
+        "workspace_path": str(workspace_path),
+        "repo_name": repo_name,
+        "stack": stack,
+        "idea": clean_idea,
+        "files": files,
+        "commands": commands,
+        "cursor_prompt": cursor_prompt,
+        "safety": {
+            "requires_confirmation": [
+                "creer le dossier projet",
+                "ecrire les fichiers",
+                "copier dans le presse-papiers",
+                "ouvrir Cursor",
+                "creer le repo GitHub",
+                "git push",
+            ],
+            "blocked": [
+                "appel API OpenAI",
+                "automatisation ChatGPT web",
+                "envoi ou publication sans validation",
+            ],
+        },
+    }
+
+
+def create_project_factory_action(idea: str, project_name: str | None = None) -> dict[str, Any]:
+    plan = build_project_plan(idea=idea, project_name=project_name)
+    action = create_action(
+        action_type="project_workspace_create",
+        title=f"Creer le workspace projet {plan['project_name']}",
+        description=(
+            "Project Factory: cree le dossier, les fichiers de cadrage, "
+            "CURSOR_PROMPT.md et prepare les commandes locales. Validation obligatoire."
+        ),
+        payload=plan,
+    )
+    return {
+        "plan": plan,
+        "action": action,
+    }

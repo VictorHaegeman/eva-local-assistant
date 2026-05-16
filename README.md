@@ -32,6 +32,10 @@ La roadmap du projet est documentee ici:
 
 ```text
 docs/ROADMAP.md
+docs/OPENJARVIS_INSPIRATION.md
+docs/JARVIS_AGENT_RESEARCH.md
+docs/HEARTBEAT.md
+docs/LINKEDIN_ASSISTANT.md
 ```
 
 Elle organise Eva en grandes etapes:
@@ -42,6 +46,29 @@ Elle organise Eva en grandes etapes:
 - V2: brief du matin;
 - V3: agent connecte aux projets;
 - V4: messagerie avec validation humaine avant envoi.
+
+Eva integre aussi une architecture modulaire simple inspiree d'OpenJarvis: modes, tools, security policy et Doctor, sans ajouter de cloud ni d'API payante.
+
+Direction produit actuelle:
+
+- privilegier les commandes locales Windows plutot que les API externes;
+- ouvrir les apps localement quand c'est utile;
+- creer des fichiers de prompt comme `CURSOR_PROMPT.md`;
+- copier un prompt dans le presse-papiers seulement apres validation;
+- utiliser Cursor via CLI/fichiers/presse-papiers, pas via API;
+- utiliser GitHub via `gh` CLI plus tard, avec validation, pas via integration API directe.
+- ne pas automatiser ChatGPT web: Eva utilise Ollama local et prepare elle-meme les prompts.
+
+Routes utiles:
+
+- `GET /doctor`: diagnostic local;
+- `GET /agents/modes`: modes Eva disponibles;
+- `GET /tools`: registre des capacites locales;
+- `GET /autonomy`: politique de securite.
+- `GET /heartbeat/status`: statut des routines locales;
+- `GET /linkedin/status`: statut LinkedIn en mode brouillon.
+- `POST /project-factory/plan`: previsualiser un projet depuis une idee;
+- `POST /project-factory/actions`: creer les actions validables workspace, clipboard, Cursor et GitHub CLI.
 
 ## Autonomie controlee
 
@@ -144,6 +171,7 @@ La strategie Cursor/Gmail est documentee ici:
 
 ```text
 docs/CURSOR_GMAIL_CONNECTION.md
+docs/GMAIL_ACTIVATION.md
 ```
 
 Cursor:
@@ -702,6 +730,57 @@ Reponse:
   }
 }
 ```
+
+## Skills Eva
+
+Eva possede maintenant un registre de skills locales:
+
+- memoire personnelle;
+- assistant projets code;
+- DreamLense growth;
+- redaction email;
+- brief du matin;
+- recherche locale et web;
+- decision partner;
+- garde-fou actions.
+
+Ces skills ne sont pas des services externes. Elles sont des consignes locales injectees dans le prompt Ollama pour guider Eva selon la demande.
+
+Endpoint utile:
+
+```text
+GET /skills
+```
+
+Les skills respectent la politique de securite: lecture et brouillons sans confirmation, validation humaine pour envoi, publication, modification de fichier, commande systeme ou `git push`.
+
+## Memoire Obsidian locale
+
+Eva peut utiliser un vault Obsidian local comme memoire longue duree lisible en Markdown.
+
+Configuration:
+
+```env
+EVA_OBSIDIAN_MEMORY_ENABLED=true
+EVA_OBSIDIAN_VAULT_PATH=data/obsidian_vault
+```
+
+Le vault est cree automatiquement au premier lancement dans:
+
+```text
+data/obsidian_vault
+```
+
+Ce dossier est ignore par Git. Il reste local sur le PC et ne demande aucun service cloud. Obsidian Sync n'est pas requis.
+
+Endpoints utiles:
+
+```text
+GET /memory/obsidian/status
+POST /memory/obsidian/sync
+```
+
+Eva ne devient pas plus intelligente par entrainement du modele local. Elle apprend au sens assistant personnel: elle conserve des informations non sensibles, les reinjecte dans le contexte Ollama, et les miroir dans Obsidian pour que Victor puisse les relire, corriger ou enrichir.
 
 ## Structure
 

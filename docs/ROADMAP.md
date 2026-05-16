@@ -158,6 +158,40 @@ Important:
 - toute option payante reste documentee comme future, pas implementee par defaut;
 - aucune reponse ou relance n'est envoyee sans validation humaine explicite.
 
+## V5 - Project Factory
+
+Objectif: envoyer une idee de projet a Eva depuis le telephone, puis lui faire preparer un espace projet local apres validation.
+
+Document de recherche:
+
+```text
+docs/JARVIS_AGENT_RESEARCH.md
+```
+
+Backlog:
+
+- endpoint `POST /project-factory/plan` pour transformer une idee en brief;
+- action `project_workspace_create` avec validation;
+- creation de `README.md`, `PROJECT_BRIEF.md`, `TASKS.md`, `CURSOR_PROMPT.md`;
+- ajout automatique dans `data/eva_projects.json`;
+- detection Cursor CLI;
+- ouverture du projet dans Cursor apres validation;
+- copie du prompt dans le presse-papiers Windows apres validation;
+- creation de repo GitHub via `gh repo create` apres validation, sans API GitHub directe;
+- push uniquement apres validation;
+- commande Telegram `/idea` et `/project`.
+
+Regles de securite:
+
+- creation de dossier: validation obligatoire;
+- ecriture de fichiers: validation obligatoire;
+- GitHub: validation obligatoire;
+- push: validation obligatoire;
+- presse-papiers et ouverture d'apps: validation obligatoire;
+- Cursor est pilote par CLI/fichiers/presse-papiers, pas par API;
+- Codex reste externe et optionnel;
+- Eva ne depend pas de l'API OpenAI.
+
 ## Ordre recommande
 
 1. Stabiliser V1.2: memoire locale, consultation, suppression.
@@ -167,3 +201,7 @@ Important:
 5. Construire le brief du matin.
 6. Ajouter l'aide aux repos de code.
 7. Etudier la messagerie seulement quand les validations humaines sont solides.
+8. Ajouter Project Factory en mode plan.
+9. Connecter Project Factory a Telegram.
+10. Ajouter Cursor CLI + prompt file + presse-papiers apres validation.
+11. Ajouter GitHub CLI apres validation.

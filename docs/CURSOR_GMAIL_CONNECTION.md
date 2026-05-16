@@ -39,6 +39,12 @@ Etat actuel:
 - brouillon de reponse genere par Ollama;
 - aucun envoi automatique.
 
+Guide d'activation detaille:
+
+```text
+docs/GMAIL_ACTIVATION.md
+```
+
 Fichiers locaux ignores par Git:
 
 ```text

@@ -15,7 +15,8 @@ def main() -> None:
     if not credentials_file.exists():
         raise SystemExit(
             f"Fichier OAuth introuvable: {credentials_file}\n"
-            "Telecharge le JSON OAuth Google et place-le dans data/gmail_credentials.json."
+            "Telecharge le JSON OAuth Google complet et place-le dans data/gmail_credentials.json.\n"
+            "Le Client ID seul ne suffit pas: le JSON doit aussi contenir client_secret."
         )
 
     token_file.parent.mkdir(parents=True, exist_ok=True)

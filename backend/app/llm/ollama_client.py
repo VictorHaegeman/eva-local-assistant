@@ -2,10 +2,12 @@ from typing import Literal, TypedDict
 
 import httpx
 
+from app.agents.modes import get_mode_prompt
 from app.config import settings
 from app.memory.memory_store import MemoryStoreError, build_memory_prompt_context
 from app.memory.profile_store import ProfileStoreError, build_profile_prompt_context
 from app.prompts.system_prompt import EVA_SYSTEM_PROMPT
+from app.skills.registry import build_skills_prompt_context
 
 
 class OllamaClientError(Exception):
@@ -44,12 +46,22 @@ def _looks_like_missing_model(error_text: str) -> bool:
     )
 
 
-async def ask_ollama(messages: list[ChatMessage], extra_context: str | None = None) -> str:
+async def ask_ollama(
+    messages: list[ChatMessage],
+    extra_context: str | None = None,
+    mode: str = "chat",
+) -> str:
     try:
+        latest_user_message = next(
+            (message["content"] for message in reversed(messages) if message["role"] == "user"),
+            "",
+        )
         system_prompt = (
             f"{EVA_SYSTEM_PROMPT}\n\n"
+            f"{get_mode_prompt(mode)}\n\n"
             f"{build_profile_prompt_context()}\n\n"
-            f"{build_memory_prompt_context()}"
+            f"{build_memory_prompt_context()}\n\n"
+            f"{build_skills_prompt_context(latest_user_message)}"
         )
         if extra_context:
             system_prompt = f"{system_prompt}\n\nContexte supplementaire:\n{extra_context}"

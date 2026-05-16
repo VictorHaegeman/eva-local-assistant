@@ -2,10 +2,16 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from app.actions.autonomy_policy import requires_confirmation
 from app.actions.action_store import EvaAction, update_action_status
 from app.config import settings
 from app.files.local_files import BLOCKED_NAMES, BLOCKED_SUFFIXES, _has_blocked_part
+from app.project_factory.executor import (
+    execute_clipboard_set_prompt,
+    execute_cursor_open_project,
+    execute_github_repo_create,
+    execute_project_workspace_create,
+)
+from app.security.action_policy import is_blocked, requires_confirmation
 
 
 class ActionExecutionError(Exception):
@@ -128,6 +134,9 @@ def execute_action(action_id: int, require_approval: bool = True) -> dict[str, o
     if require_approval and action.status != "approved":
         raise ActionExecutionError("Action non approuvee.")
 
+    if is_blocked(action.action_type, action.payload):
+        raise ActionExecutionError("Cette action est bloquee par la politique de securite.")
+
     if not require_approval and requires_confirmation(action.action_type, action.payload):
         raise ActionExecutionError("Cette action est critique et necessite une validation.")
 
@@ -145,6 +154,14 @@ def execute_action(action_id: int, require_approval: bool = True) -> dict[str, o
             result = _delete_path(action)
         elif action.action_type == "codex_prompt":
             result = _codex_prompt(action)
+        elif action.action_type == "project_workspace_create":
+            result = execute_project_workspace_create(action)
+        elif action.action_type == "clipboard_set_prompt":
+            result = execute_clipboard_set_prompt(action)
+        elif action.action_type == "cursor_open_project":
+            result = execute_cursor_open_project(action)
+        elif action.action_type == "github_repo_create":
+            result = execute_github_repo_create(action)
         else:
             raise ActionExecutionError(f"Type d'action inconnu: {action.action_type}")
     except Exception as exc:

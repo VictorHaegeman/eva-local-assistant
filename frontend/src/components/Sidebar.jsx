@@ -1,16 +1,24 @@
 import {
   Bot,
   BrainCircuit,
+  CheckCircle2,
   Cpu,
-  Files,
   GitBranch,
+  HeartPulse,
+  Layers3,
+  Mail,
   MessageSquarePlus,
+  Network,
   Newspaper,
+  Rocket,
   RotateCcw,
   ShieldCheck,
   Sparkles,
+  Stethoscope,
   Terminal,
+  TriangleAlert,
   Wifi,
+  Wrench,
 } from "lucide-react";
 
 
@@ -21,7 +29,107 @@ function getStatusLabel(status) {
 }
 
 
-export function Sidebar({ status, onReset }) {
+function getDoctorLabel(doctor) {
+  if (doctor.status === "ok") return "OK";
+  if (doctor.status === "warning") return "Attention";
+  if (doctor.status === "error") return "Erreur";
+  return "Scan";
+}
+
+
+function getDoctorIcon(doctor) {
+  if (doctor.status === "ok") return <CheckCircle2 size={16} aria-hidden="true" />;
+  if (doctor.status === "error") return <TriangleAlert size={16} aria-hidden="true" />;
+  return <Stethoscope size={16} aria-hidden="true" />;
+}
+
+
+const coreItems = [
+  {
+    icon: Bot,
+    label: "Chat local",
+    panel: "chat",
+  },
+  {
+    icon: BrainCircuit,
+    label: "Memoire",
+    panel: "memory",
+  },
+  {
+    icon: Wrench,
+    label: "Tools",
+    panel: "tools",
+  },
+  {
+    icon: Layers3,
+    label: "Skills",
+    panel: "skills",
+  },
+  {
+    icon: HeartPulse,
+    label: "Heartbeat",
+    panel: "heartbeat",
+  },
+  {
+    icon: Mail,
+    label: "Gmail",
+    panel: "gmail",
+  },
+  {
+    icon: Network,
+    label: "LinkedIn",
+    panel: "linkedin",
+  },
+  {
+    icon: GitBranch,
+    label: "Projets",
+    panel: "projects",
+  },
+];
+
+
+const operationItems = [
+  {
+    icon: Newspaper,
+    label: "Brief",
+    panel: "brief",
+  },
+  {
+    icon: Rocket,
+    label: "Factory",
+    panel: "projectFactory",
+  },
+  {
+    icon: Terminal,
+    label: "Actions",
+    panel: "actions",
+  },
+  {
+    icon: Cpu,
+    label: "Ollama",
+    panel: "ollama",
+  },
+];
+
+
+export function Sidebar({
+  status,
+  doctor,
+  modes,
+  activeMode,
+  activePanel,
+  onModeChange,
+  onPanelChange = () => {},
+  onReset,
+}) {
+  const visibleChecks = doctor.checks?.slice(0, 3) || [];
+  const safeModes = modes.length ? modes : [{ name: "chat", label: "Chat", description: "Mode general" }];
+
+  function handleNewChat() {
+    onReset();
+    onPanelChange("chat");
+  }
+
   return (
     <aside className="sidebar" aria-label="Eva">
       <div className="sidebar-brand">
@@ -42,46 +150,86 @@ export function Sidebar({ status, onReset }) {
         <p>{status.model ? `Modele: ${status.model}` : "Ollama local"}</p>
       </div>
 
-      <button type="button" className="new-chat-button" onClick={onReset}>
+      <button type="button" className="new-chat-button" onClick={handleNewChat}>
         <MessageSquarePlus size={18} aria-hidden="true" />
         Nouveau chat
       </button>
 
       <div className="sidebar-section">
-        <p className="section-label">Workspace</p>
-        <div className="nav-item active">
-          <Bot size={17} aria-hidden="true" />
-          <span>Chat local</span>
-        </div>
-        <div className="nav-item">
-          <BrainCircuit size={17} aria-hidden="true" />
-          <span>Memoire</span>
-        </div>
-        <div className="nav-item">
-          <Files size={17} aria-hidden="true" />
-          <span>Fichiers</span>
-        </div>
-        <div className="nav-item">
-          <GitBranch size={17} aria-hidden="true" />
-          <span>Projets</span>
+        <p className="section-label">Modes</p>
+        <div className="mode-grid">
+          {safeModes.map((mode) => (
+            <button
+              key={mode.name}
+              type="button"
+              className={`mode-button ${activeMode === mode.name ? "active" : ""}`}
+              onClick={() => onModeChange(mode.name)}
+              title={mode.description}
+            >
+              {mode.label}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="sidebar-section">
-        <p className="section-label">Operations</p>
-        <div className="nav-item">
-          <Newspaper size={17} aria-hidden="true" />
-          <span>Brief</span>
-        </div>
-        <div className="nav-item">
-          <Terminal size={17} aria-hidden="true" />
-          <span>Actions</span>
-        </div>
-        <div className="nav-item">
-          <Cpu size={17} aria-hidden="true" />
-          <span>Ollama</span>
-        </div>
+        <p className="section-label">Core</p>
+        {coreItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              className={`nav-item ${activePanel === item.panel ? "active" : ""}`}
+              onClick={() => onPanelChange(item.panel)}
+            >
+              <Icon size={17} aria-hidden="true" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
       </div>
+
+      <div className="sidebar-section">
+        <p className="section-label">Operations</p>
+        {operationItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              className={`nav-item ${activePanel === item.panel ? "active" : ""}`}
+              onClick={() => onPanelChange(item.panel)}
+            >
+              <Icon size={17} aria-hidden="true" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        className={`doctor-panel ${doctor.status} ${activePanel === "doctor" ? "active" : ""}`}
+        onClick={() => onPanelChange("doctor")}
+      >
+        <div className="doctor-heading">
+          {getDoctorIcon(doctor)}
+          <span>Doctor</span>
+          <strong>{getDoctorLabel(doctor)}</strong>
+        </div>
+        <p>{doctor.summary}</p>
+        {visibleChecks.length > 0 && (
+          <div className="doctor-checks">
+            {visibleChecks.map((check) => (
+              <div key={check.name} className={`doctor-check ${check.status}`}>
+                <span />
+                <small>{check.message}</small>
+              </div>
+            ))}
+          </div>
+        )}
+      </button>
 
       <div className="sidebar-footer">
         <div>

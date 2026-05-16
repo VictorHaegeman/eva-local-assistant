@@ -1,10 +1,12 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 
-load_dotenv()
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(BACKEND_DIR / ".env", override=True)
 
 
 def _env_float(name: str, default: float) -> float:
@@ -55,6 +57,12 @@ class Settings:
     )
     eva_gmail_token_path: str = os.getenv("EVA_GMAIL_TOKEN_PATH", "data/gmail_token.json")
     eva_gmail_max_sent_examples: int = _env_int("EVA_GMAIL_MAX_SENT_EXAMPLES", 5)
+    eva_heartbeat_enabled: bool = _env_bool("EVA_HEARTBEAT_ENABLED", False)
+    eva_heartbeat_poll_seconds: int = _env_int("EVA_HEARTBEAT_POLL_SECONDS", 60)
+    eva_linkedin_enabled: bool = _env_bool("EVA_LINKEDIN_ENABLED", True)
+    eva_obsidian_memory_enabled: bool = _env_bool("EVA_OBSIDIAN_MEMORY_ENABLED", True)
+    eva_obsidian_vault_path: str = os.getenv("EVA_OBSIDIAN_VAULT_PATH", "data/obsidian_vault")
+    eva_projects_dir: str = os.getenv("EVA_PROJECTS_DIR", r"C:\Users\victo\Desktop\Cursor")
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")
     eva_telegram_allowed_chat_id: str = os.getenv("EVA_TELEGRAM_ALLOWED_CHAT_ID", "")

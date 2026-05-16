@@ -29,6 +29,9 @@ data/*
 !data/eva_allowed_paths.example.json
 !data/eva_sources.example.json
 !data/eva_projects.example.json
+!data/eva_heartbeats.example.json
+!data/eva_linkedin.example.json
+!data/gmail_credentials.example.json
 data/eva_profile.json
 data/eva_memory.sqlite
 data/eva_memory.sqlite-*
@@ -42,6 +45,10 @@ data/eva_tasks.sqlite-*
 data/eva_actions.sqlite
 data/eva_actions.sqlite-*
 data/eva_telegram_state.json
+data/eva_heartbeats.json
+data/eva_heartbeat_state.json
+data/eva_linkedin.json
+data/obsidian_vault/
 data/gmail_credentials.json
 data/gmail_token.json
 data/gmail_token_*.json

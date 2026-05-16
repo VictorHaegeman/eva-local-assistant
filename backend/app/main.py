@@ -6,7 +6,6 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app.actions.autonomy_policy import autonomy_policy_text, requires_confirmation
 from app.actions.action_store import (
     ActionStoreError,
     action_to_dict,
@@ -18,10 +17,12 @@ from app.actions.action_store import (
     update_action_status,
 )
 from app.actions.executor import ActionExecutionError, execute_action
+from app.agents.modes import AgentModeName, list_modes
 from app.briefs.brief_store import BriefStoreError, brief_to_dict, get_latest_brief, init_brief_store
 from app.briefs.rss_brief import RssBriefError, ensure_sources_file, generate_morning_brief
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.doctor.diagnostics import run_doctor
 from app.files.local_files import (
     LocalFileError,
     ensure_allowed_paths_file,
@@ -29,6 +30,13 @@ from app.files.local_files import (
     read_text_file,
     roots_to_dicts,
     search_files,
+)
+from app.heartbeat.scheduler import (
+    HeartbeatError,
+    ensure_heartbeats_file,
+    heartbeat_status,
+    run_heartbeat_job,
+    start_heartbeat_background_task,
 )
 from app.integrations.gmail_client import (
     GmailIntegrationError,
@@ -40,6 +48,13 @@ from app.integrations.gmail_client import (
     list_gmail_messages,
     message_to_dict,
 )
+from app.integrations.linkedin_assistant import (
+    LinkedInAssistantError,
+    draft_linkedin_comment,
+    draft_linkedin_post,
+    ensure_linkedin_file,
+    linkedin_status,
+)
 from app.llm.ollama_client import OllamaClientError, ask_ollama
 from app.memory.memory_store import (
     MemoryStoreError,
@@ -48,6 +63,13 @@ from app.memory.memory_store import (
     init_memory_store,
     list_memories,
     memory_to_dict,
+)
+from app.memory.obsidian_store import (
+    ObsidianMemoryError,
+    ensure_obsidian_vault,
+    mirror_memory_to_obsidian,
+    obsidian_status,
+    sync_memories_to_obsidian,
 )
 from app.memory.profile_store import ProfileStoreError, ensure_profile_file, load_profile
 from app.messaging.telegram_bot import start_telegram_background_task, telegram_config_status
@@ -60,6 +82,11 @@ from app.projects.project_store import (
     project_tree,
     read_project_file,
 )
+from app.project_factory.planner import (
+    ProjectFactoryError,
+    build_project_plan,
+    create_project_factory_action,
+)
 from app.projects.task_store import (
     TaskStoreError,
     create_task,
@@ -68,6 +95,9 @@ from app.projects.task_store import (
     list_tasks,
     task_to_dict,
 )
+from app.security.action_policy import autonomy_policy_text, policy_levels, requires_confirmation
+from app.skills.registry import list_skills
+from app.tools.registry import list_tools
 from app.web.web_search import WebSearchError, format_web_results, search_web
 
 
@@ -78,6 +108,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message] = Field(default_factory=list, max_length=50)
+    mode: AgentModeName = "chat"
 
 
 class ChatResponse(BaseModel):
@@ -130,6 +161,11 @@ class ProjectDraftRequest(BaseModel):
     instruction: str = Field(default="", max_length=5000)
 
 
+class ProjectFactoryPlanRequest(BaseModel):
+    idea: str = Field(min_length=8, max_length=8000)
+    project_name: str = Field(default="", max_length=120)
+
+
 class ActionCreateRequest(BaseModel):
     action_type: Literal["command", "read_file", "write_file", "delete_path", "codex_prompt"]
     title: str = Field(min_length=1, max_length=200)
@@ -163,6 +199,18 @@ class GmailReplyDraftRequest(BaseModel):
     )
 
 
+class LinkedInPostDraftRequest(BaseModel):
+    topic: str = Field(min_length=1, max_length=5000)
+    angle: str = Field(default="", max_length=1000)
+    audience: str = Field(default="", max_length=1000)
+    format_name: str = Field(default="post court", min_length=1, max_length=80)
+
+
+class LinkedInCommentDraftRequest(BaseModel):
+    post_context: str = Field(min_length=1, max_length=8000)
+    intent: str = Field(default="", max_length=1000)
+
+
 app = FastAPI(title=settings.app_name)
 
 app.add_middleware(
@@ -175,26 +223,33 @@ app.add_middleware(
 
 ensure_profile_file()
 init_memory_store()
+ensure_obsidian_vault()
 ensure_allowed_paths_file()
 ensure_sources_file()
 ensure_projects_file()
+ensure_heartbeats_file()
+ensure_linkedin_file()
 init_brief_store()
 init_task_store()
 init_action_store()
 
 telegram_task: asyncio.Task[None] | None = None
+heartbeat_task: asyncio.Task[None] | None = None
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global telegram_task
+    global heartbeat_task, telegram_task
     telegram_task = start_telegram_background_task()
+    heartbeat_task = start_heartbeat_background_task()
 
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
     if telegram_task:
         telegram_task.cancel()
+    if heartbeat_task:
+        heartbeat_task.cancel()
 
 
 @app.get("/health")
@@ -215,14 +270,63 @@ async def gmail_config_status() -> dict[str, object]:
     return gmail_status()
 
 
+@app.get("/linkedin/status")
+async def linkedin_config_status() -> dict[str, object]:
+    return linkedin_status()
+
+
+@app.get("/heartbeat/status")
+async def heartbeat_config_status() -> dict[str, object]:
+    return heartbeat_status()
+
+
+@app.post("/heartbeat/run/{job_key}")
+async def heartbeat_run(job_key: str) -> dict[str, object]:
+    try:
+        return await run_heartbeat_job(job_key)
+    except HeartbeatError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except (RssBriefError, BriefStoreError, OllamaClientError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.get("/doctor")
+async def doctor() -> dict[str, object]:
+    return await run_doctor()
+
+
+@app.get("/agents/modes")
+async def agent_modes() -> dict[str, object]:
+    return {
+        "modes": list_modes(),
+    }
+
+
+@app.get("/tools")
+async def tools() -> dict[str, object]:
+    return {
+        "tools": list_tools(),
+    }
+
+
+@app.get("/skills")
+async def skills() -> dict[str, object]:
+    return {
+        "skills": list_skills(),
+    }
+
+
 @app.get("/autonomy")
 async def autonomy() -> dict[str, object]:
     return {
         "policy": autonomy_policy_text(),
+        "levels": policy_levels(),
         "safe_without_confirmation": [
             "lecture/analyse dans les dossiers configures",
             "recherche web gratuite",
             "lecture Gmail si OAuth local est configure",
+            "brouillon LinkedIn sans publication",
+            "heartbeat local si active",
             "brouillon de reponse email sans envoi",
             "resume",
             "creation de taches locales",
@@ -235,6 +339,7 @@ async def autonomy() -> dict[str, object]:
             "publication",
             "envoi de message",
             "envoi d'email",
+            "publication LinkedIn",
             "compte externe",
         ],
     }
@@ -266,12 +371,29 @@ async def memories() -> dict[str, object]:
     }
 
 
+@app.get("/memory/obsidian/status")
+async def memory_obsidian_status() -> dict[str, object]:
+    return obsidian_status()
+
+
+@app.post("/memory/obsidian/sync")
+async def memory_obsidian_sync() -> dict[str, object]:
+    try:
+        loaded_memories = list_memories(limit=200)
+        return sync_memories_to_obsidian(loaded_memories)
+    except (MemoryStoreError, ObsidianMemoryError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 @app.post("/memories")
 async def create_memory(request: MemoryCreateRequest) -> dict[str, object]:
     try:
         memory = add_memory(request.content, request.category, source="manual")
+        mirror_memory_to_obsidian(memory)
     except MemoryStoreError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ObsidianMemoryError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return {
         "saved": True,
@@ -580,6 +702,42 @@ Donne uniquement:
     }
 
 
+@app.post("/linkedin/post-draft")
+async def linkedin_post_draft(request: LinkedInPostDraftRequest) -> dict[str, object]:
+    try:
+        draft = await draft_linkedin_post(
+            topic=request.topic,
+            angle=request.angle,
+            audience=request.audience,
+            format_name=request.format_name,
+        )
+    except LinkedInAssistantError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "published": False,
+        "requires_confirmation_before_publish": True,
+        "draft": draft,
+    }
+
+
+@app.post("/linkedin/comment-draft")
+async def linkedin_comment_draft(request: LinkedInCommentDraftRequest) -> dict[str, object]:
+    try:
+        draft = await draft_linkedin_comment(
+            post_context=request.post_context,
+            intent=request.intent,
+        )
+    except LinkedInAssistantError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "published": False,
+        "requires_confirmation_before_publish": True,
+        "draft": draft,
+    }
+
+
 @app.post("/brief/morning")
 async def morning_brief() -> dict[str, object]:
     try:
@@ -612,6 +770,70 @@ async def projects() -> dict[str, object]:
         return {"projects": load_projects()}
     except ProjectStoreError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/project-factory/plan")
+async def project_factory_plan(request: ProjectFactoryPlanRequest) -> dict[str, object]:
+    try:
+        plan = build_project_plan(
+            idea=request.idea,
+            project_name=request.project_name or None,
+        )
+    except ProjectFactoryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "plan": plan,
+        "executed": False,
+        "requires_confirmation": True,
+    }
+
+
+@app.post("/project-factory/actions")
+async def project_factory_actions(request: ProjectFactoryPlanRequest) -> dict[str, object]:
+    try:
+        bundle = create_project_factory_action(
+            idea=request.idea,
+            project_name=request.project_name or None,
+        )
+        plan = bundle["plan"]
+        workspace_action = bundle["action"]
+        clipboard_action = create_action(
+            action_type="clipboard_set_prompt",
+            title=f"Copier le prompt Cursor pour {plan['project_name']}",
+            description="Copie le prompt dans le presse-papiers Windows. Validation obligatoire.",
+            payload={"prompt": plan["cursor_prompt"], "project_name": plan["project_name"]},
+        )
+        cursor_action = create_action(
+            action_type="cursor_open_project",
+            title=f"Ouvrir Cursor pour {plan['project_name']}",
+            description="Ouvre Cursor sur le dossier projet. Validation obligatoire.",
+            payload={"workspace_path": plan["workspace_path"]},
+        )
+        github_action = create_action(
+            action_type="github_repo_create",
+            title=f"Creer le repo GitHub {plan['repo_name']}",
+            description="Cree le repo via GitHub CLI gh. Validation obligatoire.",
+            payload={
+                "workspace_path": plan["workspace_path"],
+                "repo_name": plan["repo_name"],
+                "visibility": "private",
+            },
+        )
+    except (ProjectFactoryError, ActionStoreError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "plan": plan,
+        "actions": [
+            action_to_dict(workspace_action),
+            action_to_dict(clipboard_action),
+            action_to_dict(cursor_action),
+            action_to_dict(github_action),
+        ],
+        "executed": False,
+        "requires_confirmation": True,
+    }
 
 
 @app.get("/projects/{project_name}/tree")
@@ -814,7 +1036,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
     try:
-        result = await process_chat_messages(safe_messages)
+        result = await process_chat_messages(safe_messages, mode=request.mode)
     except ChatServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
