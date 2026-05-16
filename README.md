@@ -263,7 +263,27 @@ Eva cree alors des actions en attente pour:
 - ouvrir le projet dans Cursor;
 - creer le repo GitHub via `gh`.
 
-Chaque action critique reste validable avec `/approve ID`.
+Par defaut, chaque action critique reste validable avec `/approve ID`.
+
+Mode confiance pour tes nouvelles idees:
+
+```env
+EVA_PROJECT_FACTORY_AUTO_EXECUTE=true
+EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT=true
+EVA_PROJECT_FACTORY_AUTO_OPEN_CURSOR=true
+EVA_PROJECT_FACTORY_AUTO_GITHUB=true
+```
+
+Avec ce mode active dans `backend/.env`, quand tu envoies `/project ...` ou que tu demandes dans le chat de creer un nouveau projet, Eva lance directement le flux Project Factory:
+
+- creation du dossier dans `EVA_PROJECTS_DIR`;
+- creation des fichiers de cadrage;
+- initialisation Git locale si `git` est disponible;
+- copie du prompt Cursor dans le presse-papiers;
+- ouverture du projet dans Cursor si la CLI `cursor` est disponible;
+- creation du repo GitHub via `gh` si `EVA_PROJECT_FACTORY_AUTO_GITHUB=true` et `gh auth login` est deja configure.
+
+Ce mode ne donne pas carte blanche a tout le PC: il ne supprime rien, n'envoie pas de message, ne publie pas de contenu et n'appelle pas OpenAI. Il execute seulement le flux Project Factory borne a ton dossier projets.
 
 Configuration:
 

@@ -87,6 +87,10 @@ from app.project_factory.planner import (
     build_project_plan,
     create_project_factory_actions,
 )
+from app.project_factory.automation import (
+    auto_execute_project_factory_actions,
+    project_factory_auto_status,
+)
 from app.projects.task_store import (
     TaskStoreError,
     create_task,
@@ -321,6 +325,7 @@ async def autonomy() -> dict[str, object]:
     return {
         "policy": autonomy_policy_text(),
         "levels": policy_levels(),
+        "project_factory": project_factory_auto_status(),
         "safe_without_confirmation": [
             "lecture/analyse dans les dossiers configures",
             "recherche web gratuite",
@@ -333,8 +338,8 @@ async def autonomy() -> dict[str, object]:
             "preparation de prompts Cursor/Codex",
         ],
         "requires_confirmation": [
-            "commande systeme",
-            "modification ou suppression de fichier",
+            "commande systeme hors Project Factory auto configuree",
+            "modification ou suppression de fichier hors workspace Project Factory",
             "git push",
             "publication",
             "envoi de message",
@@ -798,14 +803,22 @@ async def project_factory_actions(request: ProjectFactoryPlanRequest) -> dict[st
         )
         plan = bundle["plan"]
         actions = bundle["actions"]
+        auto_status = project_factory_auto_status()
+        auto_results = (
+            auto_execute_project_factory_actions(actions)
+            if auto_status["auto_execute"]
+            else []
+        )
     except (ProjectFactoryError, ActionStoreError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {
         "plan": plan,
         "actions": [action_to_dict(action) for action in actions],
-        "executed": False,
-        "requires_confirmation": True,
+        "auto": auto_status,
+        "auto_results": auto_results,
+        "executed": bool(auto_results),
+        "requires_confirmation": not bool(auto_results),
     }
 
 

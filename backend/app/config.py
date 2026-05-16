@@ -63,6 +63,16 @@ class Settings:
     eva_obsidian_memory_enabled: bool = _env_bool("EVA_OBSIDIAN_MEMORY_ENABLED", True)
     eva_obsidian_vault_path: str = os.getenv("EVA_OBSIDIAN_VAULT_PATH", "data/obsidian_vault")
     eva_projects_dir: str = os.getenv("EVA_PROJECTS_DIR", r"C:\Users\victo\Desktop\Cursor")
+    eva_project_factory_auto_execute: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_EXECUTE", False)
+    eva_project_factory_auto_copy_prompt: bool = _env_bool(
+        "EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT",
+        True,
+    )
+    eva_project_factory_auto_open_cursor: bool = _env_bool(
+        "EVA_PROJECT_FACTORY_AUTO_OPEN_CURSOR",
+        True,
+    )
+    eva_project_factory_auto_github: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_GITHUB", False)
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")
     eva_telegram_allowed_chat_id: str = os.getenv("EVA_TELEGRAM_ALLOWED_CHAT_ID", "")

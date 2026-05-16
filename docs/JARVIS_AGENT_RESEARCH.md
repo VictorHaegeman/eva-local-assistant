@@ -167,6 +167,32 @@ Validation possible:
 - `/approve ID` sur Telegram;
 - jamais automatique pour GitHub, ecriture fichier, commande systeme ou push.
 
+Decision ajoutee pour le flux "nouvelle idee projet":
+
+Victor veut un mode de confiance ou la Project Factory se lance sans validation action par action. Eva supporte donc un mode auto configurable:
+
+```env
+EVA_PROJECT_FACTORY_AUTO_EXECUTE=true
+EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT=true
+EVA_PROJECT_FACTORY_AUTO_OPEN_CURSOR=true
+EVA_PROJECT_FACTORY_AUTO_GITHUB=true
+```
+
+Ce mode est volontairement borne:
+
+- creation seulement dans `EVA_PROJECTS_DIR`;
+- pas de suppression;
+- pas d'envoi de mail/message;
+- pas de publication LinkedIn;
+- pas d'appel OpenAI;
+- GitHub uniquement via `gh` local deja authentifie;
+- pas de push automatique ajoute a ce stade.
+
+La philosophie devient:
+
+- Project Factory: peut etre auto si Victor l'active;
+- actions destructrices, envoi, publication, push: restent hors auto par defaut.
+
 ### 3. Workspace local
 
 Apres validation, Eva peut:

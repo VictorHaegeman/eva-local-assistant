@@ -26,7 +26,12 @@ from app.projects.project_chat import (
     detect_cursor_prompt_request,
 )
 from app.projects.project_store import load_projects
-from app.project_factory.planner import ProjectFactoryError, create_project_factory_action
+from app.project_factory.automation import (
+    auto_execute_project_factory_actions,
+    format_project_factory_results,
+    project_factory_auto_status,
+)
+from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 from app.skills.registry import list_skills
 from app.tools.registry import list_tools
 from app.web.web_search import WebSearchError, detect_web_search_query, format_web_results, search_web
@@ -162,9 +167,23 @@ async def process_chat_messages(
 
     try:
         if _should_create_project_factory_plan(latest_user_message):
-            bundle = create_project_factory_action(latest_user_message)
+            bundle = create_project_factory_actions(latest_user_message)
             plan = bundle["plan"]
-            action = bundle["action"]
+            actions = bundle["actions"]
+            auto_status = project_factory_auto_status()
+            if auto_status["auto_execute"]:
+                results = auto_execute_project_factory_actions(actions)
+                content = format_project_factory_results(plan, results)
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": content,
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+
+            first_action = actions[0]
             return {
                 "message": {
                     "role": "assistant",
@@ -174,14 +193,13 @@ async def process_chat_messages(
                         f"Dossier cible: {plan['workspace_path']}\n"
                         f"Repo GitHub propose: {plan['repo_name']}\n"
                         f"Stack: {plan['stack']['frontend']} / {plan['stack']['backend']}\n\n"
-                        f"Action en attente #{action.id}: creer le workspace et les fichiers "
-                        "README.md, PROJECT_BRIEF.md, TASKS.md et CURSOR_PROMPT.md.\n\n"
-                        "Je n'ai pas cree le dossier, pas ouvert Cursor, pas cree GitHub et pas appele ChatGPT. "
-                        "Ces actions restent a valider dans le panneau Actions ou via Telegram."
+                        "Actions en attente:\n"
+                        + "\n".join(f"- #{action.id} [{action.action_type}] {action.title}" for action in actions)
+                        + "\n\nActive EVA_PROJECT_FACTORY_AUTO_EXECUTE=true pour lancer automatiquement ce flux."
                     ),
                 },
                 "saved_memory": None,
-                "pending_action": action_to_dict(action),
+                "pending_action": action_to_dict(first_action),
             }
 
         pending_action = create_pending_action_from_message(latest_user_message)

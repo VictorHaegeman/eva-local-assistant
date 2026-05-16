@@ -14,6 +14,11 @@ from app.actions.action_store import (
 from app.actions.executor import ActionExecutionError, execute_action
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.project_factory.automation import (
+    auto_execute_project_factory_actions,
+    format_project_factory_results,
+    project_factory_auto_status,
+)
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 
 
@@ -135,6 +140,12 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             bundle = create_project_factory_actions(argument)
             plan = bundle["plan"]
             actions = bundle["actions"]
+            auto_status = project_factory_auto_status()
+            if auto_status["auto_execute"]:
+                results = auto_execute_project_factory_actions(actions)
+                await _send_message(client, chat_id, format_project_factory_results(plan, results))
+                return True
+
             lines = [
                 f"Project Factory pret: {plan['project_name']}",
                 f"Dossier cible: {plan['workspace_path']}",
