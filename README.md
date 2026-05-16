@@ -694,7 +694,21 @@ Ce script:
 - ouvre le backend FastAPI dans une fenetre terminal separee;
 - ouvre le frontend Vite dans une fenetre terminal separee;
 - attend quelques secondes;
-- ouvre automatiquement `http://localhost:5173` dans le navigateur.
+- ouvre automatiquement Eva dans une fenetre application separee si Edge ou Chrome est disponible.
+
+Tu peux aussi ouvrir uniquement la fenetre Eva avec:
+
+```text
+open-eva-window.bat
+```
+
+Cette fenetre utilise le mode app de Edge/Chrome:
+
+```text
+http://localhost:5173
+```
+
+Elle ressemble plus a une app Windows qu'a un onglet navigateur. Une version encore plus native pourra etre faite plus tard avec Tauri ou Electron, mais ce mode est plus leger pour Eva V1.
 
 Pour arreter Eva, double-clique sur:
 

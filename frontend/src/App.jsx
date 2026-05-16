@@ -188,6 +188,7 @@ export default function App() {
             messages={messages}
             loading={loading}
             error={error}
+            status={backendStatus}
             onStarterSelect={handleSend}
           />
         ) : (

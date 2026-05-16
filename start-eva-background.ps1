@@ -80,7 +80,13 @@ for ($attempt = 1; $attempt -le 20; $attempt++) {
 }
 
 if (-not $NoBrowser) {
-    Start-Process "http://localhost:5173"
+    $windowScript = Join-Path $projectDir "open-eva-window.ps1"
+    if (Test-Path $windowScript) {
+        & $windowScript
+    }
+    else {
+        Start-Process "http://localhost:5173"
+    }
 }
 
 Write-Host "Eva est lancee depuis $projectDir"

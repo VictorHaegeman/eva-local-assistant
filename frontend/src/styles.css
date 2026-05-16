@@ -539,6 +539,165 @@ button.nav-item:hover {
   scroll-behavior: smooth;
 }
 
+.eva-orb-stage {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  width: min(820px, 100%);
+  padding: 28px 0 6px;
+}
+
+.eva-orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(214px, 30vw, 340px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(115, 214, 255, 0.18), transparent 31%),
+    radial-gradient(circle at 50% 50%, rgba(33, 156, 255, 0.1), transparent 56%);
+  filter: drop-shadow(0 0 36px rgba(33, 156, 255, 0.16));
+}
+
+.eva-orb::before,
+.eva-orb::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.eva-orb::before {
+  inset: 9%;
+  border: 1px solid rgba(115, 214, 255, 0.18);
+  box-shadow:
+    inset 0 0 42px rgba(115, 214, 255, 0.08),
+    0 0 48px rgba(33, 156, 255, 0.1);
+}
+
+.eva-orb::after {
+  inset: 26%;
+  background:
+    radial-gradient(circle, rgba(244, 248, 251, 0.14), transparent 8%),
+    radial-gradient(circle, rgba(115, 214, 255, 0.22), transparent 64%);
+  filter: blur(1px);
+}
+
+.eva-orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  pointer-events: none;
+}
+
+.ring-one {
+  inset: 1%;
+  border-top-color: rgba(115, 214, 255, 0.9);
+  border-right-color: rgba(115, 214, 255, 0.18);
+  border-bottom-color: rgba(33, 156, 255, 0.34);
+  animation: eva-spin 8s linear infinite;
+}
+
+.ring-two {
+  inset: 12%;
+  border-left-color: rgba(115, 214, 255, 0.7);
+  border-bottom-color: rgba(115, 214, 255, 0.18);
+  border-top-color: rgba(33, 156, 255, 0.36);
+  animation: eva-spin-reverse 12s linear infinite;
+}
+
+.ring-three {
+  inset: 23%;
+  border-right-color: rgba(244, 248, 251, 0.56);
+  border-top-color: rgba(115, 214, 255, 0.26);
+  animation: eva-spin 5.5s linear infinite;
+}
+
+.eva-orb-grid {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background:
+    linear-gradient(rgba(115, 214, 255, 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(115, 214, 255, 0.11) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(circle, #000 0 54%, transparent 72%);
+  opacity: 0.4;
+  animation: eva-pulse 3.2s ease-in-out infinite;
+}
+
+.eva-orb-core {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 36%;
+  aspect-ratio: 1;
+  color: var(--text);
+  background:
+    radial-gradient(circle, rgba(244, 248, 251, 0.16), rgba(115, 214, 255, 0.1) 44%, rgba(6, 12, 20, 0.9) 72%);
+  border: 1px solid rgba(115, 214, 255, 0.48);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 30px rgba(115, 214, 255, 0.18),
+    0 0 34px rgba(33, 156, 255, 0.2);
+}
+
+.eva-orb-core span {
+  font-size: clamp(1.55rem, 4vw, 2.7rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: 0 0 22px rgba(115, 214, 255, 0.52);
+}
+
+.eva-orb-copy {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.eva-orb-copy h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: 0 0 28px rgba(115, 214, 255, 0.28);
+}
+
+.eva-orb-copy p {
+  margin: 0;
+  color: var(--muted);
+}
+
+@keyframes eva-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes eva-spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes eva-pulse {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 0.54;
+    transform: scale(1.02);
+  }
+}
+
 .message-row {
   display: flex;
   align-items: flex-start;
@@ -1162,6 +1321,19 @@ button.nav-item:hover {
   .messages {
     gap: 18px;
     padding: 24px 13px 18px;
+  }
+
+  .eva-orb-stage {
+    gap: 14px;
+    padding-top: 12px;
+  }
+
+  .eva-orb {
+    width: min(70vw, 260px);
+  }
+
+  .eva-orb-copy h1 {
+    font-size: 2.15rem;
   }
 
   .message-row {

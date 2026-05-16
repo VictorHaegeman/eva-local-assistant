@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { EvaOrb } from "./EvaOrb";
 import { MessageBubble } from "./MessageBubble";
 
 
@@ -10,7 +11,7 @@ const starters = [
 ];
 
 
-export function ChatWindow({ messages, loading, error, onStarterSelect }) {
+export function ChatWindow({ messages, loading, error, onStarterSelect, status }) {
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -20,6 +21,10 @@ export function ChatWindow({ messages, loading, error, onStarterSelect }) {
   return (
     <div className="chat-window">
       <div className="messages">
+        {messages.length === 1 && !loading && (
+          <EvaOrb status={status} />
+        )}
+
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}

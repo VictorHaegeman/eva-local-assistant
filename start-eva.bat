@@ -40,6 +40,10 @@ for /l %%I in (1,1,12) do (
 )
 
 :open_browser
-start "" "http://localhost:5173"
+if exist "%PROJECT_DIR%open-eva-window.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%PROJECT_DIR%open-eva-window.ps1"
+) else (
+  start "" "http://localhost:5173"
+)
 
 endlocal
