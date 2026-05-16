@@ -19,6 +19,7 @@ from app.actions.action_store import (
 from app.actions.executor import ActionExecutionError, execute_action
 from app.agents.modes import AgentModeName, list_modes
 from app.briefs.brief_store import BriefStoreError, brief_to_dict, get_latest_brief, init_brief_store
+from app.briefs.daily_launch import DailyLaunchError, get_daily_launch_brief
 from app.briefs.rss_brief import RssBriefError, ensure_sources_file, generate_morning_brief
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
@@ -101,6 +102,12 @@ from app.projects.task_store import (
 )
 from app.security.action_policy import autonomy_policy_text, policy_levels, requires_confirmation
 from app.skills.registry import list_skills
+from app.social.instagram_public import (
+    InstagramPublicError,
+    ensure_socials_file,
+    fetch_instagram_public_snapshots,
+    instagram_status,
+)
 from app.tools.registry import list_tools
 from app.web.web_search import WebSearchError, format_web_results, search_web
 
@@ -194,6 +201,10 @@ class WebSearchRequest(BaseModel):
     limit: int = Field(default=5, ge=1, le=8)
 
 
+class DailyLaunchRequest(BaseModel):
+    force: bool = False
+
+
 class GmailReplyDraftRequest(BaseModel):
     message_id: str = Field(min_length=1, max_length=200)
     instruction: str = Field(
@@ -233,6 +244,7 @@ ensure_sources_file()
 ensure_projects_file()
 ensure_heartbeats_file()
 ensure_linkedin_file()
+ensure_socials_file()
 init_brief_store()
 init_task_store()
 init_action_store()
@@ -277,6 +289,19 @@ async def gmail_config_status() -> dict[str, object]:
 @app.get("/linkedin/status")
 async def linkedin_config_status() -> dict[str, object]:
     return linkedin_status()
+
+
+@app.get("/social/instagram/status")
+async def instagram_config_status() -> dict[str, object]:
+    return instagram_status()
+
+
+@app.get("/social/instagram/public-snapshot")
+async def instagram_public_snapshot() -> dict[str, object]:
+    try:
+        return await fetch_instagram_public_snapshots()
+    except InstagramPublicError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/heartbeat/status")
@@ -755,6 +780,16 @@ async def morning_brief() -> dict[str, object]:
     return {
         "brief": brief_to_dict(brief),
     }
+
+
+@app.post("/brief/daily-launch")
+async def daily_launch_brief(request: DailyLaunchRequest) -> dict[str, object]:
+    try:
+        return await get_daily_launch_brief(force=request.force)
+    except DailyLaunchError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except BriefStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.get("/brief/latest")

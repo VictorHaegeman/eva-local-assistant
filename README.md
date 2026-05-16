@@ -502,6 +502,7 @@ data/eva_sources.json
 Routes utiles:
 
 - `POST /brief/morning`: recupere les flux RSS, demande a Ollama de produire le brief, puis le stocke localement;
+- `POST /brief/daily-launch`: genere le brief a la premiere ouverture de la journee;
 - `GET /brief/latest`: recupere le dernier brief stocke.
 
 Le stockage local se fait dans:
@@ -511,6 +512,75 @@ data/eva_briefs.sqlite
 ```
 
 Pour l'instant, le brief est lance manuellement. L'automatisation quotidienne via le Planificateur de taches Windows viendra apres validation du format.
+
+### Brief automatique a la premiere ouverture
+
+Eva peut afficher automatiquement un resume du jour quand tu l'ouvres pour la premiere fois de la journee.
+
+Configuration:
+
+```env
+EVA_DAILY_BRIEF_ENABLED=true
+EVA_DAILY_BRIEF_AUTO_OPEN_TABS=false
+EVA_DAILY_BRIEF_MAX_TABS=3
+```
+
+Comportement:
+
+- Eva verifie localement si le brief a deja ete affiche aujourd'hui;
+- si non, elle recupere les flux RSS gratuits;
+- elle demande a Ollama de produire un resume court et utile;
+- elle affiche le texte dans le chat;
+- elle ajoute des cartes avec images/liens quand les flux en fournissent;
+- elle propose les onglets importants a ouvrir.
+
+Si `EVA_DAILY_BRIEF_AUTO_OPEN_TABS=true`, Eva essaie aussi d'ouvrir automatiquement quelques onglets importants. Certains navigateurs peuvent bloquer les ouvertures automatiques; dans ce cas les boutons restent disponibles dans le brief.
+
+L'etat local est stocke dans:
+
+```text
+data/eva_daily_launch.json
+```
+
+Ce fichier est ignore par Git.
+
+### Instagram public
+
+Eva peut surveiller un profil Instagram public configure localement dans:
+
+```text
+data/eva_socials.json
+```
+
+Le fichier exemple est:
+
+```text
+data/eva_socials.example.json
+```
+
+Exemple:
+
+```json
+{
+  "instagram": {
+    "enabled": true,
+    "public_profiles": [
+      {
+        "label": "Victor",
+        "username": "ton_username",
+        "url": "https://www.instagram.com/ton_username/"
+      }
+    ]
+  }
+}
+```
+
+Limite importante:
+
+- Eva peut lire des metadonnees publiques si Instagram les expose;
+- Eva ne peut pas voir tes nouveaux abonnes reels, tes statistiques privees ou tes messages sans connexion officielle au compte;
+- Eva ne stocke pas de mot de passe Instagram;
+- une vraie lecture d'activite Instagram demandera plus tard une integration officielle ou un export local controle.
 
 ## Projets de code et Cursor
 

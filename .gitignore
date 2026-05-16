@@ -31,6 +31,7 @@ data/*
 !data/eva_projects.example.json
 !data/eva_heartbeats.example.json
 !data/eva_linkedin.example.json
+!data/eva_socials.example.json
 !data/gmail_credentials.example.json
 data/eva_profile.json
 data/eva_memory.sqlite
@@ -47,7 +48,10 @@ data/eva_actions.sqlite-*
 data/eva_telegram_state.json
 data/eva_heartbeats.json
 data/eva_heartbeat_state.json
+data/eva_daily_launch.json
 data/eva_linkedin.json
+data/eva_socials.json
+data/eva_social_state.json
 data/obsidian_vault/
 data/gmail_credentials.json
 data/gmail_token.json

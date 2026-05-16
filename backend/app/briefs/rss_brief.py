@@ -70,6 +70,27 @@ def _find_text(element: ET.Element, names: tuple[str, ...]) -> str:
     return ""
 
 
+def _find_image(element: ET.Element, summary: str) -> str:
+    for child in element.iter():
+        clean_tag = child.tag.split("}")[-1].lower()
+        if clean_tag in {"thumbnail", "content"}:
+            url = child.attrib.get("url", "")
+            medium = child.attrib.get("medium", "")
+            content_type = child.attrib.get("type", "")
+            if url and (medium == "image" or content_type.startswith("image/") or clean_tag == "thumbnail"):
+                return url
+        if clean_tag == "enclosure":
+            url = child.attrib.get("url", "")
+            content_type = child.attrib.get("type", "")
+            if url and content_type.startswith("image/"):
+                return url
+
+    image_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', summary, flags=re.IGNORECASE)
+    if image_match:
+        return html.unescape(image_match.group(1))
+    return ""
+
+
 def _parse_feed(xml_text: str, source: dict[str, Any]) -> list[dict[str, str]]:
     root = ET.fromstring(xml_text)
     items: list[dict[str, str]] = []
@@ -83,7 +104,9 @@ def _parse_feed(xml_text: str, source: dict[str, Any]) -> list[dict[str, str]]:
 
     for item in [*rss_items, *atom_items][:MAX_ITEMS_PER_SOURCE]:
         title = _find_text(item, ("title",))
-        summary = _find_text(item, ("description", "summary", "content"))
+        raw_summary = _find_text(item, ("description", "summary", "content"))
+        image = _find_image(item, raw_summary)
+        summary = raw_summary
         link = _find_text(item, ("link",))
 
         if not link:
@@ -102,6 +125,7 @@ def _parse_feed(xml_text: str, source: dict[str, Any]) -> list[dict[str, str]]:
                 "title": title,
                 "summary": summary[:500],
                 "link": link,
+                "image": image,
             }
         )
 
@@ -122,7 +146,8 @@ async def fetch_rss_items() -> list[dict[str, str]]:
             try:
                 response = await client.get(url)
                 response.raise_for_status()
-                collected_items.extend(_parse_feed(response.text, source))
+                xml_text = response.content.decode("utf-8", errors="replace")
+                collected_items.extend(_parse_feed(xml_text, source))
             except (httpx.HTTPError, ET.ParseError):
                 continue
 

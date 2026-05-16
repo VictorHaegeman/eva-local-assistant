@@ -1,0 +1,12 @@
+{
+  "instagram": {
+    "enabled": false,
+    "public_profiles": [
+      {
+        "label": "Victor",
+        "username": "",
+        "url": ""
+      }
+    ]
+  }
+}

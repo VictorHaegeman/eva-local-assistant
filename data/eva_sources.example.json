@@ -1,6 +1,21 @@
 {
   "sources": [
     {
+      "name": "Google News Monde",
+      "category": "world",
+      "url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=fr&gl=FR&ceid=FR:fr"
+    },
+    {
+      "name": "Google News Business",
+      "category": "business",
+      "url": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=fr&gl=FR&ceid=FR:fr"
+    },
+    {
+      "name": "Google News Technologie",
+      "category": "tech",
+      "url": "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=fr&gl=FR&ceid=FR:fr"
+    },
+    {
       "name": "Hacker News",
       "category": "tech",
       "url": "https://hnrss.org/frontpage"
@@ -17,6 +32,7 @@
     }
   ],
   "brief_focus": [
+    "monde",
     "business",
     "tech",
     "IA",

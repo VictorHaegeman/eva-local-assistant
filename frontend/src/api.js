@@ -149,6 +149,17 @@ export async function getLatestBrief() {
 }
 
 
+export async function getDailyLaunchBrief(force = false) {
+  return request("/brief/daily-launch", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force }),
+  });
+}
+
+
 export async function sendChat(messages, mode = "chat") {
   const payload = await request("/chat", {
     method: "POST",

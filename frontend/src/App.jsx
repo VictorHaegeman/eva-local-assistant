@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Sparkles } from "lucide-react";
 
-import { getDoctor, getHealth, getModes, sendChat } from "./api";
+import { getDailyLaunchBrief, getDoctor, getHealth, getModes, sendChat } from "./api";
 import { ChatInput } from "./components/ChatInput";
 import { ChatWindow } from "./components/ChatWindow";
 import { ControlPanel } from "./components/ControlPanel";
@@ -15,6 +15,25 @@ const welcomeMessage = {
   content: "Bonjour Victor. Eva en ligne. Que veux-tu piloter ?",
   localOnly: true,
 };
+
+function createDailyBriefMessage(payload) {
+  const brief = payload.brief || {};
+  const instagram = payload.instagram || {};
+  const instagramLine = instagram.enabled
+    ? `\n\nInstagram: ${instagram.summary || "check public effectue."}\n${instagram.limits || ""}`
+    : "\n\nInstagram: pas encore configure en lecture publique.";
+  const staleLine = payload.stale ? "Brief base sur le dernier brief disponible.\n\n" : "";
+
+  return {
+    id: `daily-${payload.date || Date.now()}`,
+    role: "assistant",
+    content: `${staleLine}${brief.content || "Je n'ai pas encore de brief disponible."}${instagramLine}`,
+    briefItems: payload.visual_items || [],
+    suggestedTabs: payload.suggested_tabs || [],
+    instagram,
+    localOnly: true,
+  };
+}
 
 function createMessage(role, content) {
   return {
@@ -88,6 +107,30 @@ export default function App() {
             checks: [],
           });
         }
+      });
+
+    getDailyLaunchBrief()
+      .then((payload) => {
+        if (cancelled || !payload?.should_show || !payload.brief) {
+          return;
+        }
+
+        setMessages((currentMessages) => [
+          ...currentMessages,
+          createDailyBriefMessage(payload),
+        ]);
+
+        if (payload.auto_open_tabs && Array.isArray(payload.suggested_tabs)) {
+          payload.suggested_tabs.slice(0, 3).forEach((tab, index) => {
+            if (!tab?.url) return;
+            window.setTimeout(() => {
+              window.open(tab.url, "_blank", "noopener,noreferrer");
+            }, 450 * (index + 1));
+          });
+        }
+      })
+      .catch(() => {
+        // Le brief du jour ne doit pas bloquer le chat si une source RSS ne repond pas.
       });
 
     return () => {
