@@ -84,8 +84,16 @@ WEB_SEARCH_MARKERS = (
     "cherche web",
     "trouve sur internet",
     "regarde sur internet",
+    "va sur internet",
+    "navigue sur internet",
+    "regarde en ligne",
+    "trouve en ligne",
     "actualite",
     "actualites",
+    "infos recentes",
+    "infos recentes",
+    "dernieres infos",
+    "derniere info",
 )
 
 

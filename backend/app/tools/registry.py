@@ -92,6 +92,27 @@ TOOLS = (
         description="Taches locales planifiees et controles de routine.",
     ),
     ToolDescriptor(
+        key="voice_control",
+        label="Voix Eva",
+        category="voice",
+        policy_level="read_only",
+        description="Commandes vocales dans la fenetre Eva avec wake word Ok Eva et reponses vocales.",
+    ),
+    ToolDescriptor(
+        key="daily_launch_brief",
+        label="Brief d'ouverture",
+        category="automation",
+        policy_level="read_only",
+        description="Brief automatique a la premiere ouverture de la journee.",
+    ),
+    ToolDescriptor(
+        key="telegram_remote",
+        label="Telegram Remote",
+        category="messaging",
+        policy_level="confirmation_required",
+        description="Pilotage mobile optionnel par Telegram avec allowlist locale.",
+    ),
+    ToolDescriptor(
         key="local_command",
         label="Commande locale",
         category="system",

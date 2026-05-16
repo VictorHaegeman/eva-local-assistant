@@ -919,6 +919,46 @@ GET /skills
 
 Les skills respectent la politique de securite: lecture et brouillons sans confirmation, validation humaine pour envoi, publication, modification de fichier, commande systeme ou `git push`.
 
+## Voix Eva
+
+Eva dispose d'un premier mode vocal dans la fenetre app.
+
+Fonctions:
+
+- bouton micro pour dicter une demande;
+- bouton `Wake Eva` pour activer l'ecoute continue dans la fenetre;
+- declenchement par `Eva` ou `Ok Eva`;
+- reponses vocales via la synthese vocale du navigateur;
+- commande vocale `stop` ou `tais-toi` pour couper la voix.
+
+Exemples:
+
+```text
+Ok Eva, cree un nouveau projet pour une idee SaaS de prospection.
+Eva, fais mon brief du jour.
+Eva, cherche sur internet les dernieres actus IA importantes.
+```
+
+Limites de cette V1 vocale:
+
+- le wake word marche quand la fenetre Eva est ouverte;
+- selon Edge/Chrome, la reconnaissance vocale peut utiliser le moteur du navigateur;
+- ce n'est pas encore un service micro Windows qui ecoute hors de la fenetre Eva;
+- pour une version totalement locale, la prochaine etape sera un runner vocal avec Vosk, whisper.cpp ou un moteur STT local, puis une voix locale type Piper.
+
+## Hands et autonomie
+
+Eva doit raisonner comme un operateur local:
+
+1. comprendre l'objectif;
+2. utiliser les outils surs disponibles: memoire, fichiers autorises, projets, RSS, recherche web gratuite;
+3. tenter une solution directe quand elle ne modifie rien de critique;
+4. proposer ou executer le flux Project Factory auto quand il s'agit d'une nouvelle idee projet;
+5. proposer un plan B si la premiere piste bloque;
+6. demander validation pour les actions dangereuses restantes: suppression, envoi, publication, `git push`, commande systeme hors flux explicitement autorise.
+
+Eva ne depend pas de ChatGPT ni de l'API OpenAI. Si un jour Victor veut utiliser ChatGPT web comme outil externe, cela devra rester une option manuelle ou une integration future explicite, pas une dependance de base.
+
 ## Memoire Obsidian locale
 
 Eva peut utiliser un vault Obsidian local comme memoire longue duree lisible en Markdown.

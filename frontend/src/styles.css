@@ -1287,6 +1287,50 @@ button.nav-item:hover {
   backdrop-filter: blur(18px);
 }
 
+.voice-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(820px, 100%);
+  margin: 0 auto 8px;
+}
+
+.voice-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 10px;
+  color: var(--muted-strong);
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.06), rgba(255, 255, 255, 0.024)),
+    rgba(10, 17, 27, 0.78);
+  border: 1px solid rgba(115, 214, 255, 0.14);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 780;
+}
+
+.voice-mode-toggle svg {
+  color: var(--accent);
+}
+
+.voice-mode-toggle.active {
+  color: var(--text);
+  border-color: rgba(115, 214, 255, 0.48);
+  box-shadow: 0 0 22px rgba(33, 156, 255, 0.12);
+}
+
+.voice-status {
+  min-width: 0;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 46px 46px;
@@ -1514,6 +1558,15 @@ button.nav-item:hover {
 
   .composer-shell {
     padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .voice-toolbar {
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .voice-mode-toggle {
+    flex: 0 0 auto;
   }
 
   .composer {

@@ -47,6 +47,10 @@ export default function App() {
   const [messages, setMessages] = useState([welcomeMessage]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [voiceReplies, setVoiceReplies] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("evaVoiceReplies") !== "false";
+  });
   const [mode, setMode] = useState("chat");
   const [activePanel, setActivePanel] = useState("chat");
   const [modes, setModes] = useState([]);
@@ -119,6 +123,7 @@ export default function App() {
           ...currentMessages,
           createDailyBriefMessage(payload),
         ]);
+        speakEva(`Voici ton brief du jour. ${payload.brief.content || ""}`);
 
         if (payload.auto_open_tabs && Array.isArray(payload.suggested_tabs)) {
           payload.suggested_tabs.slice(0, 3).forEach((tab, index) => {
@@ -137,6 +142,31 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("evaVoiceReplies", String(voiceReplies));
+  }, [voiceReplies]);
+
+  function speakEva(text) {
+    if (!voiceReplies || typeof window === "undefined" || !window.speechSynthesis) {
+      return;
+    }
+
+    const cleanText = text
+      .replace(/\s+/g, " ")
+      .replace(/https?:\/\/\S+/g, "")
+      .trim()
+      .slice(0, 900);
+
+    if (!cleanText) return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "fr-FR";
+    utterance.rate = 1.02;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  }
 
   async function handleSend(text) {
     const cleanText = text.trim();
@@ -161,6 +191,7 @@ export default function App() {
         ...currentMessages,
         createMessage("assistant", assistantMessage.content),
       ]);
+      speakEva(assistantMessage.content);
       setBackendStatus((current) => ({
         state: "ready",
         model: current.model,
@@ -238,7 +269,12 @@ export default function App() {
           <ControlPanel panel={activePanel} doctor={doctor} onPrompt={handleQuickPrompt} />
         )}
 
-        <ChatInput onSend={handleSend} disabled={loading} />
+        <ChatInput
+          onSend={handleSend}
+          disabled={loading}
+          voiceReplies={voiceReplies}
+          onVoiceRepliesChange={setVoiceReplies}
+        />
       </section>
     </main>
   );
