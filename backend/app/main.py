@@ -21,6 +21,7 @@ from app.agents.modes import AgentModeName, list_modes
 from app.briefs.brief_store import BriefStoreError, brief_to_dict, get_latest_brief, init_brief_store
 from app.briefs.daily_launch import DailyLaunchError, get_daily_launch_brief
 from app.briefs.rss_brief import RssBriefError, ensure_sources_file, generate_morning_brief
+from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.doctor.diagnostics import run_doctor
@@ -49,6 +50,7 @@ from app.integrations.gmail_client import (
     list_gmail_messages,
     message_to_dict,
 )
+from app.integrations.inbox_smart import collect_inbox_signals
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
     draft_linkedin_comment,
@@ -693,6 +695,11 @@ async def gmail_message_detail(message_id: str) -> dict[str, object]:
     }
 
 
+@app.get("/inbox/smart")
+async def smart_inbox() -> dict[str, object]:
+    return collect_inbox_signals()
+
+
 @app.post("/gmail/reply-draft")
 async def gmail_reply_draft(request: GmailReplyDraftRequest) -> dict[str, object]:
     try:
@@ -779,6 +786,23 @@ async def morning_brief() -> dict[str, object]:
 
     return {
         "brief": brief_to_dict(brief),
+    }
+
+
+@app.post("/brief/smart")
+async def smart_brief() -> dict[str, object]:
+    try:
+        payload = await generate_smart_brief_payload()
+    except SmartBriefError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except (BriefStoreError, OllamaClientError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "brief": payload["brief_dict"],
+        "ranked_items": payload["ranked_items"],
+        "inbox": payload["inbox"],
+        "stats": payload["stats"],
     }
 
 

@@ -8,7 +8,7 @@ Eva peut executer des routines locales non critiques selon un horaire.
 
 Exemples:
 
-- `morning_brief`: generer un brief du matin;
+- `morning_brief`: generer le Smart Brief du matin;
 - `inbox_triage`: preparer un tri des mails recents si Gmail est connecte;
 - `end_of_day_log`: preparer un recap de fin de jour.
 

@@ -85,6 +85,13 @@ TOOLS = (
         description="Idees, posts et commentaires LinkedIn en brouillon uniquement.",
     ),
     ToolDescriptor(
+        key="linkedin_browser_bridge",
+        label="LinkedIn Browser",
+        category="linkedin",
+        policy_level="draft_only",
+        description="Copie un post LinkedIn dans le presse-papiers et ouvre LinkedIn localement sans API.",
+    ),
+    ToolDescriptor(
         key="heartbeat",
         label="Heartbeat",
         category="automation",
@@ -104,6 +111,13 @@ TOOLS = (
         category="automation",
         policy_level="read_only",
         description="Brief automatique a la premiere ouverture de la journee.",
+    ),
+    ToolDescriptor(
+        key="smart_brief",
+        label="Smart Brief",
+        category="brief",
+        policy_level="read_only",
+        description="Lit RSS/articles web, score pour Victor, ajoute Gmail/LinkedIn via Gmail si connecte.",
     ),
     ToolDescriptor(
         key="telegram_remote",

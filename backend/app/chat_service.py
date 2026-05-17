@@ -2,6 +2,7 @@ from typing import Any
 
 from app.actions.action_detector import create_pending_action_from_message
 from app.actions.action_store import ActionStoreError, action_to_dict, list_actions
+from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.config import settings
 from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
@@ -137,6 +138,9 @@ def _format_quick_status(message: str) -> str | None:
             )
         return "\n".join(lines)
 
+    if "brief" in normalized and any(marker in normalized for marker in ("matin", "smart", "veille", "aujourd")):
+        return "__GENERATE_SMART_BRIEF__"
+
     if "dossiers autorises" in normalized or "fichiers" in normalized and "autorises" in normalized:
         roots = roots_to_dicts()
         lines = ["Dossiers autorises:"]
@@ -222,6 +226,23 @@ async def process_chat_messages(
     try:
         quick_status = _format_quick_status(latest_user_message)
         if quick_status:
+            if quick_status == "__GENERATE_SMART_BRIEF__":
+                payload = await generate_smart_brief_payload()
+                stats = payload.get("stats", {})
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            f"{payload['brief'].content}\n\n"
+                            f"Stats: {stats.get('rss_items', 0)} items RSS, "
+                            f"{stats.get('articles_read', 0)} articles lus, "
+                            f"{stats.get('gmail_messages', 0)} mails, "
+                            f"{stats.get('linkedin_notifications', 0)} signaux LinkedIn via Gmail."
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
             return {
                 "message": {
                     "role": "assistant",
@@ -230,7 +251,7 @@ async def process_chat_messages(
                 "saved_memory": None,
                 "pending_action": None,
             }
-    except (ActionStoreError, HeartbeatError, LocalFileError, ProjectStoreError) as exc:
+    except (ActionStoreError, HeartbeatError, LocalFileError, ProjectStoreError, SmartBriefError) as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:

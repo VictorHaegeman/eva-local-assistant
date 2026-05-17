@@ -36,6 +36,7 @@ docs/OPENJARVIS_INSPIRATION.md
 docs/JARVIS_AGENT_RESEARCH.md
 docs/HEARTBEAT.md
 docs/LINKEDIN_ASSISTANT.md
+docs/SMART_BRIEF_INBOX.md
 ```
 
 Elle organise Eva en grandes etapes:
@@ -66,9 +67,27 @@ Routes utiles:
 - `GET /tools`: registre des capacites locales;
 - `GET /autonomy`: politique de securite.
 - `GET /heartbeat/status`: statut des routines locales;
-- `GET /linkedin/status`: statut LinkedIn en mode brouillon.
+- `GET /linkedin/status`: statut LinkedIn en mode brouillon + pont navigateur.
 - `POST /project-factory/plan`: previsualiser un projet depuis une idee;
 - `POST /project-factory/actions`: creer les actions validables workspace, clipboard, Cursor et GitHub CLI.
+
+## LinkedIn sans API
+
+Eva peut aider a produire pour DreamLense sans connecter l'API LinkedIn:
+
+- elle redige le post avec Ollama local;
+- elle copie le texte dans le presse-papiers Windows;
+- elle ouvre LinkedIn dans ton navigateur deja connecte;
+- elle peut proposer une direction d'image ou un prompt visuel;
+- elle ne clique pas sur `Publier` automatiquement.
+
+Exemple:
+
+```text
+Fais un post LinkedIn pertinent pour DreamLense et ouvre LinkedIn.
+```
+
+Le clic final reste manuel, car publier publiquement du contenu est une action critique.
 
 ## Autonomie controlee
 
@@ -483,9 +502,18 @@ Resume le fichier README.md
 Analyse le fichier backend/app/main.py
 ```
 
-## Brief du matin
+## Eva Inbox + Smart Brief
 
-Eva dispose maintenant d'une base V2 pour generer un brief a partir de flux RSS gratuits.
+Eva dispose maintenant d'un Smart Brief utilisable: elle recupere les flux RSS gratuits, ouvre les articles quand c'est possible, extrait le texte utile, score les infos selon Victor, puis sort seulement l'important.
+
+Sortie cible:
+
+- 3 choses a savoir ce matin;
+- 1 opportunite business;
+- 1 risque ou tendance a surveiller;
+- 1 idee LinkedIn;
+- 1 action proposee;
+- une section Inbox / LinkedIn via Gmail si Gmail est connecte.
 
 Configuration exemple versionnee:
 
@@ -501,9 +529,11 @@ data/eva_sources.json
 
 Routes utiles:
 
-- `POST /brief/morning`: recupere les flux RSS, demande a Ollama de produire le brief, puis le stocke localement;
-- `POST /brief/daily-launch`: genere le brief a la premiere ouverture de la journee;
+- `POST /brief/smart`: lit RSS/articles, ajoute Gmail/LinkedIn via Gmail si disponible, genere le Smart Brief;
+- `POST /brief/morning`: ancien brief RSS simple;
+- `POST /brief/daily-launch`: genere le Smart Brief a la premiere ouverture de la journee;
 - `GET /brief/latest`: recupere le dernier brief stocke.
+- `GET /inbox/smart`: lit les signaux Gmail/LinkedIn en lecture seule si OAuth est connecte.
 
 Le stockage local se fait dans:
 
@@ -511,7 +541,7 @@ Le stockage local se fait dans:
 data/eva_briefs.sqlite
 ```
 
-Pour l'instant, le brief est lance manuellement. L'automatisation quotidienne via le Planificateur de taches Windows viendra apres validation du format.
+Le panneau `Brief` de l'interface contient un bouton `Generer Smart Brief`.
 
 ### Brief automatique a la premiere ouverture
 
@@ -529,6 +559,8 @@ Comportement:
 
 - Eva verifie localement si le brief a deja ete affiche aujourd'hui;
 - si non, elle recupere les flux RSS gratuits;
+- elle ouvre les articles importants quand le site l'autorise;
+- elle ajoute les signaux Gmail/LinkedIn via Gmail si le token local existe;
 - elle demande a Ollama de produire un resume court et utile;
 - elle affiche le texte dans le chat;
 - elle ajoute des cartes avec images/liens quand les flux en fournissent;

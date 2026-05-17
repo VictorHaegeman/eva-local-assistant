@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from app.briefs.rss_brief import generate_morning_brief
+from app.briefs.smart_brief import generate_smart_morning_brief
 from app.config import settings
 from app.integrations.gmail_client import GmailIntegrationError, list_gmail_messages
 
@@ -76,7 +76,7 @@ async def run_heartbeat_job(job_key: str) -> dict[str, Any]:
         raise HeartbeatError(f"Heartbeat introuvable: {job_key}")
 
     if job_key == "morning_brief":
-        brief = await generate_morning_brief()
+        brief = await generate_smart_morning_brief()
         result = f"Brief genere: {brief.title}"
     elif job_key == "inbox_triage":
         try:

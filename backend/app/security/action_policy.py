@@ -26,6 +26,7 @@ DRAFT_ONLY_ACTIONS = {
     "project_factory_plan",
     "gmail_reply_draft",
     "linkedin_draft",
+    "linkedin_browser_prepare_post",
     "readme_draft",
     "pr_plan",
 }

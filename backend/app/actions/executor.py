@@ -5,6 +5,7 @@ from pathlib import Path
 from app.actions.action_store import EvaAction, update_action_status
 from app.config import settings
 from app.files.local_files import BLOCKED_NAMES, BLOCKED_SUFFIXES, _has_blocked_part
+from app.integrations.linkedin_browser import execute_linkedin_browser_prepare_post
 from app.project_factory.executor import (
     execute_clipboard_set_prompt,
     execute_cursor_open_project,
@@ -162,6 +163,8 @@ def execute_action(action_id: int, require_approval: bool = True) -> dict[str, o
             result = execute_cursor_open_project(action)
         elif action.action_type == "github_repo_create":
             result = execute_github_repo_create(action)
+        elif action.action_type == "linkedin_browser_prepare_post":
+            result = execute_linkedin_browser_prepare_post(action)
         else:
             raise ActionExecutionError(f"Type d'action inconnu: {action.action_type}")
     except Exception as exc:

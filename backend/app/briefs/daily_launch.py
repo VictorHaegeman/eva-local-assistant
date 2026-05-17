@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from app.briefs.brief_store import Brief, brief_to_dict, get_latest_brief
-from app.briefs.rss_brief import RssBriefError, generate_morning_brief
+from app.briefs.rss_brief import RssBriefError
+from app.briefs.smart_brief import SmartBriefError, generate_smart_morning_brief
 from app.config import settings
 from app.social.instagram_public import InstagramPublicError, fetch_instagram_public_snapshots
 
@@ -105,9 +106,9 @@ async def get_daily_launch_brief(force: bool = False) -> dict[str, object]:
         }
 
     try:
-        brief = await generate_morning_brief()
+        brief = await generate_smart_morning_brief()
         stale = False
-    except RssBriefError as exc:
+    except (RssBriefError, SmartBriefError) as exc:
         latest = get_latest_brief()
         if not latest:
             raise DailyLaunchError(str(exc)) from exc

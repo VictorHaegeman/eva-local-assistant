@@ -149,6 +149,13 @@ export async function getLatestBrief() {
 }
 
 
+export async function generateSmartBrief() {
+  return request("/brief/smart", {
+    method: "POST",
+  });
+}
+
+
 export async function getDailyLaunchBrief(force = false) {
   return request("/brief/daily-launch", {
     method: "POST",

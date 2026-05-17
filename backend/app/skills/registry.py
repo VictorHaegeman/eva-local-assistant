@@ -80,10 +80,11 @@ SKILLS: tuple[SkillDescriptor, ...] = (
         trigger_words=("brief", "matin", "actu", "veille", "rss", "news"),
         description="Structurer l'actualite et les sources en brief utile.",
         instructions=(
-            "Structure en sections: business, tech, IA, finance, DreamLense, opportunites, priorites. "
+            "Lis les articles quand c'est possible, filtre selon Victor, puis sors uniquement "
+            "l'important: 3 choses a savoir, 1 opportunite, 1 risque, 1 idee LinkedIn et 1 action. "
             "Distingue clairement faits, idees et actions proposees."
         ),
-        tool_hints=("heartbeat", "rss_brief"),
+        tool_hints=("smart_brief", "heartbeat", "rss_brief"),
     ),
     SkillDescriptor(
         key="local_research",

@@ -38,5 +38,17 @@
     "IA",
     "finance",
     "DreamLense"
-  ]
+  ],
+  "smart_brief": {
+    "enabled": true,
+    "read_full_articles": true,
+    "max_articles_to_read": 12,
+    "output_shape": [
+      "3 choses a savoir ce matin",
+      "1 opportunite business",
+      "1 risque ou tendance a surveiller",
+      "1 idee LinkedIn",
+      "1 action proposee"
+    ]
+  }
 }

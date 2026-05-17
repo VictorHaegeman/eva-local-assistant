@@ -32,6 +32,7 @@ import {
   getProjects,
   getSkills,
   getTools,
+  generateSmartBrief,
   createProjectFactoryActions,
   planProjectFactory,
   runHeartbeat,
@@ -74,7 +75,7 @@ const panelMeta = {
     icon: Network,
     kicker: "Mouth",
     title: "LinkedIn assistant",
-    description: "Idees, posts et commentaires en brouillon, sans publication automatique.",
+    description: "Brouillons premium, copie presse-papiers et ouverture LinkedIn sans API.",
   },
   projects: {
     icon: GitBranch,
@@ -85,8 +86,8 @@ const panelMeta = {
   brief: {
     icon: Clock3,
     kicker: "Morning",
-    title: "Brief du matin",
-    description: "Dernier brief local et preparation business / tech / IA / finance.",
+    title: "Smart Brief",
+    description: "Articles lus, score Victor, Gmail/LinkedIn via Gmail si connecte.",
   },
   projectFactory: {
     icon: Rocket,
@@ -296,6 +297,25 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
     }
   }
 
+  async function handleGenerateSmartBrief() {
+    setRunningJob("smart_brief");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await generateSmartBrief();
+      setData({ brief: result.brief, smart: result });
+      const stats = result.stats || {};
+      setJobResult(
+        `${stats.articles_read || 0} articles lus, ${stats.gmail_messages || 0} mails, ${stats.linkedin_notifications || 0} signaux LinkedIn.`
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   function renderMemory() {
     const memories = data?.memories || [];
     const obsidian = data?.obsidian || {};
@@ -493,13 +513,17 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
         <div className="panel-metrics">
           <Metric label="assistant" value={data?.enabled ? "actif" : "off"} tone={data?.enabled ? "ok" : "warning"} />
           <Metric label="mode" value={data?.mode || "draft_only"} tone="ok" />
-          <Metric label="publication" value={data?.can_publish ? "possible" : "bloquee"} tone={data?.can_publish ? "warning" : "ok"} />
+          <Metric label="navigateur" value={data?.can_prepare_browser_post ? "pret" : "off"} tone={data?.can_prepare_browser_post ? "ok" : "warning"} />
         </div>
         <section className="panel-card">
           <h3>Profil connu</h3>
           <p>{data?.profile_url || "Aucun profil LinkedIn local configure."}</p>
+          {data?.company_page_url && <p>{data.company_page_url}</p>}
           <p>{data?.note || "Eva prepare uniquement des brouillons."}</p>
           <div className="panel-actions">
+            <button type="button" className="panel-action-button" onClick={() => onPrompt("Fais un post LinkedIn pertinent pour DreamLense et ouvre LinkedIn dans le navigateur.")}>
+              Preparer et ouvrir LinkedIn
+            </button>
             <button type="button" className="panel-action-button" onClick={() => onPrompt("Prepare 3 idees de posts LinkedIn pour DreamLense cette semaine.")}>
               Idees de posts
             </button>
@@ -542,14 +566,32 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
 
   function renderBrief() {
     const brief = data?.brief;
+    const smart = data?.smart;
+    const stats = smart?.stats || {};
 
     return (
       <>
+        {smart && (
+          <div className="panel-metrics">
+            <Metric label="articles lus" value={stats.articles_read || 0} tone={stats.articles_read ? "ok" : "warning"} />
+            <Metric label="mails" value={stats.gmail_messages || 0} tone={stats.gmail_messages ? "ok" : "neutral"} />
+            <Metric label="LinkedIn via Gmail" value={stats.linkedin_notifications || 0} tone={stats.linkedin_notifications ? "ok" : "neutral"} />
+          </div>
+        )}
+        {jobResult && <div className="panel-success">{jobResult}</div>}
         <section className="panel-card">
-          <h3>{brief?.title || "Aucun brief cree pour le moment"}</h3>
-          <p>{brief?.content || "Eva peut generer un brief local depuis les sources RSS configurees."}</p>
+          <h3>{brief?.title || "Aucun Smart Brief cree pour le moment"}</h3>
+          <p>{brief?.content || "Eva peut lire les RSS, ouvrir les articles utiles, scorer les infos pour Victor et ajouter Gmail/LinkedIn via Gmail si connecte."}</p>
           {brief?.created_at && <Field label="Cree le" value={brief.created_at} />}
           <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={handleGenerateSmartBrief}
+              disabled={Boolean(runningJob)}
+            >
+              {runningJob === "smart_brief" ? "Lecture en cours..." : "Generer Smart Brief"}
+            </button>
             <button type="button" className="panel-action-button" onClick={() => onPrompt("Prepare mon brief du matin business, tech, IA, finance et DreamLense.")}>
               Preparer dans le chat
             </button>
@@ -561,8 +603,13 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
               <div key={`${item.url || item.title}-${index}`} className="panel-row">
                 <div>
                   <strong>{item.title || "Source"}</strong>
-                  <span>{item.source || item.url || "RSS"}</span>
+                  <span>
+                    {item.source || item.url || "RSS"}
+                    {item.victor_score ? ` / score ${item.victor_score}` : ""}
+                    {item.article_read ? " / article lu" : ""}
+                  </span>
                 </div>
+                {item.victor_tags?.length ? <StatusPill tone="ok">{item.victor_tags.slice(0, 2).join(", ")}</StatusPill> : null}
               </div>
             ))}
           </div>

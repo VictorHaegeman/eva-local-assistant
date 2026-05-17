@@ -1,5 +1,12 @@
 {
   "profile_url": "https://www.linkedin.com/in/victor-haegeman/",
+  "company_page_url": "https://www.linkedin.com/company/dreamlense-ai/",
+  "company_admin_url": "",
+  "browser_compose_url": "https://www.linkedin.com/feed/?shareActive=true",
+  "browser_bridge": {
+    "enabled": true,
+    "final_publish_requires_human_click": true
+  },
   "default_voice": "clair, direct, utile, premium",
   "default_audience": "dirigeants, independants, recruteurs, entrepreneurs et equipes commerciales",
   "themes": [
@@ -12,6 +19,7 @@
   ],
   "safety_rules": [
     "Ne jamais publier sans validation humaine.",
+    "Eva peut ouvrir LinkedIn et copier un brouillon, mais ne clique pas sur Publier automatiquement.",
     "Ne jamais envoyer de message LinkedIn sans validation humaine.",
     "Ne pas scraper LinkedIn.",
     "Utiliser l'API officielle uniquement si l'acces est approuve."
