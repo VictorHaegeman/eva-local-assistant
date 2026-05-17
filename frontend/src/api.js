@@ -134,6 +134,13 @@ export async function getGmailStatus() {
 }
 
 
+export async function connectGmail() {
+  return request("/gmail/connect", {
+    method: "POST",
+  });
+}
+
+
 export async function getGmailMessages() {
   return request("/gmail/messages?max_results=5");
 }

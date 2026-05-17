@@ -50,6 +50,7 @@ from app.integrations.gmail_client import (
     list_gmail_messages,
     message_to_dict,
 )
+from app.integrations.gmail_auth import GmailAuthLaunchError, start_gmail_oauth_flow
 from app.integrations.inbox_smart import collect_inbox_signals
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
@@ -286,6 +287,14 @@ async def telegram_status() -> dict[str, object]:
 @app.get("/gmail/status")
 async def gmail_config_status() -> dict[str, object]:
     return gmail_status()
+
+
+@app.post("/gmail/connect")
+async def gmail_connect() -> dict[str, object]:
+    try:
+        return start_gmail_oauth_flow()
+    except GmailAuthLaunchError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/linkedin/status")

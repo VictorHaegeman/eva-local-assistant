@@ -87,6 +87,16 @@ EVA_GMAIL_MAX_SENT_EXAMPLES=5
 
 ## Autoriser Eva sur ton compte Gmail
 
+Depuis l'interface Eva:
+
+1. Ouvre le panneau `Gmail`.
+2. Clique `Connecter Gmail`.
+3. Une page Google s'ouvre.
+4. Connecte-toi toi-meme et accepte uniquement le scope `gmail.readonly`.
+5. Reviens dans Eva et clique `Rafraichir statut`.
+
+Alternative en PowerShell:
+
 Dans PowerShell:
 
 ```powershell

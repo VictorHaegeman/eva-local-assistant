@@ -211,6 +211,7 @@ Gmail:
 Routes Gmail:
 
 - `GET /gmail/status`;
+- `POST /gmail/connect`;
 - `GET /gmail/messages`;
 - `GET /gmail/messages/{message_id}`;
 - `POST /gmail/reply-draft`.
@@ -225,6 +226,10 @@ EVA_GMAIL_MAX_SENT_EXAMPLES=5
 ```
 
 Connexion Gmail:
+
+Depuis l'interface Eva, ouvre le panneau `Gmail`, clique `Connecter Gmail`, valide ton compte dans Google, puis clique `Rafraichir statut`.
+
+Alternative PowerShell:
 
 ```powershell
 cd backend

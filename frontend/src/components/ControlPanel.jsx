@@ -33,6 +33,7 @@ import {
   getSkills,
   getTools,
   generateSmartBrief,
+  connectGmail,
   createProjectFactoryActions,
   planProjectFactory,
   runHeartbeat,
@@ -316,6 +317,22 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
     }
   }
 
+  async function handleConnectGmail() {
+    setRunningJob("gmail_connect");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await connectGmail();
+      setJobResult(result.message || "Flux OAuth Gmail lance.");
+      await loadPanel();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   function renderMemory() {
     const memories = data?.memories || [];
     const obsidian = data?.obsidian || {};
@@ -486,9 +503,34 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
         </div>
         {!status.token_exists && (
           <div className="panel-empty">
-            Gmail est configure, mais Google n'a pas encore donne de token local a Eva. Ajoute ton compte comme test user dans Google Cloud, puis relance le flux OAuth.
+            Gmail est configure, mais Google n'a pas encore donne de token local a Eva. Lance la connexion, valide dans Google, puis rafraichis ce panneau.
           </div>
         )}
+        {jobResult && <div className="panel-success">{jobResult}</div>}
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Connexion OAuth locale</h3>
+            <StatusPill tone={status.token_exists ? "ok" : "warning"}>
+              {status.token_exists ? "connecte" : "a connecter"}
+            </StatusPill>
+          </div>
+          <p>Eva ouvre Google dans ton navigateur. Tu valides toi-meme le compte et le scope Gmail lecture seule.</p>
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={handleConnectGmail}
+              disabled={Boolean(runningJob) || !status.enabled || !status.credentials_exists || status.token_exists}
+            >
+              {runningJob === "gmail_connect" ? "Ouverture..." : "Connecter Gmail"}
+            </button>
+            <button type="button" className="panel-action-button secondary" onClick={loadPanel}>
+              Rafraichir statut
+            </button>
+          </div>
+          {!status.enabled && <p>Active EVA_GMAIL_ENABLED=true dans backend/.env.</p>}
+          {!status.credentials_exists && <p>Ajoute le JSON OAuth complet dans data/gmail_credentials.json.</p>}
+        </section>
         {data?.messagesError && <div className="panel-error">{data.messagesError}</div>}
         {messages.length ? (
           <div className="panel-list">
