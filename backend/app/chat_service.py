@@ -7,9 +7,17 @@ from app.config import settings
 from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
 from app.heartbeat.scheduler import HeartbeatError, heartbeat_status
-from app.integrations.gmail_chat import build_gmail_chat_response
+from app.integrations.gmail_chat import (
+    build_gmail_chat_response,
+    wants_gmail_list,
+    wants_gmail_reply_draft,
+)
 from app.integrations.gmail_client import GmailIntegrationError
-from app.integrations.linkedin_assistant import LinkedInAssistantError, build_linkedin_chat_response
+from app.integrations.linkedin_assistant import (
+    LinkedInAssistantError,
+    build_linkedin_chat_response,
+    wants_linkedin_browser_post,
+)
 from app.llm.ollama_client import OllamaClientError, ask_ollama
 from app.memory.memory_store import (
     MemoryStoreError,
@@ -158,9 +166,26 @@ def _format_quick_status(message: str) -> str | None:
     return None
 
 
+def _quick_status_requires_trusted_access(message: str) -> bool:
+    normalized = message.lower()
+    trusted_markers = (
+        "actions",
+        "obsidian",
+        "brief",
+        "dossiers autorises",
+        "fichiers autorises",
+        "projets locaux",
+        "projets",
+        "heartbeat",
+        "heartbeats",
+    )
+    return any(marker in normalized for marker in trusted_markers)
+
+
 async def process_chat_messages(
     safe_messages: list[dict[str, str]],
     mode: str = "chat",
+    trusted_actions: bool = False,
 ) -> dict[str, Any]:
     if not safe_messages or safe_messages[-1]["role"] != "user":
         raise ChatServiceError("La conversation doit se terminer par un message utilisateur.")
@@ -171,6 +196,20 @@ async def process_chat_messages(
 
     try:
         if _should_create_project_factory_plan(latest_user_message):
+            if not trusted_actions:
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            "Cette demande implique des actions locales sur ton PC. "
+                            "Je peux le faire depuis le PC local ou depuis ton Telegram autorise, "
+                            "mais pas depuis une session non fiable du reseau."
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+
             bundle = create_project_factory_actions(latest_user_message)
             plan = bundle["plan"]
             actions = bundle["actions"]
@@ -208,6 +247,19 @@ async def process_chat_messages(
 
         pending_action = create_pending_action_from_message(latest_user_message)
         if pending_action:
+            if not trusted_actions:
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            "J'ai detecte une action locale, mais je ne peux pas la creer depuis "
+                            "une session non fiable. Refais la demande depuis le PC local ou Telegram autorise."
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+
             return {
                 "message": {
                     "role": "assistant",
@@ -224,6 +276,19 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
+        if not trusted_actions and _quick_status_requires_trusted_access(latest_user_message):
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "Cette demande consulte l'etat local d'Eva. Je peux le faire depuis "
+                        "le PC local ou Telegram autorise, mais pas depuis une session non fiable."
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         quick_status = _format_quick_status(latest_user_message)
         if quick_status:
             if quick_status == "__GENERATE_SMART_BRIEF__":
@@ -255,6 +320,21 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
+        if not trusted_actions and (
+            wants_gmail_list(latest_user_message) or wants_gmail_reply_draft(latest_user_message)
+        ):
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "Gmail contient des donnees privees. Je peux le lire depuis le PC local "
+                        "ou Telegram autorise, mais pas depuis une session non fiable."
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         gmail_response = await build_gmail_chat_response(latest_user_message)
         if gmail_response:
             return {
@@ -269,6 +349,19 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
+        if not trusted_actions and wants_linkedin_browser_post(latest_user_message):
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "Ouvrir LinkedIn et preparer le navigateur est une action locale. "
+                        "Je peux le faire depuis le PC local ou Telegram autorise."
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         linkedin_response = await build_linkedin_chat_response(latest_user_message)
         if linkedin_response:
             return {
@@ -296,12 +389,12 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        memory_content = detect_explicit_memory_request(latest_user_message)
+        memory_content = detect_explicit_memory_request(latest_user_message) if trusted_actions else None
         if memory_content:
             memory = add_memory(memory_content, source="explicit")
             _mirror_memory(memory)
             saved_memory = memory_to_dict(memory)
-        else:
+        elif trusted_actions:
             memory_candidate = detect_auto_memory_candidate(latest_user_message)
             if memory_candidate:
                 memory = add_memory(
@@ -316,7 +409,7 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        file_context = detect_file_context(latest_user_message)
+        file_context = detect_file_context(latest_user_message) if trusted_actions else None
         if file_context:
             context_blocks.append(
                 f"Fichier local lu en lecture seule: {file_context['root']}/{file_context['path']}\n\n"
@@ -334,7 +427,7 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        if _should_attach_project_context(latest_user_message):
+        if trusted_actions and _should_attach_project_context(latest_user_message):
             project_context = build_project_context_for_chat(latest_user_message)
             if project_context:
                 context_blocks.append(project_context)

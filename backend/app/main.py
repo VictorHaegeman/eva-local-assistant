@@ -2,7 +2,7 @@ from typing import Literal
 
 import asyncio
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -104,6 +104,7 @@ from app.projects.task_store import (
     task_to_dict,
 )
 from app.security.action_policy import autonomy_policy_text, policy_levels, requires_confirmation
+from app.security.api_auth import is_request_trusted, require_sensitive_access
 from app.skills.registry import list_skills
 from app.social.instagram_public import (
     InstagramPublicError,
@@ -279,17 +280,17 @@ async def health() -> dict[str, str]:
     }
 
 
-@app.get("/messaging/telegram/status")
+@app.get("/messaging/telegram/status", dependencies=[Depends(require_sensitive_access)])
 async def telegram_status() -> dict[str, object]:
     return telegram_config_status()
 
 
-@app.get("/gmail/status")
+@app.get("/gmail/status", dependencies=[Depends(require_sensitive_access)])
 async def gmail_config_status() -> dict[str, object]:
     return gmail_status()
 
 
-@app.post("/gmail/connect")
+@app.post("/gmail/connect", dependencies=[Depends(require_sensitive_access)])
 async def gmail_connect() -> dict[str, object]:
     try:
         return start_gmail_oauth_flow()
@@ -297,17 +298,17 @@ async def gmail_connect() -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.get("/linkedin/status")
+@app.get("/linkedin/status", dependencies=[Depends(require_sensitive_access)])
 async def linkedin_config_status() -> dict[str, object]:
     return linkedin_status()
 
 
-@app.get("/social/instagram/status")
+@app.get("/social/instagram/status", dependencies=[Depends(require_sensitive_access)])
 async def instagram_config_status() -> dict[str, object]:
     return instagram_status()
 
 
-@app.get("/social/instagram/public-snapshot")
+@app.get("/social/instagram/public-snapshot", dependencies=[Depends(require_sensitive_access)])
 async def instagram_public_snapshot() -> dict[str, object]:
     try:
         return await fetch_instagram_public_snapshots()
@@ -315,12 +316,12 @@ async def instagram_public_snapshot() -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.get("/heartbeat/status")
+@app.get("/heartbeat/status", dependencies=[Depends(require_sensitive_access)])
 async def heartbeat_config_status() -> dict[str, object]:
     return heartbeat_status()
 
 
-@app.post("/heartbeat/run/{job_key}")
+@app.post("/heartbeat/run/{job_key}", dependencies=[Depends(require_sensitive_access)])
 async def heartbeat_run(job_key: str) -> dict[str, object]:
     try:
         return await run_heartbeat_job(job_key)
@@ -356,7 +357,7 @@ async def skills() -> dict[str, object]:
     }
 
 
-@app.get("/autonomy")
+@app.get("/autonomy", dependencies=[Depends(require_sensitive_access)])
 async def autonomy() -> dict[str, object]:
     return {
         "policy": autonomy_policy_text(),
@@ -386,7 +387,7 @@ async def autonomy() -> dict[str, object]:
     }
 
 
-@app.get("/profile")
+@app.get("/profile", dependencies=[Depends(require_sensitive_access)])
 async def profile() -> dict[str, object]:
     try:
         loaded_profile = load_profile()
@@ -399,7 +400,7 @@ async def profile() -> dict[str, object]:
     }
 
 
-@app.get("/memories")
+@app.get("/memories", dependencies=[Depends(require_sensitive_access)])
 async def memories() -> dict[str, object]:
     try:
         loaded_memories = list_memories()
@@ -412,12 +413,12 @@ async def memories() -> dict[str, object]:
     }
 
 
-@app.get("/memory/obsidian/status")
+@app.get("/memory/obsidian/status", dependencies=[Depends(require_sensitive_access)])
 async def memory_obsidian_status() -> dict[str, object]:
     return obsidian_status()
 
 
-@app.post("/memory/obsidian/sync")
+@app.post("/memory/obsidian/sync", dependencies=[Depends(require_sensitive_access)])
 async def memory_obsidian_sync() -> dict[str, object]:
     try:
         loaded_memories = list_memories(limit=200)
@@ -426,7 +427,7 @@ async def memory_obsidian_sync() -> dict[str, object]:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@app.post("/memories")
+@app.post("/memories", dependencies=[Depends(require_sensitive_access)])
 async def create_memory(request: MemoryCreateRequest) -> dict[str, object]:
     try:
         memory = add_memory(request.content, request.category, source="manual")
@@ -442,7 +443,7 @@ async def create_memory(request: MemoryCreateRequest) -> dict[str, object]:
     }
 
 
-@app.delete("/memories/{memory_id}")
+@app.delete("/memories/{memory_id}", dependencies=[Depends(require_sensitive_access)])
 async def remove_memory(memory_id: int) -> dict[str, object]:
     try:
         deleted = delete_memory(memory_id)
@@ -458,7 +459,7 @@ async def remove_memory(memory_id: int) -> dict[str, object]:
     }
 
 
-@app.get("/actions")
+@app.get("/actions", dependencies=[Depends(require_sensitive_access)])
 async def actions(status: str | None = Query(default=None)) -> dict[str, object]:
     try:
         loaded_actions = list_actions(status=status)
@@ -470,7 +471,7 @@ async def actions(status: str | None = Query(default=None)) -> dict[str, object]
     }
 
 
-@app.get("/actions/{action_id}")
+@app.get("/actions/{action_id}", dependencies=[Depends(require_sensitive_access)])
 async def action_detail(action_id: int) -> dict[str, object]:
     try:
         action = get_action(action_id)
@@ -482,7 +483,7 @@ async def action_detail(action_id: int) -> dict[str, object]:
     }
 
 
-@app.post("/actions")
+@app.post("/actions", dependencies=[Depends(require_sensitive_access)])
 async def action_create(request: ActionCreateRequest) -> dict[str, object]:
     try:
         action = create_action(
@@ -503,7 +504,7 @@ async def action_create(request: ActionCreateRequest) -> dict[str, object]:
     }
 
 
-@app.post("/actions/command")
+@app.post("/actions/command", dependencies=[Depends(require_sensitive_access)])
 async def action_command_create(request: CommandActionRequest) -> dict[str, object]:
     payload: dict[str, object] = {"command": request.command}
     if request.cwd:
@@ -524,7 +525,7 @@ async def action_command_create(request: CommandActionRequest) -> dict[str, obje
     }
 
 
-@app.post("/actions/codex-prompt")
+@app.post("/actions/codex-prompt", dependencies=[Depends(require_sensitive_access)])
 async def action_codex_prompt_create(request: CodexPromptActionRequest) -> dict[str, object]:
     try:
         action = create_action(
@@ -540,7 +541,7 @@ async def action_codex_prompt_create(request: CodexPromptActionRequest) -> dict[
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/actions/{action_id}/approve")
+@app.post("/actions/{action_id}/approve", dependencies=[Depends(require_sensitive_access)])
 async def action_approve(action_id: int) -> dict[str, object]:
     try:
         update_action_status(action_id, "approved")
@@ -551,7 +552,7 @@ async def action_approve(action_id: int) -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/actions/{action_id}/reject")
+@app.post("/actions/{action_id}/reject", dependencies=[Depends(require_sensitive_access)])
 async def action_reject(action_id: int) -> dict[str, object]:
     try:
         action = update_action_status(action_id, "rejected", "Action rejetee par Victor.")
@@ -563,7 +564,7 @@ async def action_reject(action_id: int) -> dict[str, object]:
     }
 
 
-@app.delete("/actions/{action_id}")
+@app.delete("/actions/{action_id}", dependencies=[Depends(require_sensitive_access)])
 async def action_delete(action_id: int) -> dict[str, object]:
     try:
         deleted = delete_action(action_id)
@@ -579,7 +580,7 @@ async def action_delete(action_id: int) -> dict[str, object]:
     }
 
 
-@app.get("/files/roots")
+@app.get("/files/roots", dependencies=[Depends(require_sensitive_access)])
 async def file_roots() -> dict[str, object]:
     try:
         roots = roots_to_dicts()
@@ -591,7 +592,7 @@ async def file_roots() -> dict[str, object]:
     }
 
 
-@app.get("/files/list")
+@app.get("/files/list", dependencies=[Depends(require_sensitive_access)])
 async def files_list(
     root: str = Query(..., min_length=1),
     path: str = Query(".", min_length=1),
@@ -602,7 +603,7 @@ async def files_list(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.get("/files/search")
+@app.get("/files/search", dependencies=[Depends(require_sensitive_access)])
 async def files_search(
     q: str = Query(..., min_length=1),
     root: str | None = Query(default=None),
@@ -617,7 +618,7 @@ async def files_search(
     }
 
 
-@app.post("/files/read")
+@app.post("/files/read", dependencies=[Depends(require_sensitive_access)])
 async def files_read(request: FileReadRequest) -> dict[str, object]:
     try:
         return read_text_file(request.root, request.path)
@@ -625,7 +626,7 @@ async def files_read(request: FileReadRequest) -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/files/summarize")
+@app.post("/files/summarize", dependencies=[Depends(require_sensitive_access)])
 async def files_summarize(request: FileSummaryRequest) -> dict[str, object]:
     try:
         file_payload = read_text_file(request.root, request.path)
@@ -676,7 +677,7 @@ async def web_search(request: WebSearchRequest) -> dict[str, object]:
     }
 
 
-@app.get("/gmail/messages")
+@app.get("/gmail/messages", dependencies=[Depends(require_sensitive_access)])
 async def gmail_messages(
     q: str = Query(default="in:inbox newer_than:14d", min_length=1, max_length=500),
     max_results: int = Query(default=10, ge=1, le=25),
@@ -692,7 +693,7 @@ async def gmail_messages(
     }
 
 
-@app.get("/gmail/messages/{message_id}")
+@app.get("/gmail/messages/{message_id}", dependencies=[Depends(require_sensitive_access)])
 async def gmail_message_detail(message_id: str) -> dict[str, object]:
     try:
         message = get_gmail_message(message_id)
@@ -704,12 +705,12 @@ async def gmail_message_detail(message_id: str) -> dict[str, object]:
     }
 
 
-@app.get("/inbox/smart")
+@app.get("/inbox/smart", dependencies=[Depends(require_sensitive_access)])
 async def smart_inbox() -> dict[str, object]:
     return collect_inbox_signals()
 
 
-@app.post("/gmail/reply-draft")
+@app.post("/gmail/reply-draft", dependencies=[Depends(require_sensitive_access)])
 async def gmail_reply_draft(request: GmailReplyDraftRequest) -> dict[str, object]:
     try:
         message = get_gmail_message(request.message_id)
@@ -748,7 +749,7 @@ Donne uniquement:
     }
 
 
-@app.post("/linkedin/post-draft")
+@app.post("/linkedin/post-draft", dependencies=[Depends(require_sensitive_access)])
 async def linkedin_post_draft(request: LinkedInPostDraftRequest) -> dict[str, object]:
     try:
         draft = await draft_linkedin_post(
@@ -767,7 +768,7 @@ async def linkedin_post_draft(request: LinkedInPostDraftRequest) -> dict[str, ob
     }
 
 
-@app.post("/linkedin/comment-draft")
+@app.post("/linkedin/comment-draft", dependencies=[Depends(require_sensitive_access)])
 async def linkedin_comment_draft(request: LinkedInCommentDraftRequest) -> dict[str, object]:
     try:
         draft = await draft_linkedin_comment(
@@ -784,7 +785,7 @@ async def linkedin_comment_draft(request: LinkedInCommentDraftRequest) -> dict[s
     }
 
 
-@app.post("/brief/morning")
+@app.post("/brief/morning", dependencies=[Depends(require_sensitive_access)])
 async def morning_brief() -> dict[str, object]:
     try:
         brief = await generate_morning_brief()
@@ -798,7 +799,7 @@ async def morning_brief() -> dict[str, object]:
     }
 
 
-@app.post("/brief/smart")
+@app.post("/brief/smart", dependencies=[Depends(require_sensitive_access)])
 async def smart_brief() -> dict[str, object]:
     try:
         payload = await generate_smart_brief_payload()
@@ -815,7 +816,7 @@ async def smart_brief() -> dict[str, object]:
     }
 
 
-@app.post("/brief/daily-launch")
+@app.post("/brief/daily-launch", dependencies=[Depends(require_sensitive_access)])
 async def daily_launch_brief(request: DailyLaunchRequest) -> dict[str, object]:
     try:
         return await get_daily_launch_brief(force=request.force)
@@ -825,7 +826,7 @@ async def daily_launch_brief(request: DailyLaunchRequest) -> dict[str, object]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-@app.get("/brief/latest")
+@app.get("/brief/latest", dependencies=[Depends(require_sensitive_access)])
 async def latest_brief() -> dict[str, object]:
     try:
         brief = get_latest_brief()
@@ -837,7 +838,7 @@ async def latest_brief() -> dict[str, object]:
     }
 
 
-@app.get("/projects")
+@app.get("/projects", dependencies=[Depends(require_sensitive_access)])
 async def projects() -> dict[str, object]:
     try:
         return {"projects": load_projects()}
@@ -845,7 +846,7 @@ async def projects() -> dict[str, object]:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@app.post("/project-factory/plan")
+@app.post("/project-factory/plan", dependencies=[Depends(require_sensitive_access)])
 async def project_factory_plan(request: ProjectFactoryPlanRequest) -> dict[str, object]:
     try:
         plan = build_project_plan(
@@ -862,7 +863,7 @@ async def project_factory_plan(request: ProjectFactoryPlanRequest) -> dict[str, 
     }
 
 
-@app.post("/project-factory/actions")
+@app.post("/project-factory/actions", dependencies=[Depends(require_sensitive_access)])
 async def project_factory_actions(request: ProjectFactoryPlanRequest) -> dict[str, object]:
     try:
         bundle = create_project_factory_actions(
@@ -890,7 +891,7 @@ async def project_factory_actions(request: ProjectFactoryPlanRequest) -> dict[st
     }
 
 
-@app.get("/projects/{project_name}/tree")
+@app.get("/projects/{project_name}/tree", dependencies=[Depends(require_sensitive_access)])
 async def project_tree_route(project_name: str) -> dict[str, object]:
     try:
         return project_tree(project_name)
@@ -898,7 +899,7 @@ async def project_tree_route(project_name: str) -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/projects/{project_name}/files/read")
+@app.post("/projects/{project_name}/files/read", dependencies=[Depends(require_sensitive_access)])
 async def project_file_read(project_name: str, request: ProjectFileReadRequest) -> dict[str, object]:
     try:
         return read_project_file(project_name, request.path)
@@ -906,7 +907,7 @@ async def project_file_read(project_name: str, request: ProjectFileReadRequest) 
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/projects/{project_name}/cursor-prompt")
+@app.post("/projects/{project_name}/cursor-prompt", dependencies=[Depends(require_sensitive_access)])
 async def project_cursor_prompt(project_name: str, request: CursorPromptRequest) -> dict[str, object]:
     try:
         prompt = build_cursor_prompt(project_name, request.task)
@@ -918,7 +919,7 @@ async def project_cursor_prompt(project_name: str, request: CursorPromptRequest)
     }
 
 
-@app.post("/projects/{project_name}/branch-plan")
+@app.post("/projects/{project_name}/branch-plan", dependencies=[Depends(require_sensitive_access)])
 async def project_branch_plan(project_name: str, request: BranchPlanRequest) -> dict[str, object]:
     try:
         return build_branch_plan(project_name, request.branch_name)
@@ -926,7 +927,7 @@ async def project_branch_plan(project_name: str, request: BranchPlanRequest) -> 
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/projects/{project_name}/terminal-error")
+@app.post("/projects/{project_name}/terminal-error", dependencies=[Depends(require_sensitive_access)])
 async def project_terminal_error(project_name: str, request: TerminalErrorRequest) -> dict[str, object]:
     try:
         tree = project_tree(project_name, limit=80)
@@ -957,7 +958,7 @@ Donne:
     }
 
 
-@app.get("/projects/{project_name}/tasks")
+@app.get("/projects/{project_name}/tasks", dependencies=[Depends(require_sensitive_access)])
 async def project_tasks(project_name: str) -> dict[str, object]:
     try:
         get_project = load_projects()
@@ -972,7 +973,7 @@ async def project_tasks(project_name: str) -> dict[str, object]:
     }
 
 
-@app.post("/projects/{project_name}/tasks")
+@app.post("/projects/{project_name}/tasks", dependencies=[Depends(require_sensitive_access)])
 async def project_task_create(
     project_name: str,
     request: ProjectTaskCreateRequest,
@@ -994,7 +995,7 @@ async def project_task_create(
     }
 
 
-@app.delete("/projects/{project_name}/tasks/{task_id}")
+@app.delete("/projects/{project_name}/tasks/{task_id}", dependencies=[Depends(require_sensitive_access)])
 async def project_task_delete(project_name: str, task_id: int) -> dict[str, object]:
     try:
         deleted = delete_task(task_id, project=project_name)
@@ -1010,7 +1011,7 @@ async def project_task_delete(project_name: str, task_id: int) -> dict[str, obje
     }
 
 
-@app.post("/projects/{project_name}/readme-draft")
+@app.post("/projects/{project_name}/readme-draft", dependencies=[Depends(require_sensitive_access)])
 async def project_readme_draft(project_name: str, request: ProjectDraftRequest) -> dict[str, object]:
     try:
         tree = project_tree(project_name, limit=160)
@@ -1039,7 +1040,7 @@ Ne pretends pas avoir ecrit le fichier. Donne seulement un brouillon Markdown.
     }
 
 
-@app.post("/projects/{project_name}/pr-plan")
+@app.post("/projects/{project_name}/pr-plan", dependencies=[Depends(require_sensitive_access)])
 async def project_pr_plan(project_name: str, request: ProjectDraftRequest) -> dict[str, object]:
     try:
         tree = project_tree(project_name, limit=120)
@@ -1073,13 +1074,13 @@ Donne:
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
-    if not request.messages:
+async def chat(chat_request: ChatRequest, http_request: Request) -> ChatResponse:
+    if not chat_request.messages:
         raise HTTPException(status_code=400, detail="Le message est vide.")
 
     safe_messages = [
         {"role": message.role, "content": message.content.strip()}
-        for message in request.messages
+        for message in chat_request.messages
         if message.content.strip()
     ]
 
@@ -1090,7 +1091,11 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
     try:
-        result = await process_chat_messages(safe_messages, mode=request.mode)
+        result = await process_chat_messages(
+            safe_messages,
+            mode=chat_request.mode,
+            trusted_actions=is_request_trusted(http_request),
+        )
     except ChatServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

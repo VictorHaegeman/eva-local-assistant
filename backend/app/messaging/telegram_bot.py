@@ -218,7 +218,10 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             return
 
     try:
-        result = await process_chat_messages([{"role": "user", "content": text}])
+        result = await process_chat_messages(
+            [{"role": "user", "content": text}],
+            trusted_actions=True,
+        )
     except ChatServiceError as exc:
         await _send_message(client, chat_id, f"Eva ne peut pas repondre: {exc}")
         return

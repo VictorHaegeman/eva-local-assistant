@@ -4,7 +4,7 @@ from pathlib import Path
 
 from app.actions.action_store import EvaAction, update_action_status
 from app.config import settings
-from app.files.local_files import BLOCKED_NAMES, BLOCKED_SUFFIXES, _has_blocked_part
+from app.files.local_files import LocalFileError, load_allowed_roots, read_text_file
 from app.integrations.linkedin_browser import execute_linkedin_browser_prepare_post
 from app.project_factory.executor import (
     execute_clipboard_set_prompt,
@@ -17,9 +17,6 @@ from app.security.action_policy import is_blocked, requires_confirmation
 
 class ActionExecutionError(Exception):
     """Raised when Eva cannot execute an approved local action."""
-
-
-MAX_READ_CHARS = 120_000
 
 
 def _resolve_path(path_value: str) -> Path:
@@ -59,22 +56,27 @@ def _execute_command(action: EvaAction) -> str:
 
 
 def _read_file(action: EvaAction) -> str:
-    path = _resolve_path(str(action.payload.get("path", "")))
+    root_name = str(action.payload.get("root", "")).strip()
+    relative_path = str(action.payload.get("relative_path") or action.payload.get("path", "")).strip()
 
-    if not path.exists() or not path.is_file():
-        raise ActionExecutionError("Fichier introuvable.")
+    try:
+        if root_name:
+            payload = read_text_file(root_name, relative_path)
+            return str(payload["content"])
 
-    if _has_blocked_part(path) or path.name.lower() in BLOCKED_NAMES:
-        raise ActionExecutionError("Fichier refuse: chemin sensible bloque.")
+        absolute_path = _resolve_path(relative_path)
+        for root in load_allowed_roots():
+            try:
+                path_in_root = absolute_path.relative_to(root.path)
+            except ValueError:
+                continue
 
-    if path.suffix.lower() in BLOCKED_SUFFIXES:
-        raise ActionExecutionError("Fichier refuse: type non lisible en texte.")
+            payload = read_text_file(root.name, path_in_root.as_posix())
+            return str(payload["content"])
+    except LocalFileError as exc:
+        raise ActionExecutionError(str(exc)) from exc
 
-    content = path.read_bytes().decode("utf-8", errors="replace")
-    if len(content) > MAX_READ_CHARS:
-        return content[:MAX_READ_CHARS] + "\n\n[TRUNCATED]"
-
-    return content
+    raise ActionExecutionError("Lecture refusee: chemin hors dossiers autorises.")
 
 
 def _write_file(action: EvaAction) -> str:

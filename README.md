@@ -26,6 +26,34 @@ Eva fonctionne localement avec Ollama.
 
 Si une fonctionnalite future necessite un service payant ou un abonnement externe, elle devra rester documentee comme option future et ne sera pas implementee dans Eva V1.
 
+## Securite locale
+
+Eva expose certaines routes puissantes: lecture de dossiers autorises, Gmail, memoire, projets et actions locales.
+
+Protection actuelle:
+
+- les routes sensibles acceptent automatiquement le PC local (`localhost`, `127.0.0.1`);
+- depuis un autre appareil du Wi-Fi, ces routes sont bloquees sauf si un `X-Eva-Api-Token` est configure;
+- Telegram n'est accepte que si `EVA_TELEGRAM_ALLOWED_CHAT_ID` correspond a ton chat personnel;
+- les actions de type suppression, publication, envoi ou `git push` restent hors automatisation par defaut;
+- les lectures fichier passent uniquement par les dossiers autorises dans `data/eva_allowed_paths.json`.
+
+Variable optionnelle:
+
+```env
+EVA_API_TOKEN=
+```
+
+Si elle reste vide, Eva garde les routes sensibles limitees au PC local. C'est le mode recommande tant que tu utilises Telegram comme telecommande iPhone.
+
+Si tu veux aussi piloter les panneaux sensibles depuis le navigateur du telephone, tu peux mettre le meme token dans `frontend/.env.local`:
+
+```env
+VITE_EVA_API_TOKEN=LE_MEME_TOKEN
+```
+
+Attention: ce token est envoye par le frontend. A utiliser seulement sur ton reseau local prive, jamais sur un site public.
+
 ## Structure de travail long terme
 
 La roadmap du projet est documentee ici:

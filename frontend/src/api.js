@@ -13,6 +13,7 @@ function getApiBaseUrl() {
 
 
 const API_BASE_URL = getApiBaseUrl();
+const EVA_API_TOKEN = import.meta.env.VITE_EVA_API_TOKEN || "";
 
 
 async function parseResponse(response) {
@@ -25,7 +26,15 @@ async function parseResponse(response) {
 
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
+  const headers = new Headers(options.headers || {});
+  if (EVA_API_TOKEN && !headers.has("X-Eva-Api-Token")) {
+    headers.set("X-Eva-Api-Token", EVA_API_TOKEN);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
   const payload = await parseResponse(response);
 
   if (!response.ok) {

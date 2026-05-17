@@ -47,6 +47,7 @@ class Settings:
     ollama_timeout_seconds: float = _env_float("OLLAMA_TIMEOUT_SECONDS", 90.0)
     ollama_temperature: float = _env_float("OLLAMA_TEMPERATURE", 0.7)
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
+    eva_api_token: str = os.getenv("EVA_API_TOKEN", "")
     eva_system_actions_enabled: bool = _env_bool("EVA_SYSTEM_ACTIONS_ENABLED", True)
     eva_action_timeout_seconds: float = _env_float("EVA_ACTION_TIMEOUT_SECONDS", 120.0)
     eva_web_search_enabled: bool = _env_bool("EVA_WEB_SEARCH_ENABLED", True)

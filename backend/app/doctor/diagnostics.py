@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 from typing import Any, Literal
 
@@ -9,6 +10,7 @@ from app.integrations.linkedin_assistant import LINKEDIN_PATH
 from app.memory.memory_store import MEMORY_DB_PATH
 from app.memory.obsidian_store import obsidian_status
 from app.memory.profile_store import PROFILE_PATH, ProfileStoreError, load_profile
+from app.security.api_auth import api_security_status
 from app.skills.registry import list_skills
 
 
@@ -212,6 +214,85 @@ def _skills_check() -> dict[str, Any]:
     )
 
 
+def _telegram_check() -> dict[str, Any]:
+    if not settings.eva_telegram_enabled:
+        return _check(
+            "telegram_bridge",
+            "warning",
+            "Telegram est desactive.",
+            {"enabled": False},
+        )
+
+    has_token = bool(settings.eva_telegram_bot_token.strip())
+    has_allowed_chat = bool(settings.eva_telegram_allowed_chat_id.strip())
+    status: CheckStatus = "ok" if has_token and has_allowed_chat else "warning"
+    message = (
+        "Telegram est configure pour un chat autorise."
+        if status == "ok"
+        else "Telegram a un token, mais aucun chat_id autorise n'est encore configure."
+        if has_token
+        else "Telegram est active, mais le token est absent."
+    )
+    return _check(
+        "telegram_bridge",
+        status,
+        message,
+        {
+            "enabled": True,
+            "has_token": has_token,
+            "has_allowed_chat_id": has_allowed_chat,
+        },
+    )
+
+
+def _project_factory_check() -> dict[str, Any]:
+    cursor_path = shutil.which("cursor")
+    gh_path = shutil.which("gh")
+    auto_github = settings.eva_project_factory_auto_github
+    status: CheckStatus = "ok"
+    message = "Project Factory prete pour workspace, presse-papiers et Cursor."
+
+    if settings.eva_project_factory_auto_open_cursor and not cursor_path:
+        status = "warning"
+        message = "Project Factory peut creer le workspace, mais Cursor CLI est introuvable."
+
+    if auto_github and not gh_path:
+        status = "warning"
+        message = "GitHub auto est active, mais `gh` CLI est introuvable."
+
+    return _check(
+        "project_factory",
+        status,
+        message,
+        {
+            "auto_execute": settings.eva_project_factory_auto_execute,
+            "auto_copy_prompt": settings.eva_project_factory_auto_copy_prompt,
+            "auto_open_cursor": settings.eva_project_factory_auto_open_cursor,
+            "auto_github": auto_github,
+            "cursor_cli": cursor_path or "",
+            "gh_cli": gh_path or "",
+        },
+    )
+
+
+def _api_security_check() -> dict[str, Any]:
+    status = api_security_status()
+    has_token = bool(status["api_token_configured"])
+    cors_is_wildcard = status["cors_origins"] == ["*"]
+
+    if has_token and not cors_is_wildcard:
+        level: CheckStatus = "ok"
+        message = "Routes sensibles protegees par localhost ou token API."
+    elif has_token:
+        level = "warning"
+        message = "Token API configure, mais CORS accepte encore toutes les origines."
+    else:
+        level = "warning"
+        message = "Aucun token API: les routes sensibles restent limitees au PC local."
+
+    return _check("api_security", level, message, status)
+
+
 async def run_doctor() -> dict[str, Any]:
     checks = []
     checks.extend(await _ollama_checks())
@@ -223,6 +304,9 @@ async def run_doctor() -> dict[str, Any]:
     checks.append(_heartbeat_check())
     checks.append(_linkedin_check())
     checks.append(_skills_check())
+    checks.append(_telegram_check())
+    checks.append(_project_factory_check())
+    checks.append(_api_security_check())
 
     status = _overall_status(checks)
     return {
