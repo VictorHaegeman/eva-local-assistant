@@ -302,6 +302,12 @@ connecte mon compte Google pour Gmail et Calendar
 
 Eva trouve alors le script local `backend/app/integrations/gmail_auth.py`. Si `data/gmail_credentials.json` manque, elle ouvre Google Cloud dans Brave pour que tu recuperes le JSON OAuth complet. Si le JSON est present, elle lance le flux OAuth local et tu valides toi-meme dans Google.
 
+Anti-invention:
+
+- quand tu demandes tes mails ou ton calendrier, Eva doit utiliser les donnees reelles renvoyees par Gmail API / Google Calendar API;
+- les reponses sont marquees `Source: Gmail API` ou `Source: Google Calendar API`;
+- si Google ne renvoie aucun evenement ou aucun mail, Eva doit dire qu'elle n'a rien trouve au lieu d'inventer.
+
 Scopes Google utilises:
 
 ```text

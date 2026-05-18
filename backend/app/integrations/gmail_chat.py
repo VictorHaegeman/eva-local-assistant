@@ -41,7 +41,21 @@ def wants_gmail_list(message: str) -> bool:
     normalized = _normalize(message)
     return _has_gmail_context(normalized) and any(
         marker in normalized
-        for marker in ("dernier", "recus", "recu", "inbox", "boite", "boite mail", "liste")
+        for marker in (
+            "affiche",
+            "donne",
+            "lis",
+            "lire",
+            "montre",
+            "dernier",
+            "recents",
+            "recus",
+            "recu",
+            "inbox",
+            "boite",
+            "boite mail",
+            "liste",
+        )
     )
 
 
@@ -55,12 +69,15 @@ def wants_gmail_reply_draft(message: str) -> bool:
     )
 
 
-def _format_message_list() -> str:
+def format_gmail_message_list() -> str:
     messages = list_gmail_messages(max_results=5)
     if not messages:
-        return "Je n'ai trouve aucun mail recent dans Gmail."
+        return "Source: Gmail API.\nJe n'ai trouve aucun mail recent dans Gmail."
 
-    lines = ["Derniers mails Gmail lus en lecture seule:"]
+    lines = [
+        "Source: Gmail API, lecture seule.",
+        "Derniers mails Gmail reels renvoyes par Google:",
+    ]
     for index, message in enumerate(messages, start=1):
         lines.append(
             f"{index}. {message.subject}\n"
@@ -72,7 +89,7 @@ def _format_message_list() -> str:
     return "\n\n".join(lines)
 
 
-async def build_gmail_chat_response(message: str) -> str | None:
+async def build_gmail_chat_response(message: str, force_list: bool = False) -> str | None:
     if wants_gmail_reply_draft(message):
         messages = list_gmail_messages(max_results=1)
         if not messages:
@@ -115,8 +132,8 @@ Donne uniquement:
             f"{draft}"
         )
 
-    if wants_gmail_list(message):
-        return _format_message_list()
+    if force_list or wants_gmail_list(message):
+        return format_gmail_message_list()
 
     return None
 

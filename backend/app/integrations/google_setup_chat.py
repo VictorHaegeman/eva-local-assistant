@@ -56,9 +56,15 @@ def wants_calendar_events(message: str) -> bool:
 def build_calendar_events_response(days: int = 7) -> str:
     events = list_calendar_events(days=days, max_results=10)
     if not events:
-        return f"Aucun evenement trouve dans ton calendrier principal sur les {days} prochains jours."
+        return (
+            "Source: Google Calendar API, lecture seule.\n"
+            f"Aucun evenement trouve dans ton calendrier principal sur les {days} prochains jours."
+        )
 
-    lines = [f"Voici les prochains evenements Google Calendar sur {days} jours:"]
+    lines = [
+        "Source: Google Calendar API, lecture seule.",
+        f"Voici les prochains evenements reels renvoyes par Google Calendar sur {days} jours:",
+    ]
     for event in events:
         when = event.start or "date inconnue"
         location = f" - {event.location}" if event.location else ""

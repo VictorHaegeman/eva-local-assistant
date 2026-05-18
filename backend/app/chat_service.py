@@ -10,6 +10,7 @@ from app.heartbeat.scheduler import HeartbeatError, heartbeat_status
 from app.agents.intent_router import classify_user_intent, format_intent_context
 from app.integrations.gmail_chat import (
     build_gmail_chat_response,
+    format_gmail_message_list,
     wants_gmail_list,
     wants_gmail_reply_draft,
 )
@@ -401,19 +402,46 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        if user_intent.name == "calendar_read" or wants_calendar_events(latest_user_message):
-            if not trusted_actions:
-                return {
-                    "message": {
-                        "role": "assistant",
-                        "content": (
-                            "Google Calendar contient des donnees privees. Je peux le lire depuis "
-                            "le PC local ou Telegram autorise, mais pas depuis une session non fiable."
-                        ),
-                    },
-                    "saved_memory": None,
-                    "pending_action": None,
-                }
+        calendar_requested = user_intent.name == "calendar_read" or wants_calendar_events(latest_user_message)
+        gmail_requested = (
+            user_intent.name in {"gmail_read", "gmail_reply_draft"}
+            or wants_gmail_list(latest_user_message)
+            or wants_gmail_reply_draft(latest_user_message)
+        )
+
+        if not trusted_actions and (calendar_requested or gmail_requested):
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "Gmail et Google Calendar contiennent des donnees privees. Je peux les lire "
+                        "depuis le PC local ou Telegram autorise, mais pas depuis une session non fiable."
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
+        if calendar_requested and gmail_requested and user_intent.name != "gmail_reply_draft":
+            sections = []
+            try:
+                sections.append(format_gmail_message_list())
+            except GmailIntegrationError as exc:
+                sections.append(f"Source: Gmail API.\nGmail indisponible: {exc}")
+            try:
+                sections.append(build_calendar_events_response(days=7))
+            except GmailIntegrationError as exc:
+                sections.append(f"Source: Google Calendar API.\nCalendar indisponible: {exc}")
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": "\n\n---\n\n".join(sections),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
+        if calendar_requested:
             return {
                 "message": {
                     "role": "assistant",
@@ -436,24 +464,10 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
-        if not trusted_actions and (
-            user_intent.name in {"gmail_read", "gmail_reply_draft"}
-            or wants_gmail_list(latest_user_message)
-            or wants_gmail_reply_draft(latest_user_message)
-        ):
-            return {
-                "message": {
-                    "role": "assistant",
-                    "content": (
-                        "Gmail contient des donnees privees. Je peux le lire depuis le PC local "
-                        "ou Telegram autorise, mais pas depuis une session non fiable."
-                    ),
-                },
-                "saved_memory": None,
-                "pending_action": None,
-            }
-
-        gmail_response = await build_gmail_chat_response(latest_user_message)
+        gmail_response = await build_gmail_chat_response(
+            latest_user_message,
+            force_list=user_intent.name == "gmail_read",
+        )
         if gmail_response:
             return {
                 "message": {
