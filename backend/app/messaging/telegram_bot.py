@@ -36,6 +36,11 @@ from app.project_factory.automation import (
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 from app.projects.project_chat import build_cursor_work_session_response
 from app.projects.project_store import ProjectStoreError
+from app.terminal.terminal_doctor import (
+    analyze_terminal_error,
+    format_terminal_diagnosis,
+    launch_terminal_fix,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -135,6 +140,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/google - connecter Google/Gmail/Calendar sur le PC\n"
                 "/calendar - lire les prochains evenements Calendar\n"
                 "/history - revoir le fil Telegram recent\n"
+                "/terminal ERREUR - analyser/corriger une erreur terminal\n"
                 "/reset - oublier le fil Telegram courant\n"
                 "/pending - voir les actions en attente\n"
                 "/approve ID - valider et executer une action\n"
@@ -182,6 +188,26 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             content = " ".join(message.content.split())[:240]
             lines.append(f"- {prefix}: {content}")
         await _send_message(client, chat_id, "\n".join(lines))
+        return True
+
+    if command in {"/terminal", "/error", "/fix"}:
+        if not argument:
+            await _send_message(
+                client,
+                chat_id,
+                "Usage: /terminal colle ici l'erreur complete du terminal",
+            )
+            return True
+
+        diagnosis = analyze_terminal_error(argument)
+        launched = None
+        if diagnosis.fix and diagnosis.fix.safe_to_launch:
+            try:
+                launched = launch_terminal_fix(diagnosis.fix.key)
+            except Exception as exc:
+                await _send_message(client, chat_id, f"Correctif impossible: {exc}")
+                return True
+        await _send_message(client, chat_id, format_terminal_diagnosis(diagnosis, launched=launched))
         return True
 
     if command in {"/project", "/idea"}:

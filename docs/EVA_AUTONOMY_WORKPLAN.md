@@ -79,6 +79,8 @@ Fait:
 - detection GitHub CLI;
 - detection auth GitHub;
 - auto GitHub/push configurable.
+- Terminal Doctor: analyse d'erreurs collees depuis PowerShell/Telegram;
+- correctif automatique connu pour les chemins `C:\Program Files` non quotes avec GitHub CLI.
 
 Reste:
 
@@ -89,6 +91,8 @@ Reste:
 - relancer un prompt correctif si le resultat est incomplet;
 - envoyer un update Telegram pendant et apres execution;
 - ajouter `/jobs` Telegram.
+- lecture directe d'ecran/OCR optionnelle plus tard, seulement si elle est fiable et locale;
+- enrichir la base de correctifs Terminal Doctor.
 
 Prochaine execution:
 
@@ -209,4 +213,3 @@ Cette route retourne les pistes `memory`, `hands`, `heartbeat`, `channels`, `sec
 - manques;
 - prochaines actions;
 - details techniques non secrets.
-

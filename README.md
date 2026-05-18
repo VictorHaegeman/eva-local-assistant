@@ -95,6 +95,8 @@ Routes utiles:
 - `GET /tools`: registre des capacites locales;
 - `GET /autonomy`: politique de securite.
 - `GET /autonomy/readiness`: etat de preparation memoire/autonomie.
+- `POST /terminal/error/analyze`: analyser une erreur terminal et lancer un correctif sur motif connu.
+- `POST /terminal/error/fix`: lancer un correctif Terminal Doctor connu.
 - `GET /heartbeat/status`: statut des routines locales;
 - `GET /linkedin/status`: statut LinkedIn en mode brouillon + pont navigateur.
 - `POST /project-factory/plan`: previsualiser un projet depuis une idee;
@@ -338,6 +340,7 @@ Commandes Telegram:
 /google
 /calendar
 /history
+/terminal ERREUR
 /pending
 /approve ID
 /reject ID
@@ -383,6 +386,14 @@ data/eva_chat_history.sqlite
 ```
 
 Dans l'interface Eva, le panneau `Chats` permet de rouvrir les conversations passees.
+
+Terminal Doctor:
+
+```text
+/terminal colle ici l'erreur PowerShell complete
+```
+
+Eva reconnait deja certains motifs courants. Exemple: si PowerShell affiche `C:\Program n'est pas reconnu` apres une commande `C:\Program Files\GitHub CLI\gh.exe auth login`, Eva comprend que le chemin Windows n'etait pas quote et relance `gh auth login` avec le bon appel. La validation GitHub reste humaine dans le navigateur.
 
 Routes locales utiles:
 

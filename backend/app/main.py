@@ -128,6 +128,12 @@ from app.social.instagram_public import (
     fetch_instagram_public_snapshots,
     instagram_status,
 )
+from app.terminal.terminal_doctor import (
+    TerminalDoctorError,
+    analyze_terminal_error,
+    diagnosis_to_dict,
+    launch_terminal_fix,
+)
 from app.tools.registry import list_tools
 from app.web.web_search import WebSearchError, format_web_results, search_web
 
@@ -182,6 +188,15 @@ class BranchPlanRequest(BaseModel):
 
 class TerminalErrorRequest(BaseModel):
     error: str = Field(min_length=1, max_length=20_000)
+
+
+class TerminalErrorAnalyzeRequest(BaseModel):
+    error: str = Field(min_length=1, max_length=20_000)
+    auto_fix: bool = False
+
+
+class TerminalFixRequest(BaseModel):
+    fix_key: str = Field(min_length=1, max_length=120)
 
 
 class ProjectTaskCreateRequest(BaseModel):
@@ -775,6 +790,30 @@ async def browser_open_tabs(request: BrowserOpenTabsRequest) -> dict[str, object
         "opened": opened,
         "rejected": rejected,
     }
+
+
+@app.post("/terminal/error/analyze", dependencies=[Depends(require_sensitive_access)])
+async def terminal_error_analyze(request: TerminalErrorAnalyzeRequest) -> dict[str, object]:
+    diagnosis = analyze_terminal_error(request.error)
+    launched = None
+    if request.auto_fix and diagnosis.fix and diagnosis.fix.safe_to_launch:
+        try:
+            launched = launch_terminal_fix(diagnosis.fix.key)
+        except TerminalDoctorError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "diagnosis": diagnosis_to_dict(diagnosis),
+        "launched": launched,
+    }
+
+
+@app.post("/terminal/error/fix", dependencies=[Depends(require_sensitive_access)])
+async def terminal_error_fix(request: TerminalFixRequest) -> dict[str, object]:
+    try:
+        return launch_terminal_fix(request.fix_key)
+    except TerminalDoctorError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/gmail/messages", dependencies=[Depends(require_sensitive_access)])

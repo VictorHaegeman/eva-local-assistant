@@ -49,6 +49,12 @@ from app.project_factory.automation import (
 )
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 from app.skills.registry import list_skills
+from app.terminal.terminal_doctor import (
+    analyze_terminal_error,
+    format_terminal_diagnosis,
+    launch_terminal_fix,
+    looks_like_terminal_error,
+)
 from app.tools.registry import list_tools
 from app.web.web_search import WebSearchError, detect_web_search_query, format_web_results, search_web
 
@@ -202,6 +208,20 @@ async def process_chat_messages(
     context_blocks: list[str] = []
 
     try:
+        if looks_like_terminal_error(latest_user_message):
+            diagnosis = analyze_terminal_error(latest_user_message)
+            launched = None
+            if trusted_actions and diagnosis.fix and diagnosis.fix.safe_to_launch:
+                launched = launch_terminal_fix(diagnosis.fix.key)
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": format_terminal_diagnosis(diagnosis, launched=launched),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         if _should_create_project_factory_plan(latest_user_message):
             if not trusted_actions:
                 return {
