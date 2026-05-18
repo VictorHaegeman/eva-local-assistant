@@ -14,12 +14,20 @@ from app.actions.action_store import (
 from app.actions.executor import ActionExecutionError, execute_action
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.integrations.google_setup_chat import (
+    build_calendar_events_response,
+    build_google_setup_response,
+)
 from app.messaging.telegram_memory import (
     append_telegram_exchange,
     clear_telegram_context,
     load_telegram_context,
 )
-from app.memory.chat_history_store import ChatHistoryError, append_chat_exchange
+from app.memory.chat_history_store import (
+    ChatHistoryError,
+    append_chat_exchange,
+    get_recent_chat_messages,
+)
 from app.project_factory.automation import (
     auto_execute_project_factory_actions,
     format_project_factory_results,
@@ -124,6 +132,9 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/idea IDEE - alias de /project\n"
                 "/cursor PROJET + TACHE - ouvrir Cursor et copier le prompt\n"
                 "/codex PROJET + TACHE - alias de /cursor\n"
+                "/google - connecter Google/Gmail/Calendar sur le PC\n"
+                "/calendar - lire les prochains evenements Calendar\n"
+                "/history - revoir le fil Telegram recent\n"
                 "/reset - oublier le fil Telegram courant\n"
                 "/pending - voir les actions en attente\n"
                 "/approve ID - valider et executer une action\n"
@@ -141,6 +152,36 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
     if command == "/reset":
         clear_telegram_context(chat_id)
         await _send_message(client, chat_id, "Contexte Telegram remis a zero.")
+        return True
+
+    if command in {"/google", "/gmail", "/gmailconnect", "/gmail-connect"}:
+        await _send_message(client, chat_id, build_google_setup_response(trusted_actions=True))
+        return True
+
+    if command in {"/calendar", "/agenda"}:
+        try:
+            await _send_message(client, chat_id, build_calendar_events_response(days=7))
+        except Exception as exc:
+            await _send_message(client, chat_id, f"Google Calendar indisponible: {exc}")
+        return True
+
+    if command == "/history":
+        try:
+            messages = get_recent_chat_messages(f"telegram-{chat_id}", limit=12)
+        except ChatHistoryError as exc:
+            await _send_message(client, chat_id, f"Historique indisponible: {exc}")
+            return True
+
+        if not messages:
+            await _send_message(client, chat_id, "Aucun historique Telegram archive pour le moment.")
+            return True
+
+        lines = ["Derniers messages Telegram archives:"]
+        for message in messages:
+            prefix = "Victor" if message.role == "user" else "Eva"
+            content = " ".join(message.content.split())[:240]
+            lines.append(f"- {prefix}: {content}")
+        await _send_message(client, chat_id, "\n".join(lines))
         return True
 
     if command in {"/project", "/idea"}:

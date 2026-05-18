@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from app.config import settings
+from app.memory.chat_history_store import ChatHistoryError, get_recent_chat_messages
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -51,7 +52,31 @@ def load_telegram_context(chat_id: int) -> list[dict[str, str]]:
         content = str(item.get("content", "")).strip()
         if role in {"user", "assistant"} and content:
             messages.append({"role": role, "content": content[:6000]})
-    return messages
+    if len(messages) >= limit:
+        return messages
+
+    try:
+        archived_messages = get_recent_chat_messages(f"telegram-{chat_id}", limit=limit)
+    except ChatHistoryError:
+        return messages
+
+    archived_context = [
+        {"role": message.role, "content": message.content[:6000]}
+        for message in archived_messages
+        if message.role in {"user", "assistant"} and message.content.strip()
+    ]
+
+    if not messages:
+        return archived_context[-limit:]
+
+    seen = {(message["role"], message["content"]) for message in messages}
+    merged = [
+        message
+        for message in archived_context
+        if (message["role"], message["content"]) not in seen
+    ]
+    merged.extend(messages)
+    return merged[-limit:]
 
 
 def append_telegram_exchange(chat_id: int, user_text: str, assistant_text: str) -> None:

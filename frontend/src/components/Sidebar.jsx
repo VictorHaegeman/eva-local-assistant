@@ -7,6 +7,7 @@ import {
   HeartPulse,
   Layers3,
   Mail,
+  MessagesSquare,
   MessageSquarePlus,
   Network,
   Newspaper,
@@ -49,6 +50,11 @@ const coreItems = [
     icon: Bot,
     label: "Chat local",
     panel: "chat",
+  },
+  {
+    icon: MessagesSquare,
+    label: "Chats",
+    panel: "chats",
   },
   {
     icon: BrainCircuit,

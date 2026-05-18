@@ -8,6 +8,7 @@ import {
   HeartPulse,
   Layers3,
   Mail,
+  MessagesSquare,
   Network,
   Play,
   RefreshCw,
@@ -35,6 +36,7 @@ import {
   generateSmartBrief,
   connectGmail,
   createProjectFactoryActions,
+  getChatHistory,
   planProjectFactory,
   runHeartbeat,
   syncObsidianMemory,
@@ -47,6 +49,12 @@ const panelMeta = {
     kicker: "Brain",
     title: "Memoire locale",
     description: "Ce qu'Eva retient localement sur toi, sans token ni mot de passe.",
+  },
+  chats: {
+    icon: MessagesSquare,
+    kicker: "Threads",
+    title: "Conversations",
+    description: "Tes anciens chats web et Telegram archives localement.",
   },
   tools: {
     icon: Wrench,
@@ -177,7 +185,7 @@ function renderDoctorChecks(checks = []) {
 }
 
 
-export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
+export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSession = () => {} }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -195,6 +203,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
       const [memory, obsidian] = await Promise.all([getMemories(), getObsidianMemoryStatus()]);
       return { ...memory, obsidian };
     }
+    if (panelName === "chats") return getChatHistory();
     if (panelName === "tools") {
       const [tools, autonomy] = await Promise.all([getTools(), getAutonomy()]);
       return { ...tools, autonomy };
@@ -382,6 +391,44 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
     );
   }
 
+  function renderChats() {
+    const sessions = data?.sessions || [];
+    const webCount = sessions.filter((session) => session.channel === "web").length;
+    const telegramCount = sessions.filter((session) => session.channel === "telegram").length;
+
+    return (
+      <>
+        <div className="panel-metrics">
+          <Metric label="conversations" value={sessions.length} tone={sessions.length ? "ok" : "neutral"} />
+          <Metric label="web" value={webCount} />
+          <Metric label="telegram" value={telegramCount} tone={telegramCount ? "ok" : "neutral"} />
+        </div>
+        {sessions.length ? (
+          <div className="panel-list">
+            {sessions.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                className="panel-row panel-row-button"
+                onClick={() => onLoadChatSession(session.id)}
+              >
+                <div>
+                  <strong>{session.title || "Conversation Eva"}</strong>
+                  <span>{session.channel} / {session.updated_at}</span>
+                </div>
+                <StatusPill tone={session.channel === "telegram" ? "ok" : "neutral"}>
+                  {session.channel}
+                </StatusPill>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <EmptyState>Aucune conversation archivee pour le moment.</EmptyState>
+        )}
+      </>
+    );
+  }
+
   function renderTools() {
     const tools = data?.tools || [];
     const autonomy = data?.autonomy || {};
@@ -527,6 +574,19 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
             <button type="button" className="panel-action-button secondary" onClick={loadPanel}>
               Rafraichir statut
             </button>
+            {status.token_exists && !status.token_has_required_scopes && (
+              <button
+                type="button"
+                className="panel-action-button"
+                onClick={() => connectGmail(true).then((result) => {
+                  setJobResult(result.message || "Reconnexion Google lancee.");
+                  return loadPanel();
+                }).catch((requestError) => setError(requestError.message))}
+                disabled={Boolean(runningJob)}
+              >
+                Reconnecter scopes
+              </button>
+            )}
           </div>
           {!status.enabled && <p>Active EVA_GMAIL_ENABLED=true dans backend/.env.</p>}
           {!status.credentials_exists && <p>Ajoute le JSON OAuth complet dans data/gmail_credentials.json.</p>}
@@ -838,6 +898,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {} }) {
     if (loading) return <div className="panel-loading">Chargement du module Eva...</div>;
     if (error) return <div className="panel-error">{error}</div>;
     if (panel === "memory") return renderMemory();
+    if (panel === "chats") return renderChats();
     if (panel === "tools") return renderTools();
     if (panel === "skills") return renderSkills();
     if (panel === "heartbeat") return renderHeartbeat();

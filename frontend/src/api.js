@@ -81,6 +81,16 @@ export async function getMemories() {
 }
 
 
+export async function getChatHistory() {
+  return request("/chat/history");
+}
+
+
+export async function getChatHistoryMessages(sessionId) {
+  return request(`/chat/history/${encodeURIComponent(sessionId)}`);
+}
+
+
 export async function getObsidianMemoryStatus() {
   return request("/memory/obsidian/status");
 }
@@ -143,8 +153,9 @@ export async function getGmailStatus() {
 }
 
 
-export async function connectGmail() {
-  return request("/gmail/connect", {
+export async function connectGmail(forceReconnect = false) {
+  const query = forceReconnect ? "?force_reconnect=true" : "";
+  return request(`/gmail/connect${query}`, {
     method: "POST",
   });
 }

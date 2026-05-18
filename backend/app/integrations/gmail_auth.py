@@ -1,11 +1,17 @@
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 from app.config import settings
-from app.integrations.gmail_client import GMAIL_SCOPES, gmail_credentials_path, gmail_token_path
+from app.integrations.gmail_client import (
+    GMAIL_SCOPES,
+    gmail_credentials_path,
+    gmail_token_path,
+    google_token_scope_status,
+)
 
 
 class GmailAuthLaunchError(Exception):
@@ -16,7 +22,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 _oauth_process: subprocess.Popen[Any] | None = None
 
 
-def start_gmail_oauth_flow() -> dict[str, object]:
+def start_gmail_oauth_flow(force_reconnect: bool = False) -> dict[str, object]:
     global _oauth_process
 
     credentials_file = gmail_credentials_path()
@@ -30,13 +36,33 @@ def start_gmail_oauth_flow() -> dict[str, object]:
             "Fichier OAuth Gmail absent. Place le JSON Google complet dans data/gmail_credentials.json."
         )
 
-    if token_file.exists():
+    token_status = google_token_scope_status()
+    if token_file.exists() and force_reconnect:
+        backup_path = token_file.with_name(f"{token_file.stem}_previous.json")
+        if backup_path.exists():
+            backup_path.unlink()
+        shutil.move(str(token_file), str(backup_path))
+
+    if token_file.exists() and token_status["has_required_scopes"]:
         return {
             "started": False,
             "already_connected": True,
             "requires_user_consent": False,
             "message": "Gmail est deja connecte localement.",
             "token_path": str(token_file),
+        }
+
+    if token_file.exists() and not token_status["has_required_scopes"]:
+        return {
+            "started": False,
+            "already_connected": False,
+            "requires_user_consent": True,
+            "message": (
+                "Google est connecte, mais le token local n'a pas tous les scopes requis. "
+                "Relance avec force_reconnect=true pour regenerer un token Gmail + Calendar."
+            ),
+            "token_path": str(token_file),
+            "missing_scopes": token_status["missing_scopes"],
         }
 
     if _oauth_process and _oauth_process.poll() is None:

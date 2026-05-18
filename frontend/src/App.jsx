@@ -3,6 +3,7 @@ import { ShieldCheck, Sparkles } from "lucide-react";
 
 import {
   getDailyLaunchBrief,
+  getChatHistoryMessages,
   getDoctor,
   getHealth,
   getModes,
@@ -230,6 +231,32 @@ export default function App() {
     }
   }
 
+  async function handleLoadChatSession(nextSessionId) {
+    if (!nextSessionId) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const payload = await getChatHistoryMessages(nextSessionId);
+      const loadedMessages = (payload.messages || [])
+        .filter((message) => message.role === "user" || message.role === "assistant")
+        .map((message) => ({
+          id: `history-${message.id}`,
+          role: message.role,
+          content: message.content,
+        }));
+
+      setSessionId(nextSessionId);
+      window.localStorage.setItem("evaChatSessionId", nextSessionId);
+      setMessages(loadedMessages.length ? loadedMessages : [welcomeMessage]);
+      setActivePanel("chat");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleReset() {
     setMessages([welcomeMessage]);
     setSessionId("");
@@ -291,7 +318,12 @@ export default function App() {
             onStarterSelect={handleSend}
           />
         ) : (
-          <ControlPanel panel={activePanel} doctor={doctor} onPrompt={handleQuickPrompt} />
+          <ControlPanel
+            panel={activePanel}
+            doctor={doctor}
+            onPrompt={handleQuickPrompt}
+            onLoadChatSession={handleLoadChatSession}
+          />
         )}
 
         <ChatInput

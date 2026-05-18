@@ -252,6 +252,7 @@ Gmail:
 - integration optionnelle;
 - OAuth local, sans token versionne;
 - lecture inbox/envoyes en lecture seule;
+- lecture Google Calendar en lecture seule via le meme OAuth;
 - brouillon de reponse genere par Ollama;
 - aucun envoi automatique.
 
@@ -262,6 +263,8 @@ Routes Gmail:
 - `GET /gmail/messages`;
 - `GET /gmail/messages/{message_id}`;
 - `POST /gmail/reply-draft`.
+- `GET /calendar/status`;
+- `GET /calendar/events`.
 
 Configuration Gmail locale:
 
@@ -275,6 +278,22 @@ EVA_GMAIL_MAX_SENT_EXAMPLES=5
 Connexion Gmail:
 
 Depuis l'interface Eva, ouvre le panneau `Gmail`, clique `Connecter Gmail`, valide ton compte dans Google, puis clique `Rafraichir statut`.
+
+Depuis Telegram, tu peux aussi demander:
+
+```text
+/google
+connecte mon compte Google pour Gmail et Calendar
+```
+
+Eva trouve alors le script local `backend/app/integrations/gmail_auth.py`. Si `data/gmail_credentials.json` manque, elle ouvre Google Cloud dans Brave pour que tu recuperes le JSON OAuth complet. Si le JSON est present, elle lance le flux OAuth local et tu valides toi-meme dans Google.
+
+Scopes Google utilises:
+
+```text
+https://www.googleapis.com/auth/gmail.readonly
+https://www.googleapis.com/auth/calendar.readonly
+```
 
 Alternative PowerShell:
 
@@ -316,6 +335,9 @@ Commandes Telegram:
 /idea IDEE
 /cursor PROJET + TACHE
 /codex PROJET + TACHE
+/google
+/calendar
+/history
 /pending
 /approve ID
 /reject ID
@@ -348,7 +370,7 @@ Pour `/cursor` et `/codex`, Eva:
 - ouvre Cursor sur le projet.
 - lance `cursor-agent` en arriere-plan si Cursor Agent CLI est installe.
 
-Le contexte Telegram est conserve localement sur les derniers messages, donc Eva garde le fil d'une conversation iPhone. Tu peux repartir a zero avec:
+Le contexte Telegram est conserve localement sur les derniers messages et complete par l'historique SQLite, donc Eva garde mieux le fil d'une conversation iPhone meme apres redemarrage. Tu peux repartir a zero avec:
 
 ```text
 /reset
@@ -359,6 +381,8 @@ Les conversations web et Telegram sont aussi archivees localement dans SQLite:
 ```text
 data/eva_chat_history.sqlite
 ```
+
+Dans l'interface Eva, le panneau `Chats` permet de rouvrir les conversations passees.
 
 Routes locales utiles:
 

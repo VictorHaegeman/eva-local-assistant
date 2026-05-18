@@ -52,6 +52,11 @@ from app.integrations.gmail_client import (
     message_to_dict,
 )
 from app.integrations.gmail_auth import GmailAuthLaunchError, start_gmail_oauth_flow
+from app.integrations.google_calendar_client import (
+    calendar_event_to_dict,
+    calendar_status,
+    list_calendar_events,
+)
 from app.integrations.inbox_smart import collect_inbox_signals
 from app.integrations.browser import open_url
 from app.integrations.linkedin_assistant import (
@@ -317,11 +322,31 @@ async def gmail_config_status() -> dict[str, object]:
 
 
 @app.post("/gmail/connect", dependencies=[Depends(require_sensitive_access)])
-async def gmail_connect() -> dict[str, object]:
+async def gmail_connect(force_reconnect: bool = Query(default=False)) -> dict[str, object]:
     try:
-        return start_gmail_oauth_flow()
+        return start_gmail_oauth_flow(force_reconnect=force_reconnect)
     except GmailAuthLaunchError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/calendar/status", dependencies=[Depends(require_sensitive_access)])
+async def google_calendar_status() -> dict[str, object]:
+    return calendar_status()
+
+
+@app.get("/calendar/events", dependencies=[Depends(require_sensitive_access)])
+async def google_calendar_events(
+    days: int = Query(default=7, ge=1, le=30),
+    max_results: int = Query(default=10, ge=1, le=25),
+) -> dict[str, object]:
+    try:
+        events = list_calendar_events(days=days, max_results=max_results)
+    except GmailIntegrationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "events": [calendar_event_to_dict(event) for event in events],
+    }
 
 
 @app.get("/linkedin/status", dependencies=[Depends(require_sensitive_access)])

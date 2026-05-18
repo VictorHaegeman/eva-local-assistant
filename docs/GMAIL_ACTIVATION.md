@@ -1,30 +1,33 @@
-# Activation Gmail pour Eva
+# Activation Google, Gmail et Calendar pour Eva
 
-Ce guide active Gmail en lecture seule pour Eva.
+Ce guide active Google en lecture seule pour Eva: Gmail + Google Calendar.
 
 Eva pourra:
 
 - lire les derniers mails;
 - lire un mail precis;
 - consulter des exemples dans les mails envoyes;
+- lire les prochains evenements Google Calendar;
 - rediger un brouillon de reponse avec Ollama.
 
 Eva ne pourra pas:
 
 - envoyer un email automatiquement;
 - modifier Gmail;
+- modifier Google Calendar;
 - supprimer des mails;
 - utiliser l'API OpenAI.
 
 ## Autorisations Google a donner
 
-Scope actif pour Eva V4.1:
+Scopes actifs:
 
 ```text
 https://www.googleapis.com/auth/gmail.readonly
+https://www.googleapis.com/auth/calendar.readonly
 ```
 
-Ce scope permet uniquement de lire les emails et les parametres Gmail. Il ne permet pas d'envoyer un email.
+Ces scopes permettent uniquement de lire Gmail et Google Calendar. Ils ne permettent pas d'envoyer un email ni de modifier ton agenda.
 
 Scopes a ne pas activer maintenant:
 
@@ -40,7 +43,7 @@ Ces scopes permettent d'envoyer, composer, modifier ou acceder trop largement a 
 ## Google Cloud
 
 1. Ouvre Google Cloud Console.
-2. Active la Gmail API dans ton projet.
+2. Active la Gmail API et la Google Calendar API dans ton projet.
 3. Va dans `Google Auth platform`.
 4. Configure l'ecran de consentement OAuth.
 5. Ajoute ton compte Gmail comme utilisateur test si l'app est en mode test.
@@ -92,7 +95,7 @@ Depuis l'interface Eva:
 1. Ouvre le panneau `Gmail`.
 2. Clique `Connecter Gmail`.
 3. Une page Google s'ouvre.
-4. Connecte-toi toi-meme et accepte uniquement le scope `gmail.readonly`.
+4. Connecte-toi toi-meme et accepte uniquement les scopes `gmail.readonly` et `calendar.readonly`.
 5. Reviens dans Eva et clique `Rafraichir statut`.
 
 Alternative en PowerShell:
@@ -106,7 +109,13 @@ pip install -r requirements.txt
 python -m app.integrations.gmail_auth
 ```
 
-Une page Google va s'ouvrir. Connecte-toi avec ton compte Gmail et accepte le scope `gmail.readonly`.
+Depuis Telegram:
+
+```text
+/google
+```
+
+Une page Google va s'ouvrir sur le PC. Connecte-toi avec ton compte Gmail et accepte les scopes lecture seule.
 
 Eva creera ensuite:
 
@@ -128,6 +137,8 @@ Puis ouvre:
 
 ```text
 http://localhost:8000/gmail/status
+http://localhost:8000/calendar/status
+http://localhost:8000/calendar/events
 ```
 
 Si tout est bon:

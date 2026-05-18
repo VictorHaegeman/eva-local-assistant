@@ -1152,6 +1152,20 @@ button.nav-item:hover {
   padding: 13px 14px;
 }
 
+.panel-row-button {
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.panel-row-button:hover {
+  border-color: rgba(115, 214, 255, 0.42);
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.11), rgba(255, 255, 255, 0.035)),
+    rgba(12, 20, 31, 0.9);
+}
+
 .panel-row strong {
   display: block;
   color: var(--text);

@@ -195,6 +195,26 @@ def get_chat_messages(session_id: str, limit: int = 100) -> list[ChatHistoryMess
     return [_message_from_row(row) for row in rows]
 
 
+def get_recent_chat_messages(session_id: str, limit: int = 40) -> list[ChatHistoryMessage]:
+    safe_limit = min(max(limit, 1), 120)
+    try:
+        with _connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT id, session_id, role, content, created_at
+                FROM chat_messages
+                WHERE session_id = ?
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (session_id, safe_limit),
+            ).fetchall()
+    except sqlite3.Error as exc:
+        raise ChatHistoryError("Impossible de lire les messages recents.") from exc
+
+    return [_message_from_row(row) for row in reversed(rows)]
+
+
 def _session_from_row(row: sqlite3.Row) -> ChatSession:
     return ChatSession(
         id=str(row["id"]),

@@ -27,7 +27,10 @@ class GmailMessage:
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
-GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+GMAIL_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/calendar.readonly",
+]
 
 
 def _resolve_local_path(path_value: str) -> Path:
@@ -46,15 +49,51 @@ def gmail_token_path() -> Path:
 
 
 def gmail_status() -> dict[str, object]:
+    token_scope_status = google_token_scope_status()
     return {
         "enabled": settings.eva_gmail_enabled,
         "credentials_path": str(gmail_credentials_path()),
         "credentials_exists": gmail_credentials_path().exists(),
         "token_path": str(gmail_token_path()),
         "token_exists": gmail_token_path().exists(),
+        "token_has_required_scopes": token_scope_status["has_required_scopes"],
+        "missing_scopes": token_scope_status["missing_scopes"],
         "scopes": GMAIL_SCOPES,
         "can_send": False,
         "send_requires_confirmation": True,
+    }
+
+
+def google_token_scope_status() -> dict[str, object]:
+    token_file = gmail_token_path()
+    if not token_file.exists():
+        return {
+            "has_required_scopes": False,
+            "missing_scopes": GMAIL_SCOPES,
+        }
+
+    try:
+        import json
+
+        payload = json.loads(token_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {
+            "has_required_scopes": False,
+            "missing_scopes": GMAIL_SCOPES,
+        }
+
+    raw_scopes = payload.get("scopes") or payload.get("scope") or []
+    if isinstance(raw_scopes, str):
+        scopes = set(raw_scopes.split())
+    elif isinstance(raw_scopes, list):
+        scopes = {str(scope) for scope in raw_scopes}
+    else:
+        scopes = set()
+
+    missing = [scope for scope in GMAIL_SCOPES if scope not in scopes]
+    return {
+        "has_required_scopes": not missing,
+        "missing_scopes": missing,
     }
 
 

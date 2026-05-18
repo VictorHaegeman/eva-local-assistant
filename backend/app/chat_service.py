@@ -13,6 +13,12 @@ from app.integrations.gmail_chat import (
     wants_gmail_reply_draft,
 )
 from app.integrations.gmail_client import GmailIntegrationError
+from app.integrations.google_setup_chat import (
+    build_calendar_events_response,
+    build_google_setup_response,
+    wants_calendar_events,
+    wants_google_account_setup,
+)
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
     build_linkedin_chat_response,
@@ -321,6 +327,38 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
+        if wants_calendar_events(latest_user_message):
+            if not trusted_actions:
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            "Google Calendar contient des donnees privees. Je peux le lire depuis "
+                            "le PC local ou Telegram autorise, mais pas depuis une session non fiable."
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": build_calendar_events_response(days=7),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
+        if wants_google_account_setup(latest_user_message):
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": build_google_setup_response(trusted_actions=trusted_actions),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         if not trusted_actions and (
             wants_gmail_list(latest_user_message) or wants_gmail_reply_draft(latest_user_message)
         ):
