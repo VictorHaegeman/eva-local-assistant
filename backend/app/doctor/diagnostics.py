@@ -8,7 +8,7 @@ from app.config import settings
 from app.heartbeat.scheduler import HEARTBEATS_PATH
 from app.integrations.linkedin_assistant import LINKEDIN_PATH
 from app.integrations.browser import find_browser
-from app.integrations.cli_tools import find_cursor_agent, find_gh
+from app.integrations.cli_tools import find_cursor_agent, find_gh, is_gh_authenticated
 from app.memory.memory_store import MEMORY_DB_PATH
 from app.memory.obsidian_store import obsidian_status
 from app.memory.profile_store import PROFILE_PATH, ProfileStoreError, load_profile
@@ -251,26 +251,34 @@ def _project_factory_check() -> dict[str, Any]:
     cursor_path = shutil.which("cursor")
     cursor_agent_path = find_cursor_agent()
     gh_path = find_gh()
+    gh_authenticated = is_gh_authenticated() if gh_path else False
     auto_github = settings.eva_project_factory_auto_github
     auto_push = settings.eva_project_factory_auto_push
     status: CheckStatus = "ok"
     message = "Project Factory prete pour workspace, presse-papiers et Cursor."
+    warnings: list[str] = []
 
     if settings.eva_project_factory_auto_open_cursor and not cursor_path:
-        status = "warning"
-        message = "Project Factory peut creer le workspace, mais Cursor CLI est introuvable."
+        warnings.append("Cursor CLI est introuvable.")
 
     if auto_github and not gh_path:
-        status = "warning"
-        message = "GitHub auto est active, mais `gh` CLI est introuvable."
+        warnings.append("GitHub auto est active, mais `gh` CLI est introuvable.")
+
+    if auto_github and gh_path and not gh_authenticated:
+        warnings.append("GitHub auto est active, mais `gh auth login` n'est pas encore fait.")
 
     if auto_push and not gh_path:
-        status = "warning"
-        message = "Push auto demande un repo GitHub cree via `gh`, mais `gh` CLI est introuvable."
+        warnings.append("Push auto demande un repo GitHub cree via `gh`, mais `gh` CLI est introuvable.")
+
+    if auto_push and gh_path and not gh_authenticated:
+        warnings.append("Push auto est active, mais `gh auth login` n'est pas encore fait.")
 
     if settings.eva_cursor_agent_enabled and not cursor_agent_path:
+        warnings.append("cursor-agent CLI est introuvable pour l'autonomie a distance.")
+
+    if warnings:
         status = "warning"
-        message = "Cursor GUI est disponible, mais cursor-agent CLI est introuvable pour l'autonomie a distance."
+        message = "Project Factory partiellement prete: " + " ".join(warnings)
 
     return _check(
         "project_factory",
@@ -286,6 +294,7 @@ def _project_factory_check() -> dict[str, Any]:
             "cursor_cli": cursor_path or "",
             "cursor_agent_cli": cursor_agent_path or "",
             "gh_cli": gh_path or "",
+            "gh_authenticated": gh_authenticated,
         },
     )
 

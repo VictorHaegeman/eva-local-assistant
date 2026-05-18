@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 
@@ -39,3 +40,21 @@ def find_cursor_agent() -> str:
     if local_app_data:
         candidates.append(Path(local_app_data) / "Programs" / "cursor-agent" / "cursor-agent.exe")
     return _existing(candidates)
+
+
+def is_gh_authenticated() -> bool:
+    gh = find_gh()
+    if not gh:
+        return False
+
+    try:
+        completed = subprocess.run(
+            [gh, "auth", "status"],
+            capture_output=True,
+            text=True,
+            timeout=12,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+    return completed.returncode == 0

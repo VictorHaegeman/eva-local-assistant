@@ -402,7 +402,11 @@ Variables utiles:
 EVA_CURSOR_AGENT_ENABLED=true
 EVA_CURSOR_AGENT_BACKGROUND=true
 EVA_TELEGRAM_CONTEXT_MESSAGES=16
+EVA_PROJECT_FACTORY_AUTO_GITHUB=true
+EVA_PROJECT_FACTORY_AUTO_PUSH=true
 ```
+
+Pour que GitHub soit vraiment autonome depuis Telegram, `gh auth status` doit etre OK sur le PC. Sans ca, Eva peut preparer le workspace et le commit local, mais la creation du repo et le push echoueront proprement.
 
 Par defaut, chaque action critique reste validable avec `/approve ID`.
 
