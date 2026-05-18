@@ -76,6 +76,22 @@ export async function getAutonomy() {
 }
 
 
+export async function getScreenStatus() {
+  return request("/screen/status");
+}
+
+
+export async function analyzeScreen(instruction = "", autoFix = true) {
+  return request("/screen/analyze", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ instruction, auto_fix: autoFix }),
+  });
+}
+
+
 export async function getMemories() {
   return request("/memories");
 }

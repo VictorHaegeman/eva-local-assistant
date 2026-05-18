@@ -98,6 +98,9 @@ Routes utiles:
 - `GET /autonomy/readiness`: etat de preparation memoire/autonomie.
 - `POST /terminal/error/analyze`: analyser une erreur terminal et lancer un correctif sur motif connu.
 - `POST /terminal/error/fix`: lancer un correctif Terminal Doctor connu.
+- `GET /screen/status`: verifier la lecture d'ecran locale.
+- `POST /screen/capture`: prendre une capture locale de l'ecran.
+- `POST /screen/analyze`: analyser les pixels avec un modele vision Ollama.
 - `GET /heartbeat/status`: statut des routines locales;
 - `GET /linkedin/status`: statut LinkedIn en mode brouillon + pont navigateur.
 - `POST /project-factory/plan`: previsualiser un projet depuis une idee;
@@ -342,6 +345,8 @@ Commandes Telegram:
 /calendar
 /history
 /terminal ERREUR
+/screen
+/ecran
 /pending
 /approve ID
 /reject ID
@@ -392,9 +397,52 @@ Terminal Doctor:
 
 ```text
 /terminal colle ici l'erreur PowerShell complete
+/screen lis mon ecran et detecte les erreurs visibles
 ```
 
 Eva reconnait deja certains motifs courants. Exemple: si PowerShell affiche `C:\Program n'est pas reconnu` apres une commande `C:\Program Files\GitHub CLI\gh.exe auth login`, Eva comprend que le chemin Windows n'etait pas quote et relance `gh auth login` avec le bon appel. La validation GitHub reste humaine dans le navigateur.
+
+## Lecture d'ecran locale
+
+Eva peut lire les pixels de ton ecran en local, sans OpenAI et sans cloud.
+
+Fonctionnement:
+
+- Eva prend une capture locale de l'ecran avec Python/Pillow;
+- la capture est envoyee a un modele vision Ollama local, par defaut `llava:7b`;
+- l'analyse est renvoyee dans le chat ou Telegram;
+- si une erreur terminal connue est visible et que le correctif est sur, Eva peut lancer le correctif Terminal Doctor.
+
+Installer le modele vision gratuit:
+
+```powershell
+ollama pull llava:7b
+```
+
+Variables utiles:
+
+```env
+EVA_SCREEN_ENABLED=true
+EVA_SCREEN_VISION_MODEL=llava:7b
+EVA_SCREEN_MAX_CAPTURES=20
+```
+
+Routes utiles:
+
+```text
+GET /screen/status
+POST /screen/capture
+POST /screen/analyze
+```
+
+Depuis Telegram:
+
+```text
+/screen
+/screen analyse mon ecran et dis-moi pourquoi ca bloque
+```
+
+Limite importante: Eva lit ce qui est visible dans la capture. Si la fenetre d'erreur est cachee, minimisee ou sur un autre bureau virtuel, elle ne pourra pas l'interpreter correctement.
 
 Routes locales utiles:
 
@@ -861,6 +909,12 @@ ollama --version
 ollama pull llama3.1:8b
 ```
 
+Pour la lecture d'ecran, installe aussi le modele vision local:
+
+```powershell
+ollama pull llava:7b
+```
+
 ## Tester le modele
 
 ```powershell
@@ -884,6 +938,9 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.1:8b
 OLLAMA_TIMEOUT_SECONDS=90
 OLLAMA_TEMPERATURE=0.7
+EVA_SCREEN_ENABLED=true
+EVA_SCREEN_VISION_MODEL=llava:7b
+EVA_SCREEN_MAX_CAPTURES=20
 CORS_ORIGINS=*
 ```
 

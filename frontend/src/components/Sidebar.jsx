@@ -3,6 +3,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   Cpu,
+  Eye,
   GitBranch,
   HeartPulse,
   Layers3,
@@ -60,6 +61,11 @@ const coreItems = [
     icon: BrainCircuit,
     label: "Memoire",
     panel: "memory",
+  },
+  {
+    icon: Eye,
+    label: "Ecran",
+    panel: "screen",
   },
   {
     icon: Wrench,

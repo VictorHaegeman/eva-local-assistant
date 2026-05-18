@@ -141,3 +141,74 @@ async def ask_ollama(
         raise OllamaClientError("Ollama n'a pas renvoye de reponse exploitable.")
 
     return content
+
+
+async def ask_ollama_vision(
+    image_base64: str,
+    prompt: str,
+    model: str,
+) -> str:
+    payload = {
+        "model": model,
+        "stream": False,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt,
+                "images": [image_base64],
+            }
+        ],
+        "options": {
+            "temperature": 0.1,
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.ollama_base_url,
+            timeout=max(settings.ollama_timeout_seconds, 120.0),
+        ) as client:
+            response = await client.post("/api/chat", json=payload)
+            response.raise_for_status()
+    except httpx.ConnectError as exc:
+        raise OllamaClientError(
+            "Ollama n'est pas lance ou n'est pas accessible pour l'analyse ecran."
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise OllamaClientError(
+            "Le modele vision Ollama ne repond pas assez vite. Utilise un modele plus leger."
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        error_text = _extract_ollama_error(exc.response)
+        if exc.response.status_code == 404 or _looks_like_missing_model(error_text):
+            raise OllamaClientError(
+                f"Le modele vision Ollama '{model}' n'est pas installe. Lance: ollama pull {model}"
+            ) from exc
+        detail = f" Detail Ollama: {error_text}" if error_text else ""
+        raise OllamaClientError(
+            f"L'API Ollama vision a repondu avec une erreur HTTP {exc.response.status_code}.{detail}"
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise OllamaClientError("Impossible de contacter l'API Ollama vision.") from exc
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise OllamaClientError("Ollama vision a renvoye une reponse non JSON.") from exc
+
+    if isinstance(data, dict) and data.get("error"):
+        error_text = str(data["error"])
+        if _looks_like_missing_model(error_text):
+            raise OllamaClientError(
+                f"Le modele vision Ollama '{model}' n'est pas installe. Lance: ollama pull {model}"
+            )
+        raise OllamaClientError(f"Erreur Ollama vision: {error_text}")
+
+    if not isinstance(data, dict):
+        raise OllamaClientError("Ollama vision a renvoye une reponse inattendue.")
+
+    content = data.get("message", {}).get("content", "").strip()
+    if not content:
+        raise OllamaClientError("Ollama vision n'a pas renvoye d'analyse exploitable.")
+
+    return content

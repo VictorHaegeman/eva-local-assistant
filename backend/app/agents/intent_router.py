@@ -5,6 +5,7 @@ from typing import Literal
 
 IntentName = Literal[
     "terminal_error",
+    "screen_read",
     "google_oauth_setup",
     "calendar_read",
     "gmail_read",
@@ -56,6 +57,29 @@ def classify_user_intent(message: str) -> UserIntent:
             name="terminal_error",
             confidence=0.95,
             summary="Diagnostiquer une erreur terminal et appliquer un correctif connu si possible.",
+        )
+
+    if _has_any(
+        text,
+        (
+            "lis l'ecran",
+            "lis mon ecran",
+            "regarde l'ecran",
+            "regarde mon ecran",
+            "analyse l'ecran",
+            "analyse mon ecran",
+            "screen",
+            "pixels",
+            "capture d'ecran",
+            "ce qu'il y a a l'ecran",
+            "ce qu il y a a l ecran",
+        ),
+    ):
+        return UserIntent(
+            name="screen_read",
+            confidence=0.9,
+            summary="Lire les pixels de l'ecran local et interpreter ce qui est visible.",
+            caution="La capture reste locale et peut contenir des donnees privees.",
         )
 
     google_context = _has_any(

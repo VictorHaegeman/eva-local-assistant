@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock3,
   Cpu,
+  Eye,
   GitBranch,
   HeartPulse,
   Layers3,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 
 import {
+  analyzeScreen,
   getActions,
   getAutonomy,
   getDoctor,
@@ -31,6 +33,7 @@ import {
   getMemories,
   getObsidianMemoryStatus,
   getProjects,
+  getScreenStatus,
   getSkills,
   getTools,
   generateSmartBrief,
@@ -61,6 +64,12 @@ const panelMeta = {
     kicker: "Hands",
     title: "Tools & permissions",
     description: "Les capacites actives d'Eva et les limites de securite.",
+  },
+  screen: {
+    icon: Eye,
+    kicker: "Vision",
+    title: "Lecture ecran",
+    description: "Capture locale des pixels et interpretation par un modele vision Ollama.",
   },
   skills: {
     icon: Layers3,
@@ -194,6 +203,8 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
   const [factoryIdea, setFactoryIdea] = useState("");
   const [factoryName, setFactoryName] = useState("");
   const [factoryResult, setFactoryResult] = useState(null);
+  const [screenInstruction, setScreenInstruction] = useState("Lis l'ecran et corrige l'erreur visible si le correctif est sur.");
+  const [screenResult, setScreenResult] = useState(null);
 
   const meta = panelMeta[panel] || panelMeta.doctor;
   const Icon = meta.icon;
@@ -208,6 +219,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
       const [tools, autonomy] = await Promise.all([getTools(), getAutonomy()]);
       return { ...tools, autonomy };
     }
+    if (panelName === "screen") return getScreenStatus();
     if (panelName === "skills") return getSkills();
     if (panelName === "heartbeat") return getHeartbeatStatus();
     if (panelName === "gmail") {
@@ -464,6 +476,72 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
             </div>
           ))}
         </div>
+      </>
+    );
+  }
+
+  async function handleAnalyzeScreen() {
+    setRunningJob("screen_analyze");
+    setScreenResult(null);
+    setError("");
+
+    try {
+      const result = await analyzeScreen(screenInstruction, true);
+      setScreenResult(result);
+      setJobResult("Ecran analyse localement.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
+  function renderScreen() {
+    const terminalDiagnosis = screenResult?.terminal_diagnosis || {};
+    const launched = screenResult?.launched;
+
+    return (
+      <>
+        <div className="panel-metrics">
+          <Metric label="lecture ecran" value={data?.enabled ? "on" : "off"} tone={data?.enabled ? "ok" : "warning"} />
+          <Metric label="Pillow" value={data?.pillow_available ? "pret" : "absent"} tone={data?.pillow_available ? "ok" : "warning"} />
+          <Metric label="modele vision" value={data?.vision_model || "llava:7b"} />
+        </div>
+        <section className="panel-card">
+          <h3>Analyse des pixels</h3>
+          <p>Eva capture l'ecran local, l'envoie a Ollama local, puis interprete ce qui est visible. Les captures restent dans data/screen_captures et sont ignorees par Git.</p>
+          <textarea
+            className="panel-textarea"
+            value={screenInstruction}
+            onChange={(event) => setScreenInstruction(event.target.value)}
+            rows={4}
+          />
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={handleAnalyzeScreen}
+              disabled={Boolean(runningJob)}
+            >
+              {runningJob === "screen_analyze" ? "Analyse..." : "Analyser ecran"}
+            </button>
+          </div>
+          <Field label="Captures" value={data?.capture_dir || "data/screen_captures"} />
+        </section>
+        {jobResult && <div className="panel-success">{jobResult}</div>}
+        {screenResult && (
+          <section className="panel-card">
+            <div className="panel-card-heading">
+              <h3>Resultat</h3>
+              <StatusPill tone={terminalDiagnosis.detected ? "warning" : "ok"}>
+                {terminalDiagnosis.detected ? "erreur detectee" : "analyse"}
+              </StatusPill>
+            </div>
+            <p>{screenResult.analysis}</p>
+            {terminalDiagnosis.detected && <Field label="Terminal Doctor" value={terminalDiagnosis.title} />}
+            {launched && <Field label="Action lancee" value={launched.message} />}
+          </section>
+        )}
       </>
     );
   }
@@ -900,6 +978,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panel === "memory") return renderMemory();
     if (panel === "chats") return renderChats();
     if (panel === "tools") return renderTools();
+    if (panel === "screen") return renderScreen();
     if (panel === "skills") return renderSkills();
     if (panel === "heartbeat") return renderHeartbeat();
     if (panel === "gmail") return renderGmail();

@@ -57,6 +57,7 @@ data/eva_socials.json
 data/eva_social_state.json
 data/obsidian_vault/
 data/cursor_agent_logs/
+data/screen_captures/
 data/gmail_credentials.json
 data/gmail_token.json
 data/gmail_token_*.json

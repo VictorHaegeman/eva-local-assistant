@@ -94,7 +94,7 @@ Reste:
 - relancer un prompt correctif si le resultat est incomplet;
 - envoyer un update Telegram pendant et apres execution;
 - ajouter `/jobs` Telegram.
-- lecture directe d'ecran/OCR optionnelle plus tard, seulement si elle est fiable et locale;
+- lecture directe d'ecran locale ajoutee: capture Pillow + modele vision Ollama `llava:7b` + commande Telegram `/screen`;
 - enrichir la base de correctifs Terminal Doctor.
 
 Prochaine execution:

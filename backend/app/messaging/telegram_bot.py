@@ -36,6 +36,7 @@ from app.project_factory.automation import (
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 from app.projects.project_chat import build_cursor_work_session_response
 from app.projects.project_store import ProjectStoreError
+from app.screen.screen_reader import ScreenReaderError, analyze_screen
 from app.terminal.terminal_doctor import (
     analyze_terminal_error,
     format_terminal_diagnosis,
@@ -140,6 +141,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/google - connecter Google/Gmail/Calendar sur le PC\n"
                 "/calendar - lire les prochains evenements Calendar\n"
                 "/history - revoir le fil Telegram recent\n"
+                "/screen - lire et interpreter l'ecran du PC\n"
                 "/terminal ERREUR - analyser/corriger une erreur terminal\n"
                 "/reset - oublier le fil Telegram courant\n"
                 "/pending - voir les actions en attente\n"
@@ -188,6 +190,29 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             content = " ".join(message.content.split())[:240]
             lines.append(f"- {prefix}: {content}")
         await _send_message(client, chat_id, "\n".join(lines))
+        return True
+
+    if command in {"/screen", "/ecran"}:
+        try:
+            result = await analyze_screen(
+                instruction=argument or "Lis l'ecran et detecte les erreurs visibles.",
+                auto_fix=True,
+            )
+        except ScreenReaderError as exc:
+            await _send_message(client, chat_id, f"Lecture ecran impossible: {exc}")
+            return True
+
+        launched = result.get("launched")
+        suffix = (
+            f"\n\nAction locale lancee: {launched.get('message')}"
+            if isinstance(launched, dict)
+            else ""
+        )
+        await _send_message(
+            client,
+            chat_id,
+            f"Analyse ecran via {result['vision_model']}:\n{result['analysis']}{suffix}",
+        )
         return True
 
     if command in {"/terminal", "/error", "/fix"}:

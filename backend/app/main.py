@@ -128,6 +128,12 @@ from app.social.instagram_public import (
     fetch_instagram_public_snapshots,
     instagram_status,
 )
+from app.screen.screen_reader import (
+    ScreenReaderError,
+    analyze_screen,
+    capture_screen,
+    screen_status,
+)
 from app.terminal.terminal_doctor import (
     TerminalDoctorError,
     analyze_terminal_error,
@@ -252,6 +258,11 @@ class BrowserOpenTabsRequest(BaseModel):
 
 class DailyLaunchRequest(BaseModel):
     force: bool = False
+
+
+class ScreenAnalyzeRequest(BaseModel):
+    instruction: str = Field(default="", max_length=2000)
+    auto_fix: bool = False
 
 
 class GmailReplyDraftRequest(BaseModel):
@@ -790,6 +801,30 @@ async def browser_open_tabs(request: BrowserOpenTabsRequest) -> dict[str, object
         "opened": opened,
         "rejected": rejected,
     }
+
+
+@app.get("/screen/status", dependencies=[Depends(require_sensitive_access)])
+async def screen_reader_status() -> dict[str, object]:
+    return screen_status()
+
+
+@app.post("/screen/capture", dependencies=[Depends(require_sensitive_access)])
+async def screen_reader_capture() -> dict[str, object]:
+    try:
+        return capture_screen()
+    except ScreenReaderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/screen/analyze", dependencies=[Depends(require_sensitive_access)])
+async def screen_reader_analyze(request: ScreenAnalyzeRequest) -> dict[str, object]:
+    try:
+        return await analyze_screen(
+            instruction=request.instruction,
+            auto_fix=request.auto_fix,
+        )
+    except ScreenReaderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/terminal/error/analyze", dependencies=[Depends(require_sensitive_access)])

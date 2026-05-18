@@ -49,6 +49,7 @@ from app.project_factory.automation import (
     project_factory_auto_status,
 )
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
+from app.screen.screen_reader import ScreenReaderError, analyze_screen
 from app.skills.registry import list_skills
 from app.terminal.terminal_doctor import (
     analyze_terminal_error,
@@ -211,6 +212,43 @@ async def process_chat_messages(
     context_blocks: list[str] = []
 
     try:
+        if user_intent.name == "screen_read":
+            if not trusted_actions:
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            "Lire l'ecran expose des donnees privees. Je peux le faire depuis "
+                            "le PC local ou Telegram autorise, pas depuis une session non fiable."
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+            screen_result = await analyze_screen(
+                instruction=latest_user_message,
+                auto_fix=True,
+            )
+            launched = screen_result.get("launched")
+            launched_line = (
+                f"\n\nAction locale lancee: {launched.get('message')}"
+                if isinstance(launched, dict)
+                else ""
+            )
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        f"{intent_context}\n\n"
+                        f"Analyse ecran via {screen_result['vision_model']}:\n"
+                        f"{screen_result['analysis']}"
+                        f"{launched_line}"
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         if user_intent.name == "terminal_error" or looks_like_terminal_error(latest_user_message):
             diagnosis = analyze_terminal_error(latest_user_message)
             launched = None
@@ -315,7 +353,7 @@ async def process_chat_messages(
                 "saved_memory": None,
                 "pending_action": action_to_dict(pending_action),
             }
-    except (ActionStoreError, ProjectFactoryError) as exc:
+    except (ActionStoreError, ProjectFactoryError, ScreenReaderError) as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:
