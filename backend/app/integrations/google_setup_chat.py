@@ -66,10 +66,17 @@ def build_calendar_events_response(days: int = 7) -> str:
     return "\n".join(lines)
 
 
-def build_google_setup_response(trusted_actions: bool = False) -> str:
+def build_google_setup_response(
+    trusted_actions: bool = False,
+    intent_context: str = "",
+) -> str:
     gmail = gmail_status()
     calendar = calendar_status()
-    lines = [
+    lines = []
+    if intent_context:
+        lines.extend([intent_context, ""])
+
+    lines.extend([
         "J'ai trouve la brique locale Google dans Eva.",
         "",
         f"Script OAuth: {GMAIL_AUTH_SCRIPT}",
@@ -88,7 +95,7 @@ def build_google_setup_response(trusted_actions: bool = False) -> str:
         f"- JSON OAuth present: {gmail['credentials_exists']}",
         f"- token local present: {gmail['token_exists']}",
         f"- scopes requis OK: {gmail['token_has_required_scopes']}",
-    ]
+    ])
 
     missing_scopes = gmail.get("missing_scopes") or calendar.get("missing_scopes") or []
     if missing_scopes:

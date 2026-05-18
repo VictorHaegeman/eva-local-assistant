@@ -24,6 +24,7 @@ Eva possede deja:
 
 - elle comprend la demande;
 - elle choisit le bon outil;
+- elle corrige l'intention quand les mots de Victor sont approximatifs;
 - elle execute seule les actions non critiques;
 - elle garde le contexte et apprend les infos utiles;
 - elle notifie Victor quand elle travaille, bloque ou termine;
@@ -31,6 +32,8 @@ Eva possede deja:
 - elle journalise ce qu'elle fait;
 - elle ne stocke jamais de secrets en memoire;
 - elle ne publie/envoie rien sans regle explicite.
+
+Eva possede maintenant une couche `intent_router`: elle classe la demande avant d'appeler les outils. Exemple: "recupere mon script Google et colle-le dans le code" devient `google_oauth_setup`, avec correction: le JSON OAuth ne doit pas aller dans le code, mais dans `data/gmail_credentials.json`.
 
 ## Piste 1 - Memory
 

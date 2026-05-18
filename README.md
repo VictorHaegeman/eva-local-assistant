@@ -37,6 +37,7 @@ Protection actuelle:
 - Telegram n'est accepte que si `EVA_TELEGRAM_ALLOWED_CHAT_ID` correspond a ton chat personnel;
 - les actions de type suppression, publication, envoi ou `git push` restent hors automatisation par defaut;
 - les lectures fichier passent uniquement par les dossiers autorises dans `data/eva_allowed_paths.json`.
+- Eva interprete l'intention avant de lancer un outil. Exemple: si Victor demande de "recuperer le script Google et le coller dans le code", Eva comprend que le "script" est le JSON OAuth Google Cloud, refuse de le coller dans le code, et utilise `data/gmail_credentials.json` puis le flux OAuth local.
 
 Variable optionnelle:
 

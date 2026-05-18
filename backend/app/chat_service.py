@@ -7,6 +7,7 @@ from app.config import settings
 from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
 from app.heartbeat.scheduler import HeartbeatError, heartbeat_status
+from app.agents.intent_router import classify_user_intent, format_intent_context
 from app.integrations.gmail_chat import (
     build_gmail_chat_response,
     wants_gmail_list,
@@ -205,10 +206,12 @@ async def process_chat_messages(
 
     saved_memory = None
     latest_user_message = safe_messages[-1]["content"]
+    user_intent = classify_user_intent(latest_user_message)
+    intent_context = format_intent_context(user_intent)
     context_blocks: list[str] = []
 
     try:
-        if looks_like_terminal_error(latest_user_message):
+        if user_intent.name == "terminal_error" or looks_like_terminal_error(latest_user_message):
             diagnosis = analyze_terminal_error(latest_user_message)
             launched = None
             if trusted_actions and diagnosis.fix and diagnosis.fix.safe_to_launch:
@@ -216,13 +219,26 @@ async def process_chat_messages(
             return {
                 "message": {
                     "role": "assistant",
-                    "content": format_terminal_diagnosis(diagnosis, launched=launched),
+                        "content": f"{intent_context}\n\n{format_terminal_diagnosis(diagnosis, launched=launched)}",
                 },
                 "saved_memory": None,
                 "pending_action": None,
             }
 
-        if _should_create_project_factory_plan(latest_user_message):
+        if user_intent.name == "google_oauth_setup":
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": build_google_setup_response(
+                        trusted_actions=trusted_actions,
+                        intent_context=intent_context,
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
+        if user_intent.name == "project_factory" or _should_create_project_factory_plan(latest_user_message):
             if not trusted_actions:
                 return {
                     "message": {
@@ -347,7 +363,7 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        if wants_calendar_events(latest_user_message):
+        if user_intent.name == "calendar_read" or wants_calendar_events(latest_user_message):
             if not trusted_actions:
                 return {
                     "message": {
@@ -373,14 +389,19 @@ async def process_chat_messages(
             return {
                 "message": {
                     "role": "assistant",
-                    "content": build_google_setup_response(trusted_actions=trusted_actions),
+                    "content": build_google_setup_response(
+                        trusted_actions=trusted_actions,
+                        intent_context=intent_context,
+                    ),
                 },
                 "saved_memory": None,
                 "pending_action": None,
             }
 
         if not trusted_actions and (
-            wants_gmail_list(latest_user_message) or wants_gmail_reply_draft(latest_user_message)
+            user_intent.name in {"gmail_read", "gmail_reply_draft"}
+            or wants_gmail_list(latest_user_message)
+            or wants_gmail_reply_draft(latest_user_message)
         ):
             return {
                 "message": {
