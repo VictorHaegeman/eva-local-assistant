@@ -11,6 +11,7 @@ from app.agents.intent_router import classify_user_intent, format_intent_context
 from app.integrations.gmail_chat import (
     build_gmail_chat_response,
     format_gmail_message_list,
+    wants_gmail_open,
     wants_gmail_list,
     wants_gmail_reply_draft,
 )
@@ -405,6 +406,7 @@ async def process_chat_messages(
         calendar_requested = user_intent.name == "calendar_read" or wants_calendar_events(latest_user_message)
         gmail_requested = (
             user_intent.name in {"gmail_read", "gmail_reply_draft"}
+            or wants_gmail_open(latest_user_message)
             or wants_gmail_list(latest_user_message)
             or wants_gmail_reply_draft(latest_user_message)
         )

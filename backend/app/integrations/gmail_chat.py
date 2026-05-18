@@ -1,7 +1,10 @@
+import re
 import unicodedata
 
+from app.integrations.browser import open_url
 from app.integrations.gmail_client import (
     GmailIntegrationError,
+    GmailMessage,
     find_sent_examples,
     format_email_for_prompt,
     format_sent_examples_for_prompt,
@@ -37,6 +40,26 @@ def _has_gmail_context(normalized: str) -> bool:
     )
 
 
+def _message_index_from_request(message: str) -> int:
+    normalized = _normalize(message)
+    if any(marker in normalized for marker in ("deuxieme", "2eme", "2e", "second")):
+        return 1
+    if any(marker in normalized for marker in ("troisieme", "3eme", "3e")):
+        return 2
+    if any(marker in normalized for marker in ("quatrieme", "4eme", "4e")):
+        return 3
+    return 0
+
+
+def wants_gmail_open(message: str) -> bool:
+    normalized = _normalize(message)
+    open_markers = ("ouvre", "ouvrir", "open", "brave", "navigateur", "browser")
+    return (
+        _has_gmail_context(normalized)
+        or ("mail" in normalized and any(marker in normalized for marker in open_markers))
+    ) and any(marker in normalized for marker in open_markers)
+
+
 def wants_gmail_list(message: str) -> bool:
     normalized = _normalize(message)
     return _has_gmail_context(normalized) and any(
@@ -69,6 +92,107 @@ def wants_gmail_reply_draft(message: str) -> bool:
     )
 
 
+def _gmail_thread_url(message: GmailMessage) -> str:
+    thread = message.thread_id or message.id
+    return f"https://mail.google.com/mail/u/0/#all/{thread}"
+
+
+def _extract_urls(text: str) -> list[str]:
+    if not text:
+        return []
+    candidates = re.findall(r"https?://[^\s)\]>\"']+", text)
+    cleaned: list[str] = []
+    seen = set()
+    for candidate in candidates:
+        url = candidate.rstrip(".,;")
+        if url in seen:
+            continue
+        seen.add(url)
+        cleaned.append(url)
+    return cleaned
+
+
+def _select_relevant_external_link(message: GmailMessage) -> str:
+    text = "\n".join([message.subject, message.snippet, message.body])
+    urls = _extract_urls(text)
+    if not urls:
+        return ""
+
+    ignored = (
+        "unsubscribe",
+        "desabonnement",
+        "preferences",
+        "privacy",
+        "facebook.com",
+        "twitter.com",
+        "instagram",
+        "linkedin",
+        "/static/",
+        "logo",
+        "transparent",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+    )
+    priority_paths = ("/annonce", "/annonces", "voir_annonce", "voir-annonce")
+    priority_domains = ("bienici.com", "pap.fr", "seloger.com", "leboncoin.fr")
+
+    for url in urls:
+        lowered = url.lower()
+        if any(marker in lowered for marker in ignored):
+            continue
+        if any(marker in lowered for marker in priority_paths):
+            return url
+
+    for url in urls:
+        lowered = url.lower()
+        if any(marker in lowered for marker in ignored):
+            continue
+        if any(domain in lowered for domain in priority_domains):
+            return url
+
+    for url in urls:
+        lowered = url.lower()
+        if not any(marker in lowered for marker in ignored):
+            return url
+
+    return ""
+
+
+def _looks_like_housing_message(message: GmailMessage) -> bool:
+    text = _normalize(" ".join([message.subject, message.sender, message.snippet, message.body[:1500]]))
+    return any(
+        marker in text
+        for marker in (
+            "appartement",
+            "studio",
+            "location",
+            "logement",
+            "bienici",
+            "pap.fr",
+            "demande de contact",
+            "alerte email",
+        )
+    )
+
+
+def open_gmail_message_in_browser(message: GmailMessage, open_related_link: bool = False) -> dict[str, str]:
+    gmail_url = _gmail_thread_url(message)
+    open_url(gmail_url)
+
+    related_link = ""
+    if open_related_link:
+        related_link = _select_relevant_external_link(message)
+        if related_link:
+            open_url(related_link)
+
+    return {
+        "gmail_url": gmail_url,
+        "related_link": related_link,
+    }
+
+
 def format_gmail_message_list() -> str:
     messages = list_gmail_messages(max_results=5)
     if not messages:
@@ -90,18 +214,55 @@ def format_gmail_message_list() -> str:
 
 
 async def build_gmail_chat_response(message: str, force_list: bool = False) -> str | None:
-    if wants_gmail_reply_draft(message):
-        messages = list_gmail_messages(max_results=1)
-        if not messages:
-            return "Je n'ai trouve aucun mail recent auquel preparer une reponse."
+    open_requested = wants_gmail_open(message)
+    reply_requested = wants_gmail_reply_draft(message)
 
-        original = get_gmail_message(messages[0].id)
+    if open_requested or reply_requested:
+        selected_index = _message_index_from_request(message)
+        messages = list_gmail_messages(max_results=max(5, selected_index + 1))
+        if not messages:
+            return "Source: Gmail API.\nJe n'ai trouve aucun mail recent a ouvrir ou traiter."
+
+        if selected_index >= len(messages):
+            return f"Source: Gmail API.\nJe n'ai trouve que {len(messages)} mail(s) recent(s), pas de mail numero {selected_index + 1}."
+
+        original = get_gmail_message(messages[selected_index].id)
+        lines = [
+            "Source: Gmail API, lecture seule.",
+            f"Mail source: {original.subject} ({original.sender})",
+        ]
+
+        should_open_related_link = open_requested and (
+            "annonce" in _normalize(message) or _looks_like_housing_message(original)
+        )
+        if open_requested:
+            opened = open_gmail_message_in_browser(
+                original,
+                open_related_link=should_open_related_link,
+            )
+            lines.append(f"J'ai ouvert le mail reel dans Brave: {opened['gmail_url']}")
+            if opened["related_link"]:
+                lines.append(f"J'ai aussi ouvert le lien pertinent detecte dans le mail: {opened['related_link']}")
+
+        if _looks_like_housing_message(original):
+            lines.append(
+                "Lecture rapide: ce mail ressemble a un signal immobilier. "
+                "Est-ce que tu cherches un nouvel appartement ? Si oui, je peux preparer un rendez-vous "
+                "dans le calendrier, mais l'ajout restera a confirmer."
+            )
+
+        if not reply_requested:
+            return "\n\n".join(lines)
+
         examples = find_sent_examples(original.sender_email)
 
         prompt = f"""
 Tu dois rediger un brouillon de reponse email pour Victor.
 Ne dis jamais que le mail a ete envoye.
 La reponse doit etre prete a relire, modifier et valider par Victor.
+Tu reponds comme Victor, jamais comme l'expediteur du mail.
+Utilise uniquement le contenu du mail recu ci-dessous. N'invente pas de prix, surface, rendez-vous, adresse ou caracteristiques absentes.
+Si le mail vient d'une adresse no-reply, d'une alerte automatique ou d'une notification, dis clairement que la reponse email directe est deconseillee et propose l'action la plus logique.
 
 Profil local:
 {build_profile_prompt_context()}
@@ -116,9 +277,10 @@ Exemples de mails deja envoyes par Victor:
 {format_sent_examples_for_prompt(examples)}
 
 Donne uniquement:
-1. Objet propose;
-2. Brouillon du mail;
-3. Points a verifier avant envoi.
+1. Diagnostic du mail;
+2. Reponse conseillee: oui/non;
+3. Brouillon uniquement si une reponse email a du sens;
+4. Actions proposees a Victor.
 """.strip()
 
         try:
@@ -126,11 +288,8 @@ Donne uniquement:
         except OllamaClientError as exc:
             raise GmailIntegrationError(str(exc)) from exc
 
-        return (
-            "J'ai prepare un brouillon, sans envoyer le mail.\n\n"
-            f"Mail source: {original.subject} ({original.sender})\n\n"
-            f"{draft}"
-        )
+        lines.extend(["J'ai prepare une proposition, sans envoyer le mail.", draft])
+        return "\n\n".join(lines)
 
     if force_list or wants_gmail_list(message):
         return format_gmail_message_list()
