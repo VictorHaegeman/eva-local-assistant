@@ -7,7 +7,9 @@ AUTO_ACTION_ORDER = {
     "project_workspace_create": 10,
     "clipboard_set_prompt": 20,
     "cursor_open_project": 30,
-    "github_repo_create": 40,
+    "git_initial_commit": 40,
+    "github_repo_create": 50,
+    "git_push": 60,
 }
 
 
@@ -21,8 +23,14 @@ def _auto_enabled_for(action: EvaAction) -> tuple[bool, str]:
     if action.action_type == "cursor_open_project":
         return settings.eva_project_factory_auto_open_cursor, "auto_open_cursor desactive"
 
+    if action.action_type == "git_initial_commit":
+        return settings.eva_project_factory_auto_commit, "auto_commit desactive"
+
     if action.action_type == "github_repo_create":
         return settings.eva_project_factory_auto_github, "auto_github desactive"
+
+    if action.action_type == "git_push":
+        return settings.eva_project_factory_auto_push, "auto_push desactive"
 
     return action.action_type == "project_workspace_create", "action non auto"
 
@@ -55,7 +63,9 @@ def project_factory_auto_status() -> dict[str, object]:
         "auto_execute": settings.eva_project_factory_auto_execute,
         "auto_copy_prompt": settings.eva_project_factory_auto_copy_prompt,
         "auto_open_cursor": settings.eva_project_factory_auto_open_cursor,
+        "auto_commit": settings.eva_project_factory_auto_commit,
         "auto_github": settings.eva_project_factory_auto_github,
+        "auto_push": settings.eva_project_factory_auto_push,
     }
 
 

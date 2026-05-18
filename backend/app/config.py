@@ -70,8 +70,12 @@ class Settings:
     eva_cursor_auto_copy_prompt: bool = _env_bool("EVA_CURSOR_AUTO_COPY_PROMPT", True)
     eva_cursor_auto_open_project: bool = _env_bool("EVA_CURSOR_AUTO_OPEN_PROJECT", True)
     eva_cursor_write_prompt_file: bool = _env_bool("EVA_CURSOR_WRITE_PROMPT_FILE", True)
+    eva_cursor_agent_enabled: bool = _env_bool("EVA_CURSOR_AGENT_ENABLED", True)
+    eva_cursor_agent_background: bool = _env_bool("EVA_CURSOR_AGENT_BACKGROUND", True)
+    eva_telegram_context_messages: int = _env_int("EVA_TELEGRAM_CONTEXT_MESSAGES", 16)
     eva_projects_dir: str = os.getenv("EVA_PROJECTS_DIR", r"C:\Users\victo\Desktop\Cursor")
     eva_project_factory_auto_execute: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_EXECUTE", False)
+    eva_project_factory_auto_commit: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_COMMIT", True)
     eva_project_factory_auto_copy_prompt: bool = _env_bool(
         "EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT",
         True,
@@ -81,6 +85,7 @@ class Settings:
         True,
     )
     eva_project_factory_auto_github: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_GITHUB", False)
+    eva_project_factory_auto_push: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_PUSH", False)
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")
     eva_telegram_allowed_chat_id: str = os.getenv("EVA_TELEGRAM_ALLOWED_CHAT_ID", "")

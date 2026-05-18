@@ -339,6 +339,42 @@ Pour `/cursor` et `/codex`, Eva:
 - ecrit `EVA_CURSOR_PROMPT.md` dans le projet;
 - copie le prompt dans le presse-papiers Windows;
 - ouvre Cursor sur le projet.
+- lance `cursor-agent` en arriere-plan si Cursor Agent CLI est installe.
+
+Le contexte Telegram est conserve localement sur les derniers messages, donc Eva garde le fil d'une conversation iPhone. Tu peux repartir a zero avec:
+
+```text
+/reset
+```
+
+Autonomie Cursor a distance:
+
+- si `cursor-agent` est disponible, Eva peut lancer un vrai job agent depuis Telegram;
+- sinon elle ouvre Cursor et prepare le prompt, mais le collage dans l'interface reste un fallback local;
+- docs Cursor Agent CLI: https://docs.cursor.com/en/cli/overview
+
+Verification:
+
+```powershell
+cursor-agent --help
+gh --version
+gh auth status
+```
+
+Si `gh` est absent, installe GitHub CLI puis connecte-toi:
+
+```powershell
+winget install --id GitHub.cli
+gh auth login
+```
+
+Variables utiles:
+
+```env
+EVA_CURSOR_AGENT_ENABLED=true
+EVA_CURSOR_AGENT_BACKGROUND=true
+EVA_TELEGRAM_CONTEXT_MESSAGES=16
+```
 
 Par defaut, chaque action critique reste validable avec `/approve ID`.
 
@@ -346,9 +382,11 @@ Mode confiance pour tes nouvelles idees:
 
 ```env
 EVA_PROJECT_FACTORY_AUTO_EXECUTE=true
+EVA_PROJECT_FACTORY_AUTO_COMMIT=true
 EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT=true
 EVA_PROJECT_FACTORY_AUTO_OPEN_CURSOR=true
 EVA_PROJECT_FACTORY_AUTO_GITHUB=true
+EVA_PROJECT_FACTORY_AUTO_PUSH=true
 ```
 
 Avec ce mode active dans `backend/.env`, quand tu envoies `/project ...` ou que tu demandes dans le chat de creer un nouveau projet, Eva lance directement le flux Project Factory:
@@ -358,7 +396,9 @@ Avec ce mode active dans `backend/.env`, quand tu envoies `/project ...` ou que 
 - initialisation Git locale si `git` est disponible;
 - copie du prompt Cursor dans le presse-papiers;
 - ouverture du projet dans Cursor si la CLI `cursor` est disponible;
-- creation du repo GitHub via `gh` si `EVA_PROJECT_FACTORY_AUTO_GITHUB=true` et `gh auth login` est deja configure.
+- commit initial local si `EVA_PROJECT_FACTORY_AUTO_COMMIT=true`;
+- creation du repo GitHub via `gh` si `EVA_PROJECT_FACTORY_AUTO_GITHUB=true` et `gh auth login` est deja configure;
+- push vers GitHub si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
 
 Ce mode ne donne pas carte blanche a tout le PC: il ne supprime rien, n'envoie pas de message, ne publie pas de contenu et n'appelle pas OpenAI. Il execute seulement le flux Project Factory borne a ton dossier projets.
 

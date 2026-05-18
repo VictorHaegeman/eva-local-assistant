@@ -183,7 +183,15 @@ class ProjectFactoryPlanRequest(BaseModel):
 
 
 class ActionCreateRequest(BaseModel):
-    action_type: Literal["command", "read_file", "write_file", "delete_path", "codex_prompt"]
+    action_type: Literal[
+        "command",
+        "read_file",
+        "write_file",
+        "delete_path",
+        "codex_prompt",
+        "git_initial_commit",
+        "git_push",
+    ]
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(default="", max_length=2000)
     payload: dict[str, object] = Field(default_factory=dict)

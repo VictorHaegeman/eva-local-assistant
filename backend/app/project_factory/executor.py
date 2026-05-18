@@ -84,6 +84,18 @@ def _run_quiet(command: str, cwd: Path) -> str:
     return "\n".join(output)
 
 
+def _git_current_branch(cwd: Path) -> str:
+    completed = subprocess.run(
+        ["git", "branch", "--show-current"],
+        cwd=str(cwd),
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    branch = completed.stdout.strip()
+    return branch or "main"
+
+
 def execute_project_workspace_create(action: EvaAction) -> str:
     payload = action.payload
     workspace = _resolve_workspace(str(payload.get("workspace_path", "")))
@@ -130,6 +142,47 @@ def execute_clipboard_set_prompt(action: EvaAction) -> str:
     if completed.returncode != 0:
         raise ProjectFactoryExecutionError(completed.stderr or "Impossible de copier le prompt.")
     return "Prompt copie dans le presse-papiers Windows."
+
+
+def execute_git_initial_commit(action: EvaAction) -> str:
+    workspace = _resolve_workspace(str(action.payload.get("workspace_path", "")))
+    commit_message = str(action.payload.get("commit_message", "Initial project scaffold")).strip()
+    if not workspace.exists():
+        raise ProjectFactoryExecutionError("Workspace introuvable. Cree-le d'abord.")
+    if not shutil.which("git"):
+        raise ProjectFactoryExecutionError("Git introuvable dans le PATH.")
+
+    outputs = []
+    if not (workspace / ".git").exists():
+        outputs.append(_run_quiet("git init", workspace))
+
+    outputs.append(_run_quiet("git add .", workspace))
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=str(workspace),
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    if not status.stdout.strip():
+        return "Aucun changement a commit.\n" + "\n\n".join(outputs)
+
+    completed = subprocess.run(
+        ["git", "commit", "-m", commit_message],
+        cwd=str(workspace),
+        text=True,
+        capture_output=True,
+        timeout=60,
+    )
+    outputs.append(f"git commit -m \"{commit_message}\"\nexit_code={completed.returncode}")
+    if completed.stdout:
+        outputs.append(completed.stdout[-4000:])
+    if completed.stderr:
+        outputs.append(completed.stderr[-4000:])
+    if completed.returncode != 0:
+        raise ProjectFactoryExecutionError("\n".join(outputs))
+
+    return "\n".join(outputs)
 
 
 def execute_cursor_open_project(action: EvaAction) -> str:
@@ -182,3 +235,38 @@ def execute_github_repo_create(action: EvaAction) -> str:
     if completed.returncode != 0:
         raise ProjectFactoryExecutionError("\n".join(output))
     return "\n".join(["Repo GitHub cree via gh CLI.", *output])
+
+
+def execute_git_push(action: EvaAction) -> str:
+    workspace = _resolve_workspace(str(action.payload.get("workspace_path", "")))
+    if not workspace.exists():
+        raise ProjectFactoryExecutionError("Workspace introuvable. Cree-le d'abord.")
+    if not shutil.which("git"):
+        raise ProjectFactoryExecutionError("Git introuvable dans le PATH.")
+
+    remotes = subprocess.run(
+        ["git", "remote"],
+        cwd=str(workspace),
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    if "origin" not in remotes.stdout.split():
+        raise ProjectFactoryExecutionError("Remote origin absent. Cree d'abord le repo GitHub.")
+
+    branch = _git_current_branch(workspace)
+    completed = subprocess.run(
+        ["git", "push", "-u", "origin", branch],
+        cwd=str(workspace),
+        text=True,
+        capture_output=True,
+        timeout=120,
+    )
+    output = [f"git push -u origin {branch}", f"exit_code={completed.returncode}"]
+    if completed.stdout:
+        output.append(completed.stdout[-8000:])
+    if completed.stderr:
+        output.append(completed.stderr[-8000:])
+    if completed.returncode != 0:
+        raise ProjectFactoryExecutionError("\n".join(output))
+    return "\n".join(output)

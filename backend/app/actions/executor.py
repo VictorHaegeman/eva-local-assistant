@@ -9,6 +9,8 @@ from app.integrations.linkedin_browser import execute_linkedin_browser_prepare_p
 from app.project_factory.executor import (
     execute_clipboard_set_prompt,
     execute_cursor_open_project,
+    execute_git_initial_commit,
+    execute_git_push,
     execute_github_repo_create,
     execute_project_workspace_create,
 )
@@ -163,8 +165,12 @@ def execute_action(action_id: int, require_approval: bool = True) -> dict[str, o
             result = execute_clipboard_set_prompt(action)
         elif action.action_type == "cursor_open_project":
             result = execute_cursor_open_project(action)
+        elif action.action_type == "git_initial_commit":
+            result = execute_git_initial_commit(action)
         elif action.action_type == "github_repo_create":
             result = execute_github_repo_create(action)
+        elif action.action_type == "git_push":
+            result = execute_git_push(action)
         elif action.action_type == "linkedin_browser_prepare_post":
             result = execute_linkedin_browser_prepare_post(action)
         else:

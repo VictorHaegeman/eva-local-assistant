@@ -248,8 +248,10 @@ def _telegram_check() -> dict[str, Any]:
 
 def _project_factory_check() -> dict[str, Any]:
     cursor_path = shutil.which("cursor")
+    cursor_agent_path = shutil.which("cursor-agent")
     gh_path = shutil.which("gh")
     auto_github = settings.eva_project_factory_auto_github
+    auto_push = settings.eva_project_factory_auto_push
     status: CheckStatus = "ok"
     message = "Project Factory prete pour workspace, presse-papiers et Cursor."
 
@@ -261,6 +263,14 @@ def _project_factory_check() -> dict[str, Any]:
         status = "warning"
         message = "GitHub auto est active, mais `gh` CLI est introuvable."
 
+    if auto_push and not gh_path:
+        status = "warning"
+        message = "Push auto demande un repo GitHub cree via `gh`, mais `gh` CLI est introuvable."
+
+    if settings.eva_cursor_agent_enabled and not cursor_agent_path:
+        status = "warning"
+        message = "Cursor GUI est disponible, mais cursor-agent CLI est introuvable pour l'autonomie a distance."
+
     return _check(
         "project_factory",
         status,
@@ -269,8 +279,11 @@ def _project_factory_check() -> dict[str, Any]:
             "auto_execute": settings.eva_project_factory_auto_execute,
             "auto_copy_prompt": settings.eva_project_factory_auto_copy_prompt,
             "auto_open_cursor": settings.eva_project_factory_auto_open_cursor,
+            "auto_commit": settings.eva_project_factory_auto_commit,
             "auto_github": auto_github,
+            "auto_push": auto_push,
             "cursor_cli": cursor_path or "",
+            "cursor_agent_cli": cursor_agent_path or "",
             "gh_cli": gh_path or "",
         },
     )

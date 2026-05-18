@@ -231,6 +231,21 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
             "visibility": "private",
         },
     )
+    commit_action = create_action(
+        action_type="git_initial_commit",
+        title=f"Commit initial pour {plan['project_name']}",
+        description="Cree un commit local initial dans le workspace projet.",
+        payload={
+            "workspace_path": plan["workspace_path"],
+            "commit_message": "Initial project scaffold",
+        },
+    )
+    push_action = create_action(
+        action_type="git_push",
+        title=f"Pousser {plan['project_name']} sur GitHub",
+        description="Pousse la branche locale vers origin via Git.",
+        payload={"workspace_path": plan["workspace_path"]},
+    )
 
     return {
         "plan": plan,
@@ -238,6 +253,8 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
             workspace_action,
             clipboard_action,
             cursor_action,
+            commit_action,
             github_action,
+            push_action,
         ],
     }

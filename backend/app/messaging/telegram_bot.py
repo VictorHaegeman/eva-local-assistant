@@ -14,6 +14,11 @@ from app.actions.action_store import (
 from app.actions.executor import ActionExecutionError, execute_action
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.messaging.telegram_memory import (
+    append_telegram_exchange,
+    clear_telegram_context,
+    load_telegram_context,
+)
 from app.project_factory.automation import (
     auto_execute_project_factory_actions,
     format_project_factory_results,
@@ -118,6 +123,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/idea IDEE - alias de /project\n"
                 "/cursor PROJET + TACHE - ouvrir Cursor et copier le prompt\n"
                 "/codex PROJET + TACHE - alias de /cursor\n"
+                "/reset - oublier le fil Telegram courant\n"
                 "/pending - voir les actions en attente\n"
                 "/approve ID - valider et executer une action\n"
                 "/reject ID - refuser une action\n"
@@ -129,6 +135,11 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
 
     if command == "/status":
         await _send_message(client, chat_id, "Eva Telegram est active sur ce PC.")
+        return True
+
+    if command == "/reset":
+        clear_telegram_context(chat_id)
+        await _send_message(client, chat_id, "Contexte Telegram remis a zero.")
         return True
 
     if command in {"/project", "/idea"}:
@@ -237,8 +248,9 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             return
 
     try:
+        context = load_telegram_context(chat_id)
         result = await process_chat_messages(
-            [{"role": "user", "content": text}],
+            [*context, {"role": "user", "content": text}],
             trusted_actions=True,
         )
     except ChatServiceError as exc:
@@ -250,7 +262,9 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
     if isinstance(pending_action, dict):
         suffix = f"\n\nAction en attente: #{pending_action.get('id')} - /approve {pending_action.get('id')}"
 
-    await _send_message(client, chat_id, f"{result['message']['content']}{suffix}")
+    assistant_text = str(result["message"]["content"])
+    append_telegram_exchange(chat_id, text, assistant_text)
+    await _send_message(client, chat_id, f"{assistant_text}{suffix}")
 
 
 async def _handle_update(client: httpx.AsyncClient, update: dict[str, Any]) -> None:

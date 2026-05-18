@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
 from app.config import settings
@@ -11,6 +12,9 @@ class CursorBridgeError(Exception):
 
 
 PROMPT_FILE_NAME = "EVA_CURSOR_PROMPT.md"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DATA_DIR = PROJECT_ROOT / "data"
+CURSOR_AGENT_LOG_DIR = DATA_DIR / "cursor_agent_logs"
 
 
 def _set_clipboard(text: str) -> None:
@@ -52,6 +56,54 @@ def _open_cursor(project_path: Path) -> str:
     return cursor
 
 
+def find_cursor_agent() -> str:
+    return shutil.which("cursor-agent") or ""
+
+
+def _start_cursor_agent(project_path: Path, prompt: str) -> dict[str, object]:
+    cursor_agent = find_cursor_agent()
+    if not cursor_agent:
+        return {
+            "available": False,
+            "started": False,
+            "log_path": "",
+            "message": "cursor-agent introuvable dans le PATH.",
+        }
+
+    CURSOR_AGENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    log_path = CURSOR_AGENT_LOG_DIR / f"{project_path.name}-{timestamp}.log"
+    log_file = log_path.open("w", encoding="utf-8")
+
+    command = [
+        cursor_agent,
+        "-p",
+        prompt,
+        "--output-format",
+        "text",
+    ]
+    creationflags = 0
+    if settings.eva_cursor_agent_background and hasattr(subprocess, "CREATE_NEW_PROCESS_GROUP"):
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+
+    subprocess.Popen(
+        command,
+        cwd=str(project_path),
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=False,
+        creationflags=creationflags,
+    )
+
+    return {
+        "available": True,
+        "started": True,
+        "log_path": str(log_path),
+        "message": "cursor-agent lance en arriere-plan.",
+    }
+
+
 def prepare_cursor_work_session(project_name: str, task: str) -> dict[str, object]:
     project = get_project(project_name)
     project_path = Path(project["path"]).resolve()
@@ -72,6 +124,15 @@ def prepare_cursor_work_session(project_name: str, task: str) -> dict[str, objec
         cursor_path = _open_cursor(project_path)
         opened = True
 
+    agent = {
+        "available": bool(find_cursor_agent()),
+        "started": False,
+        "log_path": "",
+        "message": "cursor-agent non lance.",
+    }
+    if settings.eva_cursor_agent_enabled:
+        agent = _start_cursor_agent(project_path, prompt)
+
     return {
         "project": project,
         "prompt": prompt,
@@ -79,4 +140,5 @@ def prepare_cursor_work_session(project_name: str, task: str) -> dict[str, objec
         "copied_to_clipboard": copied,
         "cursor_opened": opened,
         "cursor_cli": cursor_path,
+        "cursor_agent": agent,
     }

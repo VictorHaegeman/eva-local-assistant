@@ -40,6 +40,7 @@ CONFIRMATION_REQUIRED_ACTIONS = {
     "project_workspace_create",
     "clipboard_set_prompt",
     "cursor_open_project",
+    "git_initial_commit",
     "github_repo_create",
     "git_push",
     "publish_content",

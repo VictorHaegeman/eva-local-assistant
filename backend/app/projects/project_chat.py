@@ -107,11 +107,17 @@ def build_cursor_work_session_response(message: str) -> str:
     if session["cursor_opened"]:
         lines.append("Cursor ouvert sur le projet.")
 
+    agent = session.get("cursor_agent", {})
+    if isinstance(agent, dict):
+        if agent.get("started"):
+            lines.append(f"cursor-agent lance en arriere-plan. Log: {agent.get('log_path')}")
+        elif agent.get("available") is False:
+            lines.append("cursor-agent introuvable: installe/active Cursor CLI Agent pour execution autonome.")
+
     lines.extend(
         [
             "",
-            "Limite actuelle: Eva ne controle pas le panneau Codex/Cursor via une API officielle.",
-            "Le prompt est pret: ouvre le chat/agent Cursor et colle avec Ctrl+V.",
+            "Fallback GUI: si cursor-agent n'est pas disponible, le prompt est pret dans le presse-papiers et le fichier EVA_CURSOR_PROMPT.md.",
         ]
     )
     return "\n".join(lines)
