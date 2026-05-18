@@ -52,6 +52,7 @@ from app.integrations.gmail_client import (
 )
 from app.integrations.gmail_auth import GmailAuthLaunchError, start_gmail_oauth_flow
 from app.integrations.inbox_smart import collect_inbox_signals
+from app.integrations.browser import open_url
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
     draft_linkedin_comment,
@@ -203,6 +204,10 @@ class CodexPromptActionRequest(BaseModel):
 class WebSearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=500)
     limit: int = Field(default=5, ge=1, le=8)
+
+
+class BrowserOpenTabsRequest(BaseModel):
+    urls: list[str] = Field(default_factory=list, max_length=8)
 
 
 class DailyLaunchRequest(BaseModel):
@@ -674,6 +679,26 @@ async def web_search(request: WebSearchRequest) -> dict[str, object]:
             for result in results
         ],
         "context": format_web_results(request.query, results),
+    }
+
+
+@app.post("/browser/open-tabs", dependencies=[Depends(require_sensitive_access)])
+async def browser_open_tabs(request: BrowserOpenTabsRequest) -> dict[str, object]:
+    opened: list[str] = []
+    rejected: list[str] = []
+
+    for url in request.urls:
+        clean_url = url.strip()
+        if not clean_url.startswith(("http://", "https://")):
+            rejected.append(clean_url)
+            continue
+
+        open_url(clean_url)
+        opened.append(clean_url)
+
+    return {
+        "opened": opened,
+        "rejected": rejected,
     }
 
 

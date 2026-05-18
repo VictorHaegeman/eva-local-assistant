@@ -183,6 +183,17 @@ export async function getDailyLaunchBrief(force = false) {
 }
 
 
+export async function openBrowserTabs(urls) {
+  return request("/browser/open-tabs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ urls }),
+  });
+}
+
+
 export async function sendChat(messages, mode = "chat") {
   const payload = await request("/chat", {
     method: "POST",

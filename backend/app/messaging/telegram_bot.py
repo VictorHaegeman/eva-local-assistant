@@ -20,6 +20,8 @@ from app.project_factory.automation import (
     project_factory_auto_status,
 )
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
+from app.projects.project_chat import build_cursor_work_session_response
+from app.projects.project_store import ProjectStoreError
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -114,6 +116,8 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "Commandes:\n"
                 "/project IDEE - preparer workspace, prompt Cursor et repo GitHub\n"
                 "/idea IDEE - alias de /project\n"
+                "/cursor PROJET + TACHE - ouvrir Cursor et copier le prompt\n"
+                "/codex PROJET + TACHE - alias de /cursor\n"
                 "/pending - voir les actions en attente\n"
                 "/approve ID - valider et executer une action\n"
                 "/reject ID - refuser une action\n"
@@ -165,6 +169,21 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             await _send_message(client, chat_id, "\n".join(lines))
         except (ProjectFactoryError, ActionStoreError) as exc:
             await _send_message(client, chat_id, f"Erreur Project Factory: {exc}")
+        return True
+
+    if command in {"/cursor", "/codex", "/work"}:
+        if not argument:
+            await _send_message(
+                client,
+                chat_id,
+                "Usage: /cursor nom du projet + ce que Cursor/Codex doit faire",
+            )
+            return True
+
+        try:
+            await _send_message(client, chat_id, build_cursor_work_session_response(argument))
+        except ProjectStoreError as exc:
+            await _send_message(client, chat_id, f"Erreur Cursor bridge: {exc}")
         return True
 
     if command == "/pending":

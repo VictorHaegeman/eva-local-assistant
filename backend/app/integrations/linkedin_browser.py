@@ -1,9 +1,9 @@
-import os
 import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
 
 from app.actions.action_store import EvaAction
+from app.integrations.browser import open_url
 
 
 class LinkedInBrowserError(Exception):
@@ -11,53 +11,6 @@ class LinkedInBrowserError(Exception):
 
 
 DEFAULT_LINKEDIN_COMPOSE_URL = "https://www.linkedin.com/feed/?shareActive=true"
-
-
-def _candidate_browsers() -> list[str]:
-    candidates: list[str] = []
-    program_files_x86 = os.environ.get("ProgramFiles(x86)")
-    program_files = os.environ.get("ProgramFiles")
-
-    if program_files_x86:
-        candidates.extend(
-            [
-                str(Path(program_files_x86) / "Microsoft" / "Edge" / "Application" / "msedge.exe"),
-                str(Path(program_files_x86) / "Google" / "Chrome" / "Application" / "chrome.exe"),
-            ]
-        )
-
-    if program_files:
-        candidates.extend(
-            [
-                str(Path(program_files) / "Microsoft" / "Edge" / "Application" / "msedge.exe"),
-                str(Path(program_files) / "Google" / "Chrome" / "Application" / "chrome.exe"),
-            ]
-        )
-
-    return candidates
-
-
-def _find_browser() -> str:
-    for candidate in _candidate_browsers():
-        if Path(candidate).exists():
-            return candidate
-
-    for command in ("msedge.exe", "chrome.exe"):
-        try:
-            completed = subprocess.run(
-                ["where", command],
-                text=True,
-                capture_output=True,
-                timeout=5,
-                shell=True,
-            )
-        except subprocess.SubprocessError:
-            continue
-
-        if completed.returncode == 0 and completed.stdout.strip():
-            return completed.stdout.splitlines()[0].strip()
-
-    return ""
 
 
 def _set_clipboard(text: str) -> None:
@@ -77,12 +30,7 @@ def _open_url(url: str) -> None:
     if parsed.scheme != "https" or not parsed.netloc.endswith("linkedin.com"):
         raise LinkedInBrowserError("URL LinkedIn refusee: seule une URL https linkedin.com est autorisee.")
 
-    browser = _find_browser()
-    if browser:
-        subprocess.Popen([browser, url], shell=False)
-        return
-
-    subprocess.Popen(["cmd", "/c", "start", "", url], shell=False)
+    open_url(url)
 
 
 def execute_linkedin_browser_prepare_post(action: EvaAction) -> str:

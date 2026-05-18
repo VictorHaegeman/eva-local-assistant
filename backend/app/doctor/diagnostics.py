@@ -7,6 +7,7 @@ import httpx
 from app.config import settings
 from app.heartbeat.scheduler import HEARTBEATS_PATH
 from app.integrations.linkedin_assistant import LINKEDIN_PATH
+from app.integrations.browser import find_browser
 from app.memory.memory_store import MEMORY_DB_PATH
 from app.memory.obsidian_store import obsidian_status
 from app.memory.profile_store import PROFILE_PATH, ProfileStoreError, load_profile
@@ -275,6 +276,24 @@ def _project_factory_check() -> dict[str, Any]:
     )
 
 
+def _browser_check() -> dict[str, Any]:
+    browser = find_browser()
+    preference = settings.eva_browser_preference
+    return _check(
+        "browser_bridge",
+        "ok" if browser else "warning",
+        (
+            f"Navigateur local trouve pour les ouvertures auto: {browser}"
+            if browser
+            else "Aucun navigateur local trouve pour les ouvertures auto."
+        ),
+        {
+            "preference": preference,
+            "browser": browser,
+        },
+    )
+
+
 def _api_security_check() -> dict[str, Any]:
     status = api_security_status()
     has_token = bool(status["api_token_configured"])
@@ -306,6 +325,7 @@ async def run_doctor() -> dict[str, Any]:
     checks.append(_skills_check())
     checks.append(_telegram_check())
     checks.append(_project_factory_check())
+    checks.append(_browser_check())
     checks.append(_api_security_check())
 
     status = _overall_status(checks)

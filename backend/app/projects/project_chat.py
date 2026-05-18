@@ -1,8 +1,22 @@
+from app.integrations.cursor_bridge import CursorBridgeError, prepare_cursor_work_session
 from app.projects.project_store import ProjectStoreError, build_cursor_prompt, load_projects, project_tree
 
 
 CURSOR_MARKERS = ("cursor", "codex")
-PROMPT_MARKERS = ("prompt", "bosse", "bosser", "travaille", "travailler", "corrige", "amelior")
+PROMPT_MARKERS = (
+    "prompt",
+    "bosse",
+    "bosser",
+    "travaille",
+    "travailler",
+    "corrige",
+    "amelior",
+    "ouvre",
+    "ouvrir",
+    "lance",
+    "envoie",
+    "envoyer",
+)
 
 
 def _normalize(value: str) -> str:
@@ -61,6 +75,46 @@ def build_chat_cursor_prompt_response(message: str) -> str:
         "```\n\n"
         f"Contexte inspecte automatiquement:\n{preview}"
     )
+
+
+def build_cursor_work_session_response(message: str) -> str:
+    projects = load_projects()
+    project_name = infer_project_name(message)
+
+    if not project_name:
+        project_list = "\n".join(f"- {project['name']}" for project in projects)
+        return (
+            "Je peux ouvrir Cursor et preparer le prompt, mais il me manque le projet cible.\n\n"
+            f"Projets connus:\n{project_list}\n\n"
+            "Renvoie par exemple: ouvre le projet Eva dans Cursor et prepare un prompt Codex pour ..."
+        )
+
+    try:
+        session = prepare_cursor_work_session(project_name, message)
+    except CursorBridgeError as exc:
+        raise ProjectStoreError(str(exc)) from exc
+
+    project = session["project"]
+    lines = [
+        f"Session Cursor preparee pour {project['name']}.",
+        f"Projet: {project['path']}",
+    ]
+
+    if session["prompt_file"]:
+        lines.append(f"Fichier prompt ecrit: {session['prompt_file']}")
+    if session["copied_to_clipboard"]:
+        lines.append("Prompt copie dans le presse-papiers Windows.")
+    if session["cursor_opened"]:
+        lines.append("Cursor ouvert sur le projet.")
+
+    lines.extend(
+        [
+            "",
+            "Limite actuelle: Eva ne controle pas le panneau Codex/Cursor via une API officielle.",
+            "Le prompt est pret: ouvre le chat/agent Cursor et colle avec Ctrl+V.",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def build_project_context_for_chat(message: str) -> str | None:

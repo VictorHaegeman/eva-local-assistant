@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Sparkles } from "lucide-react";
 
-import { getDailyLaunchBrief, getDoctor, getHealth, getModes, sendChat } from "./api";
+import {
+  getDailyLaunchBrief,
+  getDoctor,
+  getHealth,
+  getModes,
+  openBrowserTabs,
+  sendChat,
+} from "./api";
 import { ChatInput } from "./components/ChatInput";
 import { ChatWindow } from "./components/ChatWindow";
 import { ControlPanel } from "./components/ControlPanel";
@@ -126,12 +133,19 @@ export default function App() {
         speakEva(`Voici ton brief du jour. ${payload.brief.content || ""}`);
 
         if (payload.auto_open_tabs && Array.isArray(payload.suggested_tabs)) {
-          payload.suggested_tabs.slice(0, 3).forEach((tab, index) => {
-            if (!tab?.url) return;
-            window.setTimeout(() => {
-              window.open(tab.url, "_blank", "noopener,noreferrer");
-            }, 450 * (index + 1));
-          });
+          const urls = payload.suggested_tabs
+            .slice(0, 3)
+            .map((tab) => tab?.url)
+            .filter(Boolean);
+          if (urls.length) {
+            openBrowserTabs(urls).catch(() => {
+              urls.forEach((url, index) => {
+                window.setTimeout(() => {
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }, 450 * (index + 1));
+              });
+            });
+          }
         }
       })
       .catch(() => {

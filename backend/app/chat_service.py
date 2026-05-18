@@ -31,6 +31,7 @@ from app.memory.obsidian_store import obsidian_status
 from app.projects.project_chat import (
     ProjectStoreError,
     build_chat_cursor_prompt_response,
+    build_cursor_work_session_response,
     build_project_context_for_chat,
     detect_cursor_prompt_request,
 )
@@ -377,6 +378,16 @@ async def process_chat_messages(
 
     try:
         if detect_cursor_prompt_request(latest_user_message):
+            if trusted_actions:
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": build_cursor_work_session_response(latest_user_message),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+
             return {
                 "message": {
                     "role": "assistant",

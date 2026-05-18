@@ -98,6 +98,18 @@ Routes utiles:
 - `GET /linkedin/status`: statut LinkedIn en mode brouillon + pont navigateur.
 - `POST /project-factory/plan`: previsualiser un projet depuis une idee;
 - `POST /project-factory/actions`: creer les actions validables workspace, clipboard, Cursor et GitHub CLI.
+- Telegram `/cursor` ou `/codex`: ouvrir un projet connu dans Cursor, copier le prompt de travail et ecrire `EVA_CURSOR_PROMPT.md`.
+
+Configuration locale utile:
+
+```env
+EVA_BROWSER_PREFERENCE=brave
+EVA_CURSOR_AUTO_COPY_PROMPT=true
+EVA_CURSOR_AUTO_OPEN_PROJECT=true
+EVA_CURSOR_WRITE_PROMPT_FILE=true
+```
+
+Eva ne peut pas encore cliquer de facon fiable dans le panneau Codex/Cursor via une API officielle. La version robuste est donc: ouvrir Cursor, copier le prompt dans le presse-papiers et le rendre visible dans `EVA_CURSOR_PROMPT.md`.
 
 ## LinkedIn sans API
 
@@ -295,6 +307,8 @@ Commandes Telegram:
 /status
 /project IDEE
 /idea IDEE
+/cursor PROJET + TACHE
+/codex PROJET + TACHE
 /pending
 /approve ID
 /reject ID
@@ -305,6 +319,8 @@ Commandes projet depuis iPhone:
 ```text
 /project cree une app SaaS pour suivre mes prospects DreamLense
 /idea un outil local pour analyser mes devis
+/cursor Eva optimise le README et propose une checklist de tests
+/codex DreamLense corrige le bug de formulaire et garde le style premium
 ```
 
 Eva cree alors des actions en attente pour:
@@ -314,6 +330,15 @@ Eva cree alors des actions en attente pour:
 - copier le prompt Cursor;
 - ouvrir le projet dans Cursor;
 - creer le repo GitHub via `gh`.
+
+Pour `/cursor` et `/codex`, Eva:
+
+- trouve le projet local connu;
+- inspecte sa structure;
+- prepare un prompt Cursor/Codex contextualise;
+- ecrit `EVA_CURSOR_PROMPT.md` dans le projet;
+- copie le prompt dans le presse-papiers Windows;
+- ouvre Cursor sur le projet.
 
 Par defaut, chaque action critique reste validable avec `/approve ID`.
 
@@ -829,7 +854,7 @@ Ce script:
 - ouvre le backend FastAPI dans une fenetre terminal separee;
 - ouvre le frontend Vite dans une fenetre terminal separee;
 - attend quelques secondes;
-- ouvre automatiquement Eva dans une fenetre application separee si Edge ou Chrome est disponible.
+- ouvre automatiquement Eva dans une fenetre application separee, avec Brave en priorite.
 
 Tu peux aussi ouvrir uniquement la fenetre Eva avec:
 
@@ -837,7 +862,7 @@ Tu peux aussi ouvrir uniquement la fenetre Eva avec:
 open-eva-window.bat
 ```
 
-Cette fenetre utilise le mode app de Edge/Chrome:
+Cette fenetre utilise le mode app de Brave si disponible, puis Chrome, puis Edge:
 
 ```text
 http://localhost:5173

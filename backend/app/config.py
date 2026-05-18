@@ -63,9 +63,13 @@ class Settings:
     eva_daily_brief_enabled: bool = _env_bool("EVA_DAILY_BRIEF_ENABLED", True)
     eva_daily_brief_auto_open_tabs: bool = _env_bool("EVA_DAILY_BRIEF_AUTO_OPEN_TABS", False)
     eva_daily_brief_max_tabs: int = _env_int("EVA_DAILY_BRIEF_MAX_TABS", 3)
+    eva_browser_preference: str = os.getenv("EVA_BROWSER_PREFERENCE", "brave")
     eva_linkedin_enabled: bool = _env_bool("EVA_LINKEDIN_ENABLED", True)
     eva_obsidian_memory_enabled: bool = _env_bool("EVA_OBSIDIAN_MEMORY_ENABLED", True)
     eva_obsidian_vault_path: str = os.getenv("EVA_OBSIDIAN_VAULT_PATH", "data/obsidian_vault")
+    eva_cursor_auto_copy_prompt: bool = _env_bool("EVA_CURSOR_AUTO_COPY_PROMPT", True)
+    eva_cursor_auto_open_project: bool = _env_bool("EVA_CURSOR_AUTO_OPEN_PROJECT", True)
+    eva_cursor_write_prompt_file: bool = _env_bool("EVA_CURSOR_WRITE_PROMPT_FILE", True)
     eva_projects_dir: str = os.getenv("EVA_PROJECTS_DIR", r"C:\Users\victo\Desktop\Cursor")
     eva_project_factory_auto_execute: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_EXECUTE", False)
     eva_project_factory_auto_copy_prompt: bool = _env_bool(
