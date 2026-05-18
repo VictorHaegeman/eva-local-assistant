@@ -44,14 +44,35 @@ Ces scopes permettent d'envoyer, composer, modifier ou acceder trop largement a 
 
 1. Ouvre Google Cloud Console.
 2. Active la Gmail API et la Google Calendar API dans ton projet.
-3. Va dans `Google Auth platform`.
-4. Configure l'ecran de consentement OAuth.
-5. Ajoute ton compte Gmail comme utilisateur test si l'app est en mode test.
+3. Va dans `Google Auth Platform`.
+4. Ouvre `Audience`.
+5. Si l'app est en mode test, ajoute ton compte Gmail dans `Test users`.
 6. Va dans `Clients`.
 7. Cree un client OAuth de type `Desktop app`.
 8. Telecharge le JSON du client OAuth.
 
 Google recommande un client OAuth `Desktop app` pour un script Python local.
+
+## Corriger `Acces bloque: Eva n'a pas termine la procedure de validation de Google`
+
+Cette erreur Google affiche souvent:
+
+```text
+Erreur 403: access_denied
+```
+
+Cause: ton app OAuth est en mode test et Google autorise seulement les comptes ajoutes comme test users.
+
+Correction:
+
+1. Ouvre `https://console.cloud.google.com/auth/audience`.
+2. Selectionne le projet Google Cloud qui contient le client OAuth Eva.
+3. Va dans `Audience`.
+4. Dans `Test users`, ajoute le compte Gmail que tu utilises pour te connecter.
+5. Sauvegarde.
+6. Relance ensuite la connexion depuis Eva ou PowerShell.
+
+Tu n'as pas besoin de publier l'app publiquement pour ton usage personnel. Garde l'app en test et ajoute simplement ton compte en test user.
 
 ## Fichier OAuth local
 

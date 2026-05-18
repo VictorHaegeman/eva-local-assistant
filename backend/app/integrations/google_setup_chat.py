@@ -9,8 +9,8 @@ from app.integrations.google_calendar_client import calendar_status, list_calend
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 GMAIL_AUTH_SCRIPT = PROJECT_ROOT / "backend" / "app" / "integrations" / "gmail_auth.py"
-GOOGLE_CLOUD_CREDENTIALS_URL = "https://console.cloud.google.com/apis/credentials"
-GOOGLE_CLOUD_OAUTH_CONSENT_URL = "https://console.cloud.google.com/apis/credentials/consent"
+GOOGLE_CLOUD_CREDENTIALS_URL = "https://console.cloud.google.com/auth/clients"
+GOOGLE_CLOUD_OAUTH_AUDIENCE_URL = "https://console.cloud.google.com/auth/audience"
 
 
 def _normalize(text: str) -> str:
@@ -101,6 +101,11 @@ def build_google_setup_response(
     if missing_scopes:
         lines.append(f"- scopes manquants: {', '.join(str(scope) for scope in missing_scopes)}")
 
+    if gmail["credentials_exists"] and not gmail["token_exists"]:
+        lines.append(
+            "- diagnostic 403 probable: l'app Google est en mode test et ton compte Gmail n'est pas encore dans Audience > Test users."
+        )
+
     if not trusted_actions:
         lines.extend(
             [
@@ -112,21 +117,37 @@ def build_google_setup_response(
 
     if not gmail["credentials_exists"]:
         open_url(GOOGLE_CLOUD_CREDENTIALS_URL)
-        open_url(GOOGLE_CLOUD_OAUTH_CONSENT_URL)
+        open_url(GOOGLE_CLOUD_OAUTH_AUDIENCE_URL)
         lines.extend(
             [
                 "",
                 "J'ai ouvert Google Cloud dans Brave.",
                 "Action humaine requise:",
                 "1. Va dans ton projet Google Cloud.",
-                "2. Configure l'ecran de consentement OAuth et ajoute ton Gmail en test user.",
-                "3. Cree un client OAuth de type Desktop app.",
-                "4. Telecharge le JSON complet.",
-                "5. Place-le dans data/gmail_credentials.json.",
-                "6. Redemande a Eva: connecte mon compte Google.",
+                "2. Ouvre Google Auth Platform > Audience > Test users.",
+                "3. Ajoute ton adresse Gmail comme utilisateur test.",
+                "4. Verifie que Gmail API et Google Calendar API sont activees.",
+                "5. Cree un client OAuth de type Desktop app.",
+                "6. Telecharge le JSON complet.",
+                "7. Place-le dans data/gmail_credentials.json.",
+                "8. Redemande a Eva: connecte mon compte Google.",
             ]
         )
         return "\n".join(lines)
+
+    if not gmail["token_exists"]:
+        open_url(GOOGLE_CLOUD_OAUTH_AUDIENCE_URL)
+        lines.extend(
+            [
+                "",
+                "J'ai ouvert Google Auth Platform > Audience dans Brave.",
+                "Si Google affiche 403 access_denied, corrige d'abord ce point:",
+                "1. Selectionne le projet Google Cloud qui contient le client OAuth Eva.",
+                "2. Va dans Audience > Test users.",
+                "3. Ajoute exactement le compte Gmail utilise pour la connexion.",
+                "4. Sauvegarde, puis relance la connexion Gmail depuis Eva si Google a bloque la premiere tentative.",
+            ]
+        )
 
     try:
         result = start_gmail_oauth_flow(force_reconnect=not gmail["token_has_required_scopes"])

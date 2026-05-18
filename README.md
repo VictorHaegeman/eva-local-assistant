@@ -285,6 +285,14 @@ Connexion Gmail:
 
 Depuis l'interface Eva, ouvre le panneau `Gmail`, clique `Connecter Gmail`, valide ton compte dans Google, puis clique `Rafraichir statut`.
 
+Si Google affiche `Acces bloque: Eva n'a pas termine la procedure de validation de Google` avec `Erreur 403: access_denied`, ajoute ton Gmail dans Google Cloud:
+
+```text
+Google Auth Platform > Audience > Test users
+```
+
+Puis relance `Connecter Gmail`. Le guide complet est dans `docs/GMAIL_ACTIVATION.md`.
+
 Depuis Telegram, tu peux aussi demander:
 
 ```text
