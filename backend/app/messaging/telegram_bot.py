@@ -19,6 +19,7 @@ from app.messaging.telegram_memory import (
     clear_telegram_context,
     load_telegram_context,
 )
+from app.memory.chat_history_store import ChatHistoryError, append_chat_exchange
 from app.project_factory.automation import (
     auto_execute_project_factory_actions,
     format_project_factory_results,
@@ -264,6 +265,15 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
 
     assistant_text = str(result["message"]["content"])
     append_telegram_exchange(chat_id, text, assistant_text)
+    try:
+        append_chat_exchange(
+            f"telegram-{chat_id}",
+            text,
+            assistant_text,
+            channel="telegram",
+        )
+    except ChatHistoryError:
+        pass
     await _send_message(client, chat_id, f"{assistant_text}{suffix}")
 
 

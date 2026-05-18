@@ -46,6 +46,9 @@ data/eva_tasks.sqlite-*
 data/eva_actions.sqlite
 data/eva_actions.sqlite-*
 data/eva_telegram_state.json
+data/eva_telegram_conversations.json
+data/eva_chat_history.sqlite
+data/eva_chat_history.sqlite-*
 data/eva_heartbeats.json
 data/eva_heartbeat_state.json
 data/eva_daily_launch.json
@@ -53,6 +56,7 @@ data/eva_linkedin.json
 data/eva_socials.json
 data/eva_social_state.json
 data/obsidian_vault/
+data/cursor_agent_logs/
 data/gmail_credentials.json
 data/gmail_token.json
 data/gmail_token_*.json

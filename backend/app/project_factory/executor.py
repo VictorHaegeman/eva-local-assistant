@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from app.actions.action_store import EvaAction
+from app.integrations.cli_tools import find_gh
 from app.projects.project_store import PROJECTS_PATH, ensure_projects_file
 
 
@@ -207,7 +208,7 @@ def execute_github_repo_create(action: EvaAction) -> str:
 
     if not workspace.exists():
         raise ProjectFactoryExecutionError("Workspace introuvable. Cree-le d'abord.")
-    gh = shutil.which("gh")
+    gh = find_gh()
     if not gh:
         raise ProjectFactoryExecutionError("GitHub CLI gh introuvable.")
 

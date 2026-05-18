@@ -1,9 +1,13 @@
-import shutil
 import subprocess
+import shutil
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
+import httpx
+
 from app.config import settings
+from app.integrations.cli_tools import find_cursor_agent
 from app.projects.project_store import build_cursor_prompt, get_project
 
 
@@ -56,8 +60,41 @@ def _open_cursor(project_path: Path) -> str:
     return cursor
 
 
-def find_cursor_agent() -> str:
-    return shutil.which("cursor-agent") or ""
+def _notify_telegram_sync(message: str) -> None:
+    token = settings.eva_telegram_bot_token.strip()
+    chat_id = settings.eva_telegram_allowed_chat_id.strip()
+    if not settings.eva_telegram_enabled or not token or not chat_id:
+        return
+
+    try:
+        httpx.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": message[:3500]},
+            timeout=15.0,
+        )
+    except Exception:
+        pass
+
+
+def _watch_agent_process(
+    process: subprocess.Popen[str],
+    log_file: object,
+    log_path: Path,
+    project_name: str,
+) -> None:
+    try:
+        return_code = process.wait()
+    finally:
+        close = getattr(log_file, "close", None)
+        if close:
+            close()
+
+    status = "termine" if return_code == 0 else "termine avec erreur"
+    _notify_telegram_sync(
+        f"Cursor Agent {status} pour {project_name}.\n"
+        f"Code retour: {return_code}\n"
+        f"Log local: {log_path}"
+    )
 
 
 def _start_cursor_agent(project_path: Path, prompt: str) -> dict[str, object]:
@@ -86,15 +123,25 @@ def _start_cursor_agent(project_path: Path, prompt: str) -> dict[str, object]:
     if settings.eva_cursor_agent_background and hasattr(subprocess, "CREATE_NEW_PROCESS_GROUP"):
         creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
 
-    subprocess.Popen(
-        command,
-        cwd=str(project_path),
-        stdout=log_file,
-        stderr=subprocess.STDOUT,
-        text=True,
-        shell=False,
-        creationflags=creationflags,
-    )
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=str(project_path),
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            text=True,
+            shell=False,
+            creationflags=creationflags,
+        )
+    except OSError:
+        log_file.close()
+        raise
+
+    threading.Thread(
+        target=_watch_agent_process,
+        args=(process, log_file, log_path, project_path.name),
+        daemon=True,
+    ).start()
 
     return {
         "available": True,

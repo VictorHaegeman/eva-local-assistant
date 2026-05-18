@@ -8,6 +8,7 @@ from app.config import settings
 from app.heartbeat.scheduler import HEARTBEATS_PATH
 from app.integrations.linkedin_assistant import LINKEDIN_PATH
 from app.integrations.browser import find_browser
+from app.integrations.cli_tools import find_cursor_agent, find_gh
 from app.memory.memory_store import MEMORY_DB_PATH
 from app.memory.obsidian_store import obsidian_status
 from app.memory.profile_store import PROFILE_PATH, ProfileStoreError, load_profile
@@ -248,8 +249,8 @@ def _telegram_check() -> dict[str, Any]:
 
 def _project_factory_check() -> dict[str, Any]:
     cursor_path = shutil.which("cursor")
-    cursor_agent_path = shutil.which("cursor-agent")
-    gh_path = shutil.which("gh")
+    cursor_agent_path = find_cursor_agent()
+    gh_path = find_gh()
     auto_github = settings.eva_project_factory_auto_github
     auto_push = settings.eva_project_factory_auto_push
     status: CheckStatus = "ok"

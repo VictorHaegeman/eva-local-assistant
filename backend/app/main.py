@@ -69,6 +69,15 @@ from app.memory.memory_store import (
     list_memories,
     memory_to_dict,
 )
+from app.memory.chat_history_store import (
+    ChatHistoryError,
+    append_chat_exchange,
+    chat_message_to_dict,
+    chat_session_to_dict,
+    get_chat_messages,
+    init_chat_history_store,
+    list_chat_sessions,
+)
 from app.memory.obsidian_store import (
     ObsidianMemoryError,
     ensure_obsidian_vault,
@@ -125,12 +134,14 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[Message] = Field(default_factory=list, max_length=50)
     mode: AgentModeName = "chat"
+    session_id: str = Field(default="", max_length=120)
 
 
 class ChatResponse(BaseModel):
     message: Message
     saved_memory: dict[str, object] | None = None
     pending_action: dict[str, object] | None = None
+    session_id: str | None = None
 
 
 class MemoryCreateRequest(BaseModel):
@@ -265,6 +276,7 @@ ensure_socials_file()
 init_brief_store()
 init_task_store()
 init_action_store()
+init_chat_history_store()
 
 telegram_task: asyncio.Task[None] | None = None
 heartbeat_task: asyncio.Task[None] | None = None
@@ -423,6 +435,30 @@ async def memories() -> dict[str, object]:
     return {
         "loaded": True,
         "memories": [memory_to_dict(memory) for memory in loaded_memories],
+    }
+
+
+@app.get("/chat/history", dependencies=[Depends(require_sensitive_access)])
+async def chat_history() -> dict[str, object]:
+    try:
+        sessions = list_chat_sessions()
+    except ChatHistoryError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return {
+        "sessions": [chat_session_to_dict(session) for session in sessions],
+    }
+
+
+@app.get("/chat/history/{session_id}", dependencies=[Depends(require_sensitive_access)])
+async def chat_history_messages(session_id: str) -> dict[str, object]:
+    try:
+        messages = get_chat_messages(session_id)
+    except ChatHistoryError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return {
+        "messages": [chat_message_to_dict(message) for message in messages],
     }
 
 
@@ -1132,8 +1168,19 @@ async def chat(chat_request: ChatRequest, http_request: Request) -> ChatResponse
     except ChatServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
+    try:
+        session = append_chat_exchange(
+            chat_request.session_id.strip() or None,
+            str(safe_messages[-1]["content"]),
+            str(result["message"]["content"]),
+            channel="web",
+        )
+    except ChatHistoryError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
     return ChatResponse(
         message=Message(**result["message"]),
         saved_memory=result.get("saved_memory"),
         pending_action=result.get("pending_action"),
+        session_id=session.id,
     )

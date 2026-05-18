@@ -194,14 +194,12 @@ export async function openBrowserTabs(urls) {
 }
 
 
-export async function sendChat(messages, mode = "chat") {
-  const payload = await request("/chat", {
+export async function sendChat(messages, mode = "chat", sessionId = "") {
+  return request("/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ messages, mode }),
+    body: JSON.stringify({ messages, mode, session_id: sessionId }),
   });
-
-  return payload.message;
 }

@@ -52,6 +52,10 @@ function createMessage(role, content) {
 
 export default function App() {
   const [messages, setMessages] = useState([welcomeMessage]);
+  const [sessionId, setSessionId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem("evaChatSessionId") || "";
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [voiceReplies, setVoiceReplies] = useState(() => {
@@ -200,7 +204,12 @@ export default function App() {
         .filter((message) => !message.localOnly)
         .map(({ role, content }) => ({ role, content }));
 
-      const assistantMessage = await sendChat(conversation, mode);
+      const response = await sendChat(conversation, mode, sessionId);
+      const assistantMessage = response.message;
+      if (response.session_id) {
+        setSessionId(response.session_id);
+        window.localStorage.setItem("evaChatSessionId", response.session_id);
+      }
       setMessages((currentMessages) => [
         ...currentMessages,
         createMessage("assistant", assistantMessage.content),
@@ -223,6 +232,8 @@ export default function App() {
 
   function handleReset() {
     setMessages([welcomeMessage]);
+    setSessionId("");
+    window.localStorage.removeItem("evaChatSessionId");
     setError("");
     setActivePanel("chat");
   }
