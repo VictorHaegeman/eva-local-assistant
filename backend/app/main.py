@@ -24,6 +24,7 @@ from app.briefs.rss_brief import RssBriefError, ensure_sources_file, generate_mo
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.doctor.autonomy_readiness import autonomy_readiness
 from app.doctor.diagnostics import run_doctor
 from app.files.local_files import (
     LocalFileError,
@@ -410,6 +411,11 @@ async def autonomy() -> dict[str, object]:
             "compte externe",
         ],
     }
+
+
+@app.get("/autonomy/readiness", dependencies=[Depends(require_sensitive_access)])
+async def autonomy_readiness_route() -> dict[str, object]:
+    return autonomy_readiness()
 
 
 @app.get("/profile", dependencies=[Depends(require_sensitive_access)])

@@ -94,11 +94,18 @@ Routes utiles:
 - `GET /agents/modes`: modes Eva disponibles;
 - `GET /tools`: registre des capacites locales;
 - `GET /autonomy`: politique de securite.
+- `GET /autonomy/readiness`: etat de preparation memoire/autonomie.
 - `GET /heartbeat/status`: statut des routines locales;
 - `GET /linkedin/status`: statut LinkedIn en mode brouillon + pont navigateur.
 - `POST /project-factory/plan`: previsualiser un projet depuis une idee;
 - `POST /project-factory/actions`: creer les actions validables workspace, clipboard, Cursor et GitHub CLI.
 - Telegram `/cursor` ou `/codex`: ouvrir un projet connu dans Cursor, copier le prompt de travail et ecrire `EVA_CURSOR_PROMPT.md`.
+
+Plan de travail autonomie:
+
+```text
+docs/EVA_AUTONOMY_WORKPLAN.md
+```
 
 Configuration locale utile:
 
