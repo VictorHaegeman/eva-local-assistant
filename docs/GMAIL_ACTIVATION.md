@@ -74,6 +74,20 @@ Correction:
 
 Tu n'as pas besoin de publier l'app publiquement pour ton usage personnel. Garde l'app en test et ajoute simplement ton compte en test user.
 
+## Corriger `Google Calendar API has not been used... or it is disabled`
+
+Si Gmail fonctionne mais Calendar renvoie une erreur, active aussi l'API Calendar dans le meme projet Google Cloud:
+
+```text
+https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview
+```
+
+Ensuite attends une ou deux minutes, puis relance:
+
+```text
+http://localhost:8000/calendar/events
+```
+
 ## Fichier OAuth local
 
 Renomme le JSON telecharge en:

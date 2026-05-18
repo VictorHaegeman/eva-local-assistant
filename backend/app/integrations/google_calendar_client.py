@@ -12,6 +12,11 @@ from app.integrations.gmail_client import (
 )
 
 
+CALENDAR_API_ENABLE_URL = (
+    "https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview"
+)
+
+
 @dataclass(frozen=True)
 class CalendarEvent:
     id: str
@@ -77,18 +82,28 @@ def list_calendar_events(days: int = 7, max_results: int = 10) -> list[CalendarE
     time_min = now.isoformat().replace("+00:00", "Z")
     time_max = (now + timedelta(days=safe_days)).isoformat().replace("+00:00", "Z")
 
-    response = (
-        service.events()
-        .list(
-            calendarId="primary",
-            timeMin=time_min,
-            timeMax=time_max,
-            maxResults=safe_limit,
-            singleEvents=True,
-            orderBy="startTime",
+    try:
+        response = (
+            service.events()
+            .list(
+                calendarId="primary",
+                timeMin=time_min,
+                timeMax=time_max,
+                maxResults=safe_limit,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
         )
-        .execute()
-    )
+    except Exception as exc:
+        message = str(exc)
+        if "calendar-json.googleapis.com" in message or "accessNotConfigured" in message:
+            raise GmailIntegrationError(
+                "Google Calendar API n'est pas activee dans ton projet Google Cloud. "
+                f"Active-la ici: {CALENDAR_API_ENABLE_URL}"
+            ) from exc
+        raise GmailIntegrationError(f"Google Calendar indisponible: {message}") from exc
+
     items = response.get("items", [])
     if not isinstance(items, list):
         return []
