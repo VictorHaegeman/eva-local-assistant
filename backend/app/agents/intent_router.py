@@ -9,6 +9,7 @@ IntentName = Literal[
     "google_oauth_setup",
     "calendar_read",
     "gmail_read",
+    "gmail_reply_audit",
     "gmail_reply_draft",
     "project_factory",
     "cursor_work",
@@ -82,6 +83,30 @@ def classify_user_intent(message: str) -> UserIntent:
             caution="La capture reste locale et peut contenir des donnees privees.",
         )
 
+    gmail_context = _has_any(
+        text,
+        ("gmail", "mes mails", "mes emails", "boite mail", "dernier mail", "dernier email", "le mail", "ce mail", "au mail", "mails"),
+    )
+    reply_audit_context = _has_any(
+        text,
+        (
+            "pas repondu",
+            "non repondu",
+            "sans reponse",
+            "sans repondre",
+            "a repondre",
+            "a traiter",
+            "que j'ai pas repondu",
+            "que je n'ai pas repondu",
+        ),
+    )
+    if gmail_context and reply_audit_context:
+        return UserIntent(
+            name="gmail_reply_audit",
+            confidence=0.9,
+            summary="Lire les mails reels correspondant au sujet demande et verifier ceux sans reponse de Victor.",
+        )
+
     google_context = _has_any(
         text,
         ("google", "gmail", "oauth", "calendar", "calendrier", "compte google"),
@@ -131,10 +156,6 @@ def classify_user_intent(message: str) -> UserIntent:
             summary="Lire les prochains evenements Google Calendar en lecture seule.",
         )
 
-    gmail_context = _has_any(
-        text,
-        ("gmail", "mes mails", "mes emails", "boite mail", "dernier mail", "dernier email", "le mail", "ce mail", "au mail"),
-    )
     reply_context = _has_any(
         text,
         (

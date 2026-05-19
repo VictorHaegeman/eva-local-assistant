@@ -15,6 +15,7 @@ from app.integrations.gmail_chat import (
     wants_gmail_inspect,
     wants_gmail_open,
     wants_gmail_list,
+    wants_gmail_reply_audit,
     wants_gmail_reply_draft,
 )
 from app.integrations.gmail_client import GmailIntegrationError
@@ -474,10 +475,11 @@ async def process_chat_messages(
     try:
         calendar_requested = user_intent.name == "calendar_read" or wants_calendar_events(latest_user_message)
         gmail_requested = (
-            user_intent.name in {"gmail_read", "gmail_reply_draft"}
+            user_intent.name in {"gmail_read", "gmail_reply_audit", "gmail_reply_draft"}
             or wants_gmail_inspect(latest_user_message)
             or wants_gmail_open(latest_user_message)
             or wants_gmail_list(latest_user_message)
+            or wants_gmail_reply_audit(latest_user_message)
             or wants_gmail_reply_draft(latest_user_message)
         )
 

@@ -28,6 +28,8 @@ class GmailMessage:
     body: str = ""
     message_id_header: str = ""
     references: str = ""
+    label_ids: tuple[str, ...] = ()
+    internal_date: int = 0
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -254,6 +256,8 @@ def _message_from_payload(payload: dict[str, Any], include_body: bool) -> GmailM
         body=body,
         message_id_header=_header(headers, "Message-ID"),
         references=_header(headers, "References"),
+        label_ids=tuple(str(label) for label in payload.get("labelIds", []) if label),
+        internal_date=int(str(payload.get("internalDate", "0")) or 0),
     )
 
 
@@ -269,6 +273,7 @@ def message_to_dict(message: GmailMessage, include_body: bool = False) -> dict[s
         "subject": message.subject,
         "date": message.date,
         "snippet": message.snippet,
+        "labels": ", ".join(message.label_ids),
     }
     if include_body:
         payload["body"] = message.body
@@ -318,6 +323,25 @@ def get_gmail_message(message_id: str) -> GmailMessage:
         .execute()
     )
     return _message_from_payload(payload, include_body=True)
+
+
+def get_gmail_thread_messages(thread_id: str) -> list[GmailMessage]:
+    clean_id = thread_id.strip()
+    if not clean_id:
+        raise GmailIntegrationError("ID de fil Gmail vide.")
+
+    service = _gmail_service()
+    payload = service.users().threads().get(userId="me", id=clean_id, format="full").execute()
+    raw_messages = payload.get("messages", [])
+    if not isinstance(raw_messages, list):
+        return []
+
+    messages = [
+        _message_from_payload(raw_message, include_body=True)
+        for raw_message in raw_messages
+        if isinstance(raw_message, dict)
+    ]
+    return sorted(messages, key=lambda item: item.internal_date)
 
 
 def _reply_subject(subject: str) -> str:

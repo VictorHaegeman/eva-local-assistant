@@ -1279,11 +1279,20 @@ Limites de cette V1 vocale:
 Eva doit raisonner comme un operateur local:
 
 1. comprendre l'objectif;
-2. utiliser les outils surs disponibles: memoire, fichiers autorises, projets, RSS, recherche web gratuite;
-3. tenter une solution directe quand elle ne modifie rien de critique;
-4. proposer ou executer le flux Project Factory auto quand il s'agit d'une nouvelle idee projet;
-5. proposer un plan B si la premiere piste bloque;
-6. demander validation pour les actions dangereuses restantes: suppression, envoi, publication, `git push`, commande systeme hors flux explicitement autorise.
+2. classer l'intention avant d'appeler un outil;
+3. distinguer les demandes proches: ouvrir Gmail, lire des mails, auditer les mails sans reponse, rediger un brouillon, connecter OAuth;
+4. utiliser les outils surs disponibles: memoire, fichiers autorises, projets, RSS, recherche web gratuite;
+5. tenter une solution directe quand elle ne modifie rien de critique;
+6. proposer ou executer le flux Project Factory auto quand il s'agit d'une nouvelle idee projet;
+7. proposer un plan B si la premiere piste bloque;
+8. demander validation pour les actions dangereuses restantes: suppression, envoi, publication, `git push`, commande systeme hors flux explicitement autorise.
+
+Exemples d'interpretation attendue:
+
+- `Ouvre mes mails` ouvre la boite Gmail, pas un mail aleatoire;
+- `Lis mes mails DreamLense et dis-moi ceux auxquels je n'ai pas repondu` lance un audit Gmail par sujet;
+- `Reponds au dernier mail Gmail` cree un brouillon Gmail;
+- `Connecte mon compte Google` lance uniquement le flux OAuth.
 
 Eva ne depend pas de ChatGPT ni de l'API OpenAI. Si un jour Victor veut utiliser ChatGPT web comme outil externe, cela devra rester une option manuelle ou une integration future explicite, pas une dependance de base.
 

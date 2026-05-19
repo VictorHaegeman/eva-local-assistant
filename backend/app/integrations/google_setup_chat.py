@@ -24,18 +24,31 @@ def _normalize(text: str) -> str:
 
 def wants_google_account_setup(message: str) -> bool:
     normalized = _normalize(message)
-    google_markers = ("google", "gmail", "oauth", "mail", "mails", "calendar", "calendrier")
+    explicit_setup_markers = (
+        "connect",
+        "connexion",
+        "autorisation",
+        "authentification",
+        "oauth",
+        "credentials",
+        "credential",
+        "token",
+        "script oauth",
+        "json oauth",
+        "client oauth",
+    )
+    if not any(marker in normalized for marker in explicit_setup_markers):
+        return False
+
+    google_markers = ("google", "gmail", "oauth", "calendar", "calendrier", "compte google")
     action_markers = (
         "connect",
         "connexion",
-        "compte",
         "script",
         "autorisation",
         "authentification",
         "acces",
         "accede",
-        "lire",
-        "lis",
         "va sur internet",
         "va sur mon compte",
     )

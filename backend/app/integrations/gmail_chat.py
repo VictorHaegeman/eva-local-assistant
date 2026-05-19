@@ -10,6 +10,7 @@ from app.integrations.gmail_client import (
     format_email_for_prompt,
     format_sent_examples_for_prompt,
     get_gmail_message,
+    get_gmail_thread_messages,
     list_gmail_messages,
     message_to_dict,
 )
@@ -62,6 +63,13 @@ def wants_gmail_open(message: str) -> bool:
         _has_gmail_context(normalized)
         or ("mail" in normalized and any(marker in normalized for marker in open_markers))
     ) and any(marker in normalized for marker in open_markers)
+
+
+def wants_gmail_inbox_open(message: str) -> bool:
+    normalized = _normalize(message)
+    if not any(marker in normalized for marker in ("ouvre", "ouvrir", "open", "brave", "navigateur")):
+        return False
+    return any(marker in normalized for marker in ("mes mails", "mes emails", "boite mail", "boite email", "inbox", "gmail"))
 
 
 def wants_gmail_list(message: str) -> bool:
@@ -121,6 +129,9 @@ def wants_gmail_inspect(message: str) -> bool:
 
 def wants_gmail_reply_draft(message: str) -> bool:
     normalized = _normalize(message)
+    if _has_reply_audit_context(normalized):
+        return False
+
     reply_markers = (
         "repond",
         "reponse",
@@ -144,6 +155,29 @@ def wants_gmail_reply_draft(message: str) -> bool:
         return False
 
     return any(marker in normalized for marker in reply_markers)
+
+
+def _has_reply_audit_context(normalized: str) -> bool:
+    return any(
+        marker in normalized
+        for marker in (
+            "pas repondu",
+            "non repondu",
+            "sans reponse",
+            "sans repondre",
+            "a repondre",
+            "a traiter",
+            "que j'ai pas repondu",
+            "que je n'ai pas repondu",
+        )
+    )
+
+
+def wants_gmail_reply_audit(message: str) -> bool:
+    normalized = _normalize(message)
+    if not _has_gmail_context(normalized) and "mails" not in normalized:
+        return False
+    return _has_reply_audit_context(normalized)
 
 
 def parse_reply_draft(raw_draft: str, original_subject: str) -> tuple[str, str]:
@@ -174,6 +208,10 @@ def parse_reply_draft(raw_draft: str, original_subject: str) -> tuple[str, str]:
 def _gmail_thread_url(message: GmailMessage) -> str:
     thread = message.thread_id or message.id
     return f"https://mail.google.com/mail/u/0/#all/{thread}"
+
+
+def _gmail_inbox_url() -> str:
+    return "https://mail.google.com/mail/u/0/#inbox"
 
 
 def _extract_urls(text: str) -> list[str]:
@@ -290,6 +328,12 @@ def open_gmail_message_in_browser(message: GmailMessage, open_related_link: bool
     }
 
 
+def open_gmail_inbox_in_browser() -> str:
+    url = _gmail_inbox_url()
+    open_url(url)
+    return url
+
+
 def format_gmail_message_list() -> str:
     messages = list_gmail_messages(max_results=5)
     if not messages:
@@ -310,10 +354,131 @@ def format_gmail_message_list() -> str:
     return "\n\n".join(lines)
 
 
+def _extract_topic_from_message(message: str) -> str:
+    normalized = _normalize(message)
+    if "dreamlense" in normalized or "dream lense" in normalized:
+        return "DreamLense"
+
+    match = re.search(
+        r"(?i)(?:concern(?:e|ant)?|sur|a propos de|à propos de)\s+(?P<topic>[A-Za-z0-9_.@ -]{3,80})",
+        message,
+    )
+    if match:
+        topic = match.group("topic").strip(" ?!.,;:-")
+        topic = re.sub(r"\b(?:et|dis|moi|si|j'ai|je|n'ai|pas|repondu|répondu).*$", "", topic, flags=re.IGNORECASE).strip()
+        if topic:
+            return topic
+
+    return ""
+
+
+def _topic_queries(topic: str) -> list[str]:
+    if topic.lower() == "dreamlense":
+        return [
+            'newer_than:365d -in:sent "DreamLense"',
+            'newer_than:365d -in:sent dreamlense-ai.com',
+            'newer_than:365d -in:sent dreamlense',
+        ]
+
+    escaped = topic.replace('"', "")
+    return [f'newer_than:365d -in:sent "{escaped}"']
+
+
+def _list_topic_messages(topic: str, max_results: int = 8) -> list[GmailMessage]:
+    seen: set[str] = set()
+    messages: list[GmailMessage] = []
+    for query in _topic_queries(topic):
+        for message in list_gmail_messages(query=query, max_results=max_results):
+            if message.id in seen:
+                continue
+            seen.add(message.id)
+            messages.append(message)
+        if messages:
+            break
+    return messages[:max_results]
+
+
+def _thread_has_victor_reply(original: GmailMessage) -> bool:
+    thread_messages = get_gmail_thread_messages(original.thread_id)
+    for thread_message in thread_messages:
+        if thread_message.id == original.id:
+            continue
+        if "SENT" not in thread_message.label_ids:
+            continue
+        if original.internal_date and thread_message.internal_date <= original.internal_date:
+            continue
+        return True
+    return False
+
+
+def build_gmail_reply_audit_response(message: str) -> str:
+    topic = _extract_topic_from_message(message) or "ta demande"
+    messages = _list_topic_messages(topic)
+    if not messages:
+        return (
+            "Interpretation Eva: tu veux que je lise les mails reels et que je verifie les fils sans reponse.\n\n"
+            f"Source: Gmail API.\nJe n'ai trouve aucun mail recent lie a {topic}."
+        )
+
+    unanswered: list[GmailMessage] = []
+    answered: list[GmailMessage] = []
+    checked: list[tuple[GmailMessage, bool]] = []
+    for shallow_message in messages:
+        full_message = get_gmail_message(shallow_message.id)
+        replied = _thread_has_victor_reply(full_message)
+        checked.append((full_message, replied))
+        if replied:
+            answered.append(full_message)
+        else:
+            unanswered.append(full_message)
+
+    lines = [
+        "Interpretation Eva: tu veux un audit Gmail, pas une configuration OAuth ni un brouillon automatique.",
+        f"Source: Gmail API. Sujet recherche: {topic}.",
+        f"Mails verifies: {len(checked)}. Sans reponse detectee: {len(unanswered)}.",
+        "",
+    ]
+
+    if unanswered:
+        lines.append("A traiter:")
+        for index, item in enumerate(unanswered[:5], start=1):
+            lines.append(
+                f"{index}. {item.subject}\n"
+                f"   De: {item.sender}\n"
+                f"   Date: {item.date}\n"
+                f"   ID: {item.id}\n"
+                f"   Extrait: {item.snippet}"
+            )
+        lines.append("")
+        lines.append("Tu peux me dire: `reponds au mail ID ...` ou `ouvre le premier mail DreamLense`.")
+    else:
+        lines.append("Je n'ai pas detecte de mail DreamLense recent sans reponse de ta part.")
+
+    if answered:
+        lines.append("")
+        lines.append("Deja repondu:")
+        for item in answered[:5]:
+            lines.append(f"- {item.subject} ({item.date})")
+
+    return "\n".join(lines)
+
+
 async def build_gmail_chat_response(message: str, force_list: bool = False) -> str | None:
+    reply_audit_requested = wants_gmail_reply_audit(message)
+    if reply_audit_requested:
+        return build_gmail_reply_audit_response(message)
+
+    inbox_open_requested = wants_gmail_inbox_open(message)
     open_requested = wants_gmail_open(message)
     inspect_requested = wants_gmail_inspect(message)
     reply_requested = wants_gmail_reply_draft(message)
+
+    if inbox_open_requested and not inspect_requested and not reply_requested:
+        url = open_gmail_inbox_in_browser()
+        return (
+            "Interpretation Eva: tu veux ouvrir ta boite Gmail, pas traiter un mail precis.\n\n"
+            f"J'ai ouvert Gmail dans Brave: {url}"
+        )
 
     if open_requested or inspect_requested or reply_requested:
         selected_index = _message_index_from_request(message)
