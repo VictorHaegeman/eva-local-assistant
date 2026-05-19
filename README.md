@@ -248,8 +248,23 @@ Routes utiles:
 
 - `POST /web/search`: recherche web gratuite;
 - le chat declenche aussi une recherche si tu demandes par exemple `cherche sur internet ...`.
+- `POST /browser/assist`: ouvre Brave ou YouTube quand tu demandes un support visuel, une video ou une recherche navigateur.
 
 La recherche web ne necessite pas de validation humaine, car elle ne modifie rien sur le PC et n'utilise aucun service payant.
+
+## Navigation et videos
+
+Eva peut ouvrir Brave ou YouTube quand le format web/video aide mieux que du texte.
+
+Exemples:
+
+```text
+Eva, trouve une video YouTube pour configurer OAuth Google.
+Eva, ouvre un navigateur pour comparer les meilleurs modeles Ollama.
+Eva, montre-moi un tuto pour utiliser Cursor Agent.
+```
+
+Eva ouvre seulement la recherche ou la page locale. Elle ne pretend pas avoir regarde la video si elle l'a seulement ouverte.
 
 ## Connexion Cursor et Gmail
 
@@ -1240,6 +1255,7 @@ Fonctions:
 - bouton `Wake Eva` pour activer l'ecoute continue dans la fenetre;
 - declenchement par `Eva` ou `Ok Eva`;
 - reponses vocales via la synthese vocale du navigateur;
+- profil vocal local `Jarvis-like`: voix plus grave, plus lente, selection automatique de la meilleure voix Windows/navigateur disponible;
 - commande vocale `stop` ou `tais-toi` pour couper la voix.
 
 Exemples:
@@ -1255,6 +1271,7 @@ Limites de cette V1 vocale:
 - le wake word marche quand la fenetre Eva est ouverte;
 - selon Edge/Chrome, la reconnaissance vocale peut utiliser le moteur du navigateur;
 - ce n'est pas encore un service micro Windows qui ecoute hors de la fenetre Eva;
+- Eva ne clone pas la voix officielle de Jarvis/Marvel;
 - pour une version totalement locale, la prochaine etape sera un runner vocal avec Vosk, whisper.cpp ou un moteur STT local, puis une voix locale type Piper.
 
 ## Hands et autonomie

@@ -14,6 +14,7 @@ from app.actions.action_store import (
 from app.actions.executor import ActionExecutionError, execute_action
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
 from app.integrations.google_setup_chat import (
     build_calendar_events_response,
@@ -165,8 +166,10 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             await _send_message(client, chat_id, "Usage: /open youtube ou /open https://example.com")
             return True
         try:
-            response = open_browser_from_message(f"ouvre {argument}")
-        except BrowserActionError as exc:
+            response = open_assisted_browser_from_message(argument)
+            if not response:
+                response = open_browser_from_message(f"ouvre {argument}")
+        except (BrowserActionError, BrowserAssistError) as exc:
             await _send_message(client, chat_id, f"Ouverture navigateur refusee: {exc}")
             return True
         await _send_message(client, chat_id, response or "Je n'ai pas reconnu le site a ouvrir.")
@@ -356,8 +359,10 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             return
 
     try:
-        browser_response = open_browser_from_message(text)
-    except BrowserActionError as exc:
+        browser_response = open_assisted_browser_from_message(text)
+        if not browser_response:
+            browser_response = open_browser_from_message(text)
+    except (BrowserActionError, BrowserAssistError) as exc:
         await _send_message(client, chat_id, f"Ouverture navigateur refusee: {exc}")
         return
     if browser_response:

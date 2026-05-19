@@ -212,7 +212,7 @@ export function ChatInput({ onSend, disabled, voiceReplies, onVoiceRepliesChange
           aria-label="Activer les reponses vocales"
         >
           {voiceReplies ? <Volume2 size={15} aria-hidden="true" /> : <VolumeX size={15} aria-hidden="true" />}
-          Voix
+          Voix Jarvis-like
         </button>
         {voiceStatus && <span className="voice-status">{voiceStatus}</span>}
       </div>

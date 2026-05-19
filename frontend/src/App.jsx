@@ -24,6 +24,65 @@ const welcomeMessage = {
   localOnly: true,
 };
 
+const EVA_VOICE_PROFILE = {
+  preferredNames: [
+    "Microsoft Ryan",
+    "Microsoft George",
+    "Microsoft Guy",
+    "Microsoft Henri",
+    "Microsoft Claude",
+    "Google UK English Male",
+    "Google français",
+    "Google francais",
+    "Daniel",
+    "Arthur",
+    "Thomas",
+    "Oliver",
+  ],
+  avoidedNames: ["zira", "hazel", "susan", "samantha", "hortense", "julie"],
+  rate: 0.9,
+  pitch: 0.72,
+  volume: 0.95,
+};
+
+
+function scoreEvaVoice(voice) {
+  const name = voice.name.toLowerCase();
+  const lang = voice.lang.toLowerCase();
+  let score = 0;
+
+  EVA_VOICE_PROFILE.preferredNames.forEach((preferredName, index) => {
+    if (name.includes(preferredName.toLowerCase())) {
+      score += 100 - index;
+    }
+  });
+
+  if (lang.startsWith("en-gb")) score += 38;
+  if (lang.startsWith("en")) score += 24;
+  if (lang.startsWith("fr")) score += 18;
+  if (name.includes("male") || name.includes("guy") || name.includes("ryan")) score += 18;
+  if (voice.localService) score += 8;
+
+  EVA_VOICE_PROFILE.avoidedNames.forEach((avoidedName) => {
+    if (name.includes(avoidedName)) {
+      score -= 80;
+    }
+  });
+
+  return score;
+}
+
+
+function chooseEvaVoice() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return null;
+
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  return [...voices].sort((a, b) => scoreEvaVoice(b) - scoreEvaVoice(a))[0] || null;
+}
+
+
 function createDailyBriefMessage(payload) {
   const brief = payload.brief || {};
   const instagram = payload.instagram || {};
@@ -166,6 +225,23 @@ export default function App() {
     window.localStorage.setItem("evaVoiceReplies", String(voiceReplies));
   }, [voiceReplies]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return undefined;
+
+    const loadVoices = () => {
+      window.speechSynthesis.getVoices();
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      if (window.speechSynthesis.onvoiceschanged === loadVoices) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
+
   function speakEva(text) {
     if (!voiceReplies || typeof window === "undefined" || !window.speechSynthesis) {
       return;
@@ -181,9 +257,16 @@ export default function App() {
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = "fr-FR";
-    utterance.rate = 1.02;
-    utterance.pitch = 1;
+    const voice = chooseEvaVoice();
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang || "fr-FR";
+    } else {
+      utterance.lang = "fr-FR";
+    }
+    utterance.rate = EVA_VOICE_PROFILE.rate;
+    utterance.pitch = EVA_VOICE_PROFILE.pitch;
+    utterance.volume = EVA_VOICE_PROFILE.volume;
     window.speechSynthesis.speak(utterance);
   }
 

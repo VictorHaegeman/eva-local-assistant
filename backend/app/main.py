@@ -61,6 +61,11 @@ from app.integrations.google_calendar_client import (
 )
 from app.integrations.inbox_smart import collect_inbox_signals
 from app.integrations.browser import open_url
+from app.integrations.browser_assistant import (
+    BrowserAssistError,
+    detect_browser_assist,
+    open_assisted_browser_from_message,
+)
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
     draft_linkedin_comment,
@@ -261,6 +266,10 @@ class WebSearchRequest(BaseModel):
 
 class BrowserOpenTabsRequest(BaseModel):
     urls: list[str] = Field(default_factory=list, max_length=8)
+
+
+class BrowserAssistRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=1000)
 
 
 class DailyLaunchRequest(BaseModel):
@@ -832,6 +841,21 @@ async def browser_open_tabs(request: BrowserOpenTabsRequest) -> dict[str, object
     return {
         "opened": opened,
         "rejected": rejected,
+    }
+
+
+@app.post("/browser/assist", dependencies=[Depends(require_sensitive_access)])
+async def browser_assist(request: BrowserAssistRequest) -> dict[str, object]:
+    try:
+        detected = detect_browser_assist(request.message)
+        response = open_assisted_browser_from_message(request.message)
+    except BrowserAssistError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "opened": bool(response),
+        "response": response,
+        "detected": detected,
     }
 
 
