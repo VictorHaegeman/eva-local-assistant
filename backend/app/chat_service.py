@@ -54,6 +54,7 @@ from app.project_factory.automation import (
 )
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 from app.screen.screen_reader import ScreenReaderError, analyze_screen
+from app.screen.screen_watcher import latest_screen_context
 from app.skills.registry import list_skills
 from app.terminal.terminal_doctor import (
     analyze_terminal_error,
@@ -240,6 +241,11 @@ async def process_chat_messages(
     context_blocks: list[str] = []
 
     try:
+        if trusted_actions:
+            screen_context = latest_screen_context()
+            if screen_context:
+                context_blocks.append(screen_context)
+
         if user_intent.name == "screen_read":
             if not trusted_actions:
                 return {

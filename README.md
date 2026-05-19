@@ -299,6 +299,8 @@ Depuis Telegram, tu peux aussi demander:
 /google
 connecte mon compte Google pour Gmail et Calendar
 ouvre youtube
+ouvre yourube
+/open youtube
 ouvre https://dreamlense-ai.com
 ```
 
@@ -363,6 +365,7 @@ Commandes Telegram:
 /terminal ERREUR
 /screen
 /ecran
+/open SITE
 /pending
 /approve ID
 /reject ID
@@ -441,14 +444,19 @@ Variables utiles:
 EVA_SCREEN_ENABLED=true
 EVA_SCREEN_VISION_MODEL=llava:7b
 EVA_SCREEN_MAX_CAPTURES=20
+EVA_SCREEN_WATCH_ENABLED=true
+EVA_SCREEN_WATCH_INTERVAL_SECONDS=60
+EVA_SCREEN_WATCH_CONTEXT_MAX_AGE_SECONDS=180
 ```
 
 Routes utiles:
 
 ```text
 GET /screen/status
+GET /screen/latest
 POST /screen/capture
 POST /screen/analyze
+POST /screen/watch/run-once
 ```
 
 Depuis Telegram:
@@ -459,6 +467,14 @@ Depuis Telegram:
 ```
 
 Limite importante: Eva lit ce qui est visible dans la capture. Si la fenetre d'erreur est cachee, minimisee ou sur un autre bureau virtuel, elle ne pourra pas l'interpreter correctement.
+
+Mode vision continue:
+
+- si `EVA_SCREEN_WATCH_ENABLED=true`, Eva analyse l'ecran en arriere-plan;
+- le chat local et Telegram peuvent utiliser ce contexte visuel recent;
+- l'intervalle par defaut est volontairement de 60 secondes pour eviter de saturer Ollama;
+- aucune action systeme n'est lancee par la vision continue, elle observe seulement.
+- pour un fonctionnement H24, utilise `start-eva-background.bat`: ce mode lance le backend sans `--reload`, donc il reste stable quand les fichiers changent.
 
 Routes locales utiles:
 

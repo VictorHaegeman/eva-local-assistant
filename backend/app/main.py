@@ -134,6 +134,11 @@ from app.screen.screen_reader import (
     capture_screen,
     screen_status,
 )
+from app.screen.screen_watcher import (
+    latest_screen_analysis,
+    run_screen_watch_once,
+    start_screen_watch_background_task,
+)
 from app.terminal.terminal_doctor import (
     TerminalDoctorError,
     analyze_terminal_error,
@@ -312,13 +317,15 @@ init_chat_history_store()
 
 telegram_task: asyncio.Task[None] | None = None
 heartbeat_task: asyncio.Task[None] | None = None
+screen_watch_task: asyncio.Task[None] | None = None
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global heartbeat_task, telegram_task
+    global heartbeat_task, screen_watch_task, telegram_task
     telegram_task = start_telegram_background_task()
     heartbeat_task = start_heartbeat_background_task()
+    screen_watch_task = start_screen_watch_background_task()
 
 
 @app.on_event("shutdown")
@@ -327,6 +334,8 @@ async def shutdown_event() -> None:
         telegram_task.cancel()
     if heartbeat_task:
         heartbeat_task.cancel()
+    if screen_watch_task:
+        screen_watch_task.cancel()
 
 
 @app.get("/health")
@@ -806,6 +815,22 @@ async def browser_open_tabs(request: BrowserOpenTabsRequest) -> dict[str, object
 @app.get("/screen/status", dependencies=[Depends(require_sensitive_access)])
 async def screen_reader_status() -> dict[str, object]:
     return screen_status()
+
+
+@app.get("/screen/latest", dependencies=[Depends(require_sensitive_access)])
+async def screen_reader_latest() -> dict[str, object]:
+    return {
+        "latest": latest_screen_analysis(),
+        "status": screen_status(),
+    }
+
+
+@app.post("/screen/watch/run-once", dependencies=[Depends(require_sensitive_access)])
+async def screen_watch_run_once() -> dict[str, object]:
+    try:
+        return await run_screen_watch_once()
+    except ScreenReaderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/screen/capture", dependencies=[Depends(require_sensitive_access)])

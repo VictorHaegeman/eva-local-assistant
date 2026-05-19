@@ -14,6 +14,7 @@ from app.actions.action_store import (
 from app.actions.executor import ActionExecutionError, execute_action
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
 from app.integrations.google_setup_chat import (
     build_calendar_events_response,
     build_google_setup_response,
@@ -138,6 +139,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/idea IDEE - alias de /project\n"
                 "/cursor PROJET + TACHE - ouvrir Cursor et copier le prompt\n"
                 "/codex PROJET + TACHE - alias de /cursor\n"
+                "/open SITE - ouvrir un site dans Brave\n"
                 "/google - connecter Google/Gmail/Calendar sur le PC\n"
                 "/calendar - lire les prochains evenements Calendar\n"
                 "/history - revoir le fil Telegram recent\n"
@@ -148,13 +150,26 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/approve ID - valider et executer une action\n"
                 "/reject ID - refuser une action\n"
                 "/status - verifier la connexion\n\n"
-                "Tu peux aussi envoyer un message normal, par exemple: ouvre youtube."
+                "Tu peux aussi envoyer un message normal, par exemple: ouvre youtube.\n"
+                "Eva garde aussi un contexte visuel recent de l'ecran si la vision continue est active."
             ),
         )
         return True
 
     if command == "/status":
         await _send_message(client, chat_id, "Eva Telegram est active sur ce PC.")
+        return True
+
+    if command in {"/open", "/ouvre"}:
+        if not argument:
+            await _send_message(client, chat_id, "Usage: /open youtube ou /open https://example.com")
+            return True
+        try:
+            response = open_browser_from_message(f"ouvre {argument}")
+        except BrowserActionError as exc:
+            await _send_message(client, chat_id, f"Ouverture navigateur refusee: {exc}")
+            return True
+        await _send_message(client, chat_id, response or "Je n'ai pas reconnu le site a ouvrir.")
         return True
 
     if command == "/reset":
@@ -339,6 +354,25 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
         handled = await _handle_command(client, chat_id, text)
         if handled:
             return
+
+    try:
+        browser_response = open_browser_from_message(text)
+    except BrowserActionError as exc:
+        await _send_message(client, chat_id, f"Ouverture navigateur refusee: {exc}")
+        return
+    if browser_response:
+        append_telegram_exchange(chat_id, text, browser_response)
+        try:
+            append_chat_exchange(
+                f"telegram-{chat_id}",
+                text,
+                browser_response,
+                channel="telegram",
+            )
+        except ChatHistoryError:
+            pass
+        await _send_message(client, chat_id, browser_response)
+        return
 
     try:
         context = load_telegram_context(chat_id)

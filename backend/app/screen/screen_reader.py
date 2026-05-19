@@ -44,7 +44,7 @@ def _pillow_available() -> bool:
 
 
 def screen_status() -> dict[str, object]:
-    return {
+    status = {
         "enabled": settings.eva_screen_enabled,
         "capture_dir": str(SCREEN_CAPTURE_DIR),
         "pillow_available": _pillow_available(),
@@ -52,6 +52,13 @@ def screen_status() -> dict[str, object]:
         "local_only": True,
         "captures_gitignored": True,
     }
+    try:
+        from app.screen.screen_watcher import screen_watcher_status
+
+        status["watcher"] = screen_watcher_status()
+    except Exception:
+        status["watcher"] = {"enabled": settings.eva_screen_watch_enabled}
+    return status
 
 
 def _cleanup_old_captures() -> None:

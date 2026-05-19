@@ -23,6 +23,10 @@ BLOCKED_SCHEMES = ("file", "javascript", "data")
 
 SITE_ALIASES = {
     "youtube": "https://www.youtube.com",
+    "youtu": "https://www.youtube.com",
+    "youtub": "https://www.youtube.com",
+    "yourube": "https://www.youtube.com",
+    "you tube": "https://www.youtube.com",
     "yt": "https://www.youtube.com",
     "gmail": "https://mail.google.com",
     "google": "https://www.google.com",

@@ -68,6 +68,12 @@ class Settings:
     eva_screen_enabled: bool = _env_bool("EVA_SCREEN_ENABLED", True)
     eva_screen_vision_model: str = os.getenv("EVA_SCREEN_VISION_MODEL", "llava:7b")
     eva_screen_max_captures: int = _env_int("EVA_SCREEN_MAX_CAPTURES", 20)
+    eva_screen_watch_enabled: bool = _env_bool("EVA_SCREEN_WATCH_ENABLED", True)
+    eva_screen_watch_interval_seconds: int = _env_int("EVA_SCREEN_WATCH_INTERVAL_SECONDS", 60)
+    eva_screen_watch_context_max_age_seconds: int = _env_int(
+        "EVA_SCREEN_WATCH_CONTEXT_MAX_AGE_SECONDS",
+        180,
+    )
     eva_obsidian_memory_enabled: bool = _env_bool("EVA_OBSIDIAN_MEMORY_ENABLED", True)
     eva_obsidian_vault_path: str = os.getenv("EVA_OBSIDIAN_VAULT_PATH", "data/obsidian_vault")
     eva_cursor_auto_copy_prompt: bool = _env_bool("EVA_CURSOR_AUTO_COPY_PROMPT", True)

@@ -54,7 +54,7 @@ if (-not (Test-Path $python)) {
 if (-not (Test-LocalPort -Port 8000)) {
     Start-Process `
         -FilePath $python `
-        -ArgumentList @("-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload") `
+        -ArgumentList @("-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000") `
         -WorkingDirectory $backendDir `
         -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $logsDir "backend.out.log") `
