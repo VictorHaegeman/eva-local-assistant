@@ -1291,20 +1291,17 @@ Limites de cette V1 vocale:
 Eva doit raisonner comme un operateur local:
 
 1. comprendre l'objectif;
-2. classer l'intention avant d'appeler un outil;
-3. distinguer les demandes proches: ouvrir Gmail, lire des mails, auditer les mails sans reponse, rediger un brouillon, connecter OAuth;
-4. utiliser les outils surs disponibles: memoire, fichiers autorises, projets, RSS, recherche web gratuite;
-5. tenter une solution directe quand elle ne modifie rien de critique;
-6. proposer ou executer le flux Project Factory auto quand il s'agit d'une nouvelle idee projet;
+2. creer un plan interne d'action;
+3. classer l'intention avant d'appeler un outil;
+4. distinguer les demandes proches: ouvrir Gmail, lire des mails, auditer les mails sans reponse, rediger un brouillon, connecter OAuth, ouvrir une app, lancer Spotify ou faire une recherche web;
+5. utiliser les outils surs disponibles: memoire, fichiers autorises, projets, RSS, recherche web gratuite, Gmail, Calendar, navigateur, lecture d'ecran;
+6. executer directement ce qui est autorise en mode operator;
 7. proposer un plan B si la premiere piste bloque;
-8. demander validation pour les actions dangereuses restantes: suppression, envoi, publication, `git push`, commande systeme hors flux explicitement autorise.
+8. demander validation pour les actions dangereuses restantes: suppression, envoi, publication, `git push`, commande systeme critique.
 
-Exemples d'interpretation attendue:
+Cette boucle est implementee dans `backend/app/agents/action_planner.py`. Elle produit un plan interne pour chaque prompt: objectif interprete, route d'action, outil cible, niveau de securite et etapes. Eva ne doit pas le reciter a chaque reponse; il sert a eviter les reactions betes du type "je ne peux pas ouvrir d'application" alors qu'un outil local existe.
 
-- `Ouvre mes mails` ouvre la boite Gmail, pas un mail aleatoire;
-- `Lis mes mails DreamLense et dis-moi ceux auxquels je n'ai pas repondu` lance un audit Gmail par sujet;
-- `Reponds au dernier mail Gmail` cree un brouillon Gmail;
-- `Connecte mon compte Google` lance uniquement le flux OAuth.
+Important: les consignes sur le comportement d'Eva ne sont pas des souvenirs personnels. La memoire auto ignore les phrases de pilotage du type "je veux que Eva..." ou "Eva doit..." afin de garder une memoire propre. Les souvenirs utiles concernent Victor, ses preferences, ses projets et ses objectifs.
 
 Eva ne depend pas de ChatGPT ni de l'API OpenAI. Si un jour Victor veut utiliser ChatGPT web comme outil externe, cela devra rester une option manuelle ou une integration future explicite, pas une dependance de base.
 

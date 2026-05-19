@@ -8,6 +8,7 @@ from app.config import settings
 from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
 from app.heartbeat.scheduler import HeartbeatError, heartbeat_status
+from app.agents.action_planner import build_action_plan, format_action_plan_context
 from app.agents.intent_router import classify_user_intent, format_intent_context
 from app.integrations.gmail_chat import (
     build_gmail_chat_response,
@@ -241,8 +242,13 @@ async def process_chat_messages(
     saved_memory = None
     latest_user_message = safe_messages[-1]["content"]
     user_intent = classify_user_intent(latest_user_message)
+    action_plan = build_action_plan(
+        latest_user_message,
+        user_intent,
+        trusted_actions=trusted_actions,
+    )
     intent_context = format_intent_context(user_intent)
-    context_blocks: list[str] = []
+    context_blocks: list[str] = [format_action_plan_context(action_plan)]
 
     try:
         if trusted_actions:
@@ -250,7 +256,7 @@ async def process_chat_messages(
             if screen_context:
                 context_blocks.append(screen_context)
 
-        if user_intent.name == "screen_read":
+        if action_plan.route == "screen_read":
             if not trusted_actions:
                 return {
                     "message": {
@@ -287,7 +293,7 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
-        if user_intent.name == "terminal_error" or looks_like_terminal_error(latest_user_message):
+        if action_plan.route == "terminal_error" or looks_like_terminal_error(latest_user_message):
             diagnosis = analyze_terminal_error(latest_user_message)
             launched = None
             if trusted_actions and diagnosis.fix and diagnosis.fix.safe_to_launch:
@@ -301,7 +307,7 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
-        if user_intent.name == "google_oauth_setup":
+        if action_plan.route == "google_oauth_setup":
             return {
                 "message": {
                     "role": "assistant",
@@ -314,7 +320,7 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
-        if user_intent.name == "project_factory" or _should_create_project_factory_plan(latest_user_message):
+        if action_plan.route == "project_factory" or _should_create_project_factory_plan(latest_user_message):
             if not trusted_actions:
                 return {
                     "message": {
@@ -474,9 +480,9 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        calendar_requested = user_intent.name == "calendar_read" or wants_calendar_events(latest_user_message)
+        calendar_requested = action_plan.route == "calendar_read" or wants_calendar_events(latest_user_message)
         gmail_requested = (
-            user_intent.name in {"gmail_read", "gmail_reply_audit", "gmail_reply_draft"}
+            action_plan.route in {"gmail_read", "gmail_reply_audit", "gmail_reply_draft"}
             or wants_gmail_inspect(latest_user_message)
             or wants_gmail_open(latest_user_message)
             or wants_gmail_list(latest_user_message)
@@ -497,7 +503,7 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
-        if calendar_requested and gmail_requested and user_intent.name != "gmail_reply_draft":
+        if calendar_requested and gmail_requested and action_plan.route != "gmail_reply_draft":
             sections = []
             try:
                 sections.append(format_gmail_message_list())
@@ -541,7 +547,7 @@ async def process_chat_messages(
 
         gmail_response = await build_gmail_chat_response(
             latest_user_message,
-            force_list=user_intent.name == "gmail_read",
+            force_list=action_plan.route == "gmail_read",
         )
         if gmail_response:
             return {
@@ -619,7 +625,7 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        if detect_cursor_prompt_request(latest_user_message):
+        if action_plan.route == "cursor_work" or detect_cursor_prompt_request(latest_user_message):
             if trusted_actions:
                 return {
                     "message": {

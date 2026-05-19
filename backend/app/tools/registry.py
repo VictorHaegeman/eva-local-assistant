@@ -43,6 +43,13 @@ TOOLS = (
         description="Catalogue local de competences qui oriente les reponses d'Eva.",
     ),
     ToolDescriptor(
+        key="action_planner",
+        label="Planificateur d'action",
+        category="agents",
+        policy_level="read_only",
+        description="Boucle interne comprendre, router, choisir l'outil, verifier la securite puis executer.",
+    ),
+    ToolDescriptor(
         key="file_read",
         label="Lecture fichiers",
         category="files",

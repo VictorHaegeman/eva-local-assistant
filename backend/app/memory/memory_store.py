@@ -53,6 +53,51 @@ REMEMBER_PATTERNS = (
     r"^\s*(?:remember|save|note)(?:\s+that)?\s*:?\s*(?P<content>.+)$",
 )
 
+NEGATIVE_MEMORY_MARKERS = (
+    "ne retiens pas",
+    "ne memorise pas",
+    "ne mets pas dans la memoire",
+    "ne met pas dans la memoire",
+    "n'enregistre pas",
+)
+
+ASSISTANT_META_MEMORY_MARKERS = (
+    "je veux que eva",
+    "fais en sorte que eva",
+    "eva doit",
+    "eva devra",
+    "eva puisse",
+    "qu'eva",
+    "qu eva",
+    "l'assistante",
+    "assistant local",
+)
+
+ASSISTANT_META_TOPICS = (
+    "prompt",
+    "interprete",
+    "interpreter",
+    "comprenne",
+    "comprendre",
+    "avant d'agir",
+    "avant d agir",
+    "action",
+    "actions",
+    "outil",
+    "outils",
+    "autonome",
+    "autonomie",
+    "execute",
+    "executer",
+    "reponde",
+    "repondre",
+    "memoire",
+    "telegram",
+    "gmail",
+    "cursor",
+    "codex",
+)
+
 
 def init_memory_store() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -107,6 +152,19 @@ def _normalize_for_detection(text: str) -> str:
 def _contains_forbidden_secret(content: str) -> bool:
     normalized = _normalize_for_detection(content)
     return any(pattern in normalized for pattern in FORBIDDEN_MEMORY_PATTERNS)
+
+
+def _is_negative_memory_request(normalized: str) -> bool:
+    return any(marker in normalized for marker in NEGATIVE_MEMORY_MARKERS)
+
+
+def _is_assistant_meta_instruction(normalized: str) -> bool:
+    if any(marker in normalized for marker in ASSISTANT_META_MEMORY_MARKERS):
+        return True
+
+    mentions_eva = "eva" in normalized
+    mentions_meta_topic = any(topic in normalized for topic in ASSISTANT_META_TOPICS)
+    return mentions_eva and mentions_meta_topic
 
 
 def sanitize_memory_content(content: str) -> str:
@@ -230,15 +288,26 @@ def delete_memory(memory_id: int) -> bool:
 
 
 def detect_explicit_memory_request(message: str) -> str | None:
+    normalized = _normalize_for_detection(message)
+    if _is_negative_memory_request(normalized):
+        return None
+
     for pattern in REMEMBER_PATTERNS:
         match = re.match(pattern, message, flags=re.IGNORECASE | re.DOTALL)
         if match:
-            return sanitize_memory_content(match.group("content"))
+            content = sanitize_memory_content(match.group("content"))
+            if _is_assistant_meta_instruction(_normalize_for_detection(content)):
+                return None
+            return content
 
     return None
 
 
 def detect_auto_memory_candidate(message: str) -> MemoryCandidate | None:
+    raw_normalized = _normalize_for_detection(message)
+    if _is_negative_memory_request(raw_normalized) or _is_assistant_meta_instruction(raw_normalized):
+        return None
+
     cleaned = sanitize_memory_content(message)
     normalized = _normalize_for_detection(cleaned)
 
@@ -302,8 +371,6 @@ def detect_auto_memory_candidate(message: str) -> MemoryCandidate | None:
         "je travaille sur",
         "mon projet",
         "dreamlense",
-        "eva doit",
-        "eva devra",
     )
     if any(marker in normalized for marker in project_markers):
         return MemoryCandidate(content=cleaned, category="project", confidence=0.78)

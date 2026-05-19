@@ -18,6 +18,20 @@ class SkillDescriptor:
 
 SKILLS: tuple[SkillDescriptor, ...] = (
     SkillDescriptor(
+        key="operator_planning",
+        label="Boucle operateur",
+        category="agents",
+        policy_level="read_only",
+        trigger_words=("fais", "ouvre", "cherche", "analyse", "cree", "lance", "trouve", "aide"),
+        description="Interpreter la demande avant d'agir, puis executer le meilleur plan autorise.",
+        instructions=(
+            "Avant d'agir, comprends l'objectif reel, choisis la route d'action, verifie les risques, "
+            "execute les outils autorises et rapporte le resultat concret. "
+            "Ne stocke pas les consignes sur Eva comme souvenirs personnels."
+        ),
+        tool_hints=("action_planner",),
+    ),
+    SkillDescriptor(
         key="personal_memory",
         label="Memoire personnelle",
         category="memory",
@@ -154,7 +168,7 @@ def select_skills(message: str, limit: int = 4) -> list[SkillDescriptor]:
     if matched:
         return matched[:limit]
 
-    fallback_keys = {"decision_partner", "personal_memory", "safety_guard"}
+    fallback_keys = {"operator_planning", "decision_partner", "personal_memory", "safety_guard"}
     return [skill for skill in SKILLS if skill.key in fallback_keys][:limit]
 
 
