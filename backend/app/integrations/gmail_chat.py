@@ -82,6 +82,39 @@ def wants_gmail_list(message: str) -> bool:
     )
 
 
+def wants_gmail_inspect(message: str) -> bool:
+    normalized = _normalize(message)
+    ordinal_context = any(
+        marker in normalized
+        for marker in (
+            "dernier mail",
+            "dernier email",
+            "premier mail",
+            "deuxieme mail",
+            "2eme mail",
+            "2e mail",
+            "second mail",
+            "troisieme mail",
+            "3eme mail",
+            "3e mail",
+        )
+    )
+    inspect_markers = (
+        "analyse",
+        "regarde",
+        "resume",
+        "resumer",
+        "qu'est ce",
+        "qu est ce",
+        "ce qui",
+        "contenu",
+        "quoi",
+        "detail",
+        "dis moi",
+    )
+    return ordinal_context and any(marker in normalized for marker in inspect_markers)
+
+
 def wants_gmail_reply_draft(message: str) -> bool:
     normalized = _normalize(message)
     if not _has_gmail_context(normalized):
@@ -177,6 +210,24 @@ def _looks_like_housing_message(message: GmailMessage) -> bool:
     )
 
 
+def _looks_like_automated_message(message: GmailMessage) -> bool:
+    text = _normalize(" ".join([message.subject, message.sender, message.sender_email, message.snippet, message.body[:1500]]))
+    return any(
+        marker in text
+        for marker in (
+            "no-reply",
+            "noreply",
+            "ne pas repondre",
+            "ne repondez pas",
+            "notification",
+            "alerte email",
+            "users-alertes",
+            "demande de contact",
+            "mail automatique",
+        )
+    )
+
+
 def open_gmail_message_in_browser(message: GmailMessage, open_related_link: bool = False) -> dict[str, str]:
     gmail_url = _gmail_thread_url(message)
     open_url(gmail_url)
@@ -215,9 +266,10 @@ def format_gmail_message_list() -> str:
 
 async def build_gmail_chat_response(message: str, force_list: bool = False) -> str | None:
     open_requested = wants_gmail_open(message)
+    inspect_requested = wants_gmail_inspect(message)
     reply_requested = wants_gmail_reply_draft(message)
 
-    if open_requested or reply_requested:
+    if open_requested or inspect_requested or reply_requested:
         selected_index = _message_index_from_request(message)
         messages = list_gmail_messages(max_results=max(5, selected_index + 1))
         if not messages:
@@ -252,6 +304,23 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
             )
 
         if not reply_requested:
+            if inspect_requested and original.body:
+                preview = original.body[:1200].strip()
+                lines.append(f"Extrait lu dans le mail:\n{preview}")
+            return "\n\n".join(lines)
+
+        if _looks_like_automated_message(original):
+            lines.extend(
+                [
+                    "Je ne prepare pas de faux brouillon de reponse: ce mail ressemble a une alerte, une notification ou une adresse automatique.",
+                    "Action conseillee: traiter le lien ou le site source plutot que repondre directement a l'expediteur.",
+                ]
+            )
+            if not should_open_related_link:
+                related_link = _select_relevant_external_link(original)
+                if related_link:
+                    open_url(related_link)
+                    lines.append(f"J'ai ouvert le lien le plus pertinent detecte: {related_link}")
             return "\n\n".join(lines)
 
         examples = find_sent_examples(original.sender_email)
@@ -262,7 +331,9 @@ Ne dis jamais que le mail a ete envoye.
 La reponse doit etre prete a relire, modifier et valider par Victor.
 Tu reponds comme Victor, jamais comme l'expediteur du mail.
 Utilise uniquement le contenu du mail recu ci-dessous. N'invente pas de prix, surface, rendez-vous, adresse ou caracteristiques absentes.
-Si le mail vient d'une adresse no-reply, d'une alerte automatique ou d'une notification, dis clairement que la reponse email directe est deconseillee et propose l'action la plus logique.
+Adresse expediteur verifiee: {original.sender_email}
+Ne dis jamais que l'adresse est no-reply si l'adresse expediteur verifiee ne contient pas no-reply ou noreply.
+Si le mail vient vraiment d'une adresse no-reply, d'une alerte automatique ou d'une notification, dis clairement que la reponse email directe est deconseillee et propose l'action la plus logique.
 
 Profil local:
 {build_profile_prompt_context()}

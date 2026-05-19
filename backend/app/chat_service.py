@@ -11,6 +11,7 @@ from app.agents.intent_router import classify_user_intent, format_intent_context
 from app.integrations.gmail_chat import (
     build_gmail_chat_response,
     format_gmail_message_list,
+    wants_gmail_inspect,
     wants_gmail_open,
     wants_gmail_list,
     wants_gmail_reply_draft,
@@ -89,6 +90,30 @@ PROJECT_FACTORY_MARKERS = (
     "créer un projet",
     "project factory",
 )
+
+
+BAD_TOOL_REFUSAL_MARKERS = (
+    "je suis une assistante virtuelle",
+    "je ne peux pas ouvrir des applications",
+    "je ne peux pas ouvrir d'applications",
+    "je ne peux pas interagir avec votre ordinateur",
+)
+
+
+def _remove_bad_tool_refusal(answer: str, user_message: str) -> str:
+    normalized_answer = answer.lower()
+    if not any(marker in normalized_answer for marker in BAD_TOOL_REFUSAL_MARKERS):
+        return answer
+
+    normalized_request = user_message.lower()
+    if any(marker in normalized_request for marker in ("ouvre", "ouvrir", "brave", "gmail", "mail", "ecran", "écran")):
+        return (
+            "Je ne dois pas repondre comme une IA sans outils. "
+            "Pour cette demande, je dois d'abord chercher l'outil local adapte "
+            "(Gmail, Brave, lecture d'ecran ou action locale). "
+            "Si aucun outil n'est disponible, je dois dire la limite exacte au lieu d'inventer."
+        )
+    return answer
 
 
 def _should_attach_project_context(message: str) -> bool:
@@ -406,6 +431,7 @@ async def process_chat_messages(
         calendar_requested = user_intent.name == "calendar_read" or wants_calendar_events(latest_user_message)
         gmail_requested = (
             user_intent.name in {"gmail_read", "gmail_reply_draft"}
+            or wants_gmail_inspect(latest_user_message)
             or wants_gmail_open(latest_user_message)
             or wants_gmail_list(latest_user_message)
             or wants_gmail_reply_draft(latest_user_message)
@@ -581,6 +607,7 @@ async def process_chat_messages(
     try:
         extra_context = "\n\n---\n\n".join(context_blocks) if context_blocks else None
         answer = await ask_ollama(safe_messages, extra_context=extra_context, mode=mode)
+        answer = _remove_bad_tool_refusal(answer, latest_user_message)
     except OllamaClientError as exc:
         raise ChatServiceError(str(exc)) from exc
 
