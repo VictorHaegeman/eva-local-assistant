@@ -9,7 +9,7 @@ Le projet utilise:
 - Ollama comme moteur IA local;
 - le modele par defaut `llama3.1:8b`.
 
-Eva est maintenant organisee comme un assistant local evolutif: chat Ollama, profil local, memoire locale, lecture de dossiers configures, brief RSS, projets de code, actions locales avec validation et messagerie Telegram optionnelle.
+Eva est maintenant organisee comme un assistant local evolutif: chat Ollama, profil local, memoire locale, lecture de dossiers configures, brief RSS, projets de code, actions locales en mode operateur et messagerie Telegram optionnelle.
 
 Elle reste gratuite a l'usage et n'utilise pas l'API OpenAI.
 
@@ -84,9 +84,9 @@ Direction produit actuelle:
 - privilegier les commandes locales Windows plutot que les API externes;
 - ouvrir les apps localement quand c'est utile;
 - creer des fichiers de prompt comme `CURSOR_PROMPT.md`;
-- copier un prompt dans le presse-papiers seulement apres validation;
+- copier un prompt dans le presse-papiers automatiquement quand l'action vient du PC local ou de Telegram autorise;
 - utiliser Cursor via CLI/fichiers/presse-papiers, pas via API;
-- utiliser GitHub via `gh` CLI plus tard, avec validation, pas via integration API directe.
+- utiliser GitHub via `gh` CLI local, pas via integration API directe.
 - ne pas automatiser ChatGPT web: Eva utilise Ollama local et prepare elle-meme les prompts.
 
 Routes utiles:
@@ -144,36 +144,51 @@ Le clic final reste manuel, car publier publiquement du contenu est une action c
 
 ## Autonomie controlee
 
-Eva doit etre autonome pour les actions utiles et non critiques.
+Eva est maintenant configuree pour agir comme un operateur local: elle interprete la demande, choisit l'outil adapte, puis execute directement les actions utiles non critiques depuis le PC ou ton Telegram autorise.
 
-Elle peut faire directement, sans validation a chaque fois:
+Mode par defaut:
 
-- repondre dans le chat local;
-- utiliser le profil et les memoires locales;
-- memoriser une information utile non sensible;
-- lire/analyser les fichiers texte dans les dossiers configures;
+```env
+EVA_AUTONOMY_MODE=operator
+EVA_AUTO_EXECUTE_ACTIONS=true
+EVA_AUTO_EXECUTE_COMMANDS=true
+EVA_AUTO_WRITE_FILES=true
+EVA_ALLOW_WRITE_ANY_PATH=false
+EVA_ALLOW_AUTO_DELETE=false
+EVA_ALLOW_AUTO_GIT_PUSH=false
+EVA_ALLOW_AUTO_EXTERNAL_SEND=false
+```
+
+Eva peut faire directement:
+
+- repondre dans le chat local et Telegram;
+- ouvrir des sites dans Brave;
 - rechercher sur le web via une recherche gratuite;
-- resumer un fichier, un projet ou une source;
-- preparer un prompt Cursor/Codex;
-- creer ou lister des taches locales.
+- lire/analyser les fichiers texte dans les dossiers autorises;
+- ecrire des fichiers dans les dossiers autorises;
+- executer des commandes locales non critiques;
+- preparer des prompts Cursor/Codex;
+- ouvrir Cursor et copier le prompt dans le presse-papiers;
+- creer un workspace projet;
+- faire un commit Git local initial;
+- creer un repo GitHub si `gh` est installe et connecte.
 
-Elle doit demander validation avant toute action critique:
+Ces actions restent protegees meme en mode `operator`:
 
-- lancer une commande systeme;
-- modifier ou supprimer un fichier;
-- ouvrir une branche ou faire une operation Git destructive;
-- faire un `git push`;
-- publier du contenu;
-- envoyer un message externe;
-- utiliser un compte externe.
+- suppression de fichiers, sauf `EVA_ALLOW_AUTO_DELETE=true`;
+- `git push`, sauf `EVA_ALLOW_AUTO_GIT_PUSH=true` ou `EVA_PROJECT_FACTORY_AUTO_PUSH=true`;
+- publication LinkedIn ou contenu public;
+- envoi d'email ou message externe;
+- commandes critiques: `git reset`, `git clean`, suppression, shutdown, formatage, execution policy, etc.;
+- stockage de secrets dans le code ou la memoire.
 
 Route utile:
 
 - `GET /autonomy`: affiche la politique d'autonomie active.
 
-## Mode operateur local avec validation
+## Mode operateur local
 
-Eva peut preparer et executer des actions locales puissantes. Les actions critiques restent bloquees par validation humaine.
+Eva peut preparer et executer des actions locales puissantes. Les actions non critiques sont executees directement; les actions dangereuses restent bloquees par les flags ci-dessus.
 
 Actions supportees:
 
@@ -186,11 +201,10 @@ Actions supportees:
 Principe:
 
 1. tu demandes une action a Eva;
-2. si elle est non critique, Eva la traite directement;
-3. si elle est critique, Eva cree une action en attente;
-4. tu valides explicitement l'action;
-5. Eva execute sur le PC;
-6. le resultat est stocke localement.
+2. Eva interprete l'intention avant d'appeler l'outil;
+3. si l'action est non critique et autorisee, Eva l'execute directement;
+4. si l'action est protegee, Eva l'enregistre en attente ou refuse avec la raison exacte;
+5. le resultat est stocke localement.
 
 Routes utiles:
 
@@ -209,7 +223,7 @@ Stockage local:
 data/eva_actions.sqlite
 ```
 
-Les actions systeme sont activees par defaut dans `backend/.env.example`, mais les actions critiques restent bloquees par la validation:
+Les actions systeme sont activees par defaut dans `backend/.env.example`, mais les actions critiques restent bloquees par politique:
 
 ```env
 EVA_SYSTEM_ACTIONS_ENABLED=true
@@ -224,7 +238,7 @@ Eva, lance la commande "dir"
 Eva, prepare un prompt Codex pour corriger le bug de login dans Barly
 ```
 
-La commande locale sera mise en attente. Le prompt Cursor sera genere directement.
+La commande locale non critique sera executee directement. Une commande critique comme `git reset --hard` restera bloquee.
 
 ## Recherche web gratuite
 

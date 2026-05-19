@@ -17,6 +17,7 @@ Eva possede deja:
 - Project Factory: workspace, docs projet, prompt Cursor, commit local, GitHub CLI;
 - Doctor local;
 - politique de securite par niveaux d'action.
+- mode `operator`: execution automatique des actions locales non critiques depuis le PC ou Telegram autorise.
 
 ## Definition du "100% autonome" pour Eva
 
@@ -84,6 +85,11 @@ Fait:
 - auto GitHub/push configurable.
 - Terminal Doctor: analyse d'erreurs collees depuis PowerShell/Telegram;
 - correctif automatique connu pour les chemins `C:\Program Files` non quotes avec GitHub CLI.
+- execution directe des commandes non critiques;
+- ecriture directe dans les dossiers autorises;
+- ouverture Brave/Cursor et presse-papiers sans validation repetitive;
+- creation repo GitHub automatique si `gh` est connecte;
+- `git push` automatique seulement si le flag local est active.
 
 Reste:
 
@@ -172,6 +178,7 @@ Fait:
 - routes sensibles protegees;
 - action policy;
 - actions bloquees pour secrets et appels payants.
+- flags d'autonomie locale: commandes, ecriture, suppression, push, envois externes.
 
 Reste:
 
@@ -179,7 +186,7 @@ Reste:
 - ajouter journal d'audit consultable;
 - classer les actions par risque reel;
 - separer autonomie locale et publication externe;
-- ajouter mode "manual", "trusted", "full local".
+- exposer le mode "manual", "operator", "full local" dans l'interface.
 
 Prochaine execution:
 

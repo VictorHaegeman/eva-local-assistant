@@ -1,6 +1,7 @@
 from app.actions.action_store import EvaAction, action_to_dict, update_action_status
 from app.actions.executor import execute_action
 from app.config import settings
+from app.security.action_policy import can_auto_execute
 
 
 AUTO_ACTION_ORDER = {
@@ -14,7 +15,7 @@ AUTO_ACTION_ORDER = {
 
 
 def _auto_enabled_for(action: EvaAction) -> tuple[bool, str]:
-    if not settings.eva_project_factory_auto_execute:
+    if not (settings.eva_project_factory_auto_execute or settings.eva_auto_execute_actions):
         return False, "auto_execute desactive"
 
     if action.action_type == "clipboard_set_prompt":
@@ -32,7 +33,8 @@ def _auto_enabled_for(action: EvaAction) -> tuple[bool, str]:
     if action.action_type == "git_push":
         return settings.eva_project_factory_auto_push, "auto_push desactive"
 
-    return action.action_type == "project_workspace_create", "action non auto"
+    allowed, reason = can_auto_execute(action.action_type, action.payload)
+    return allowed, reason
 
 
 def auto_execute_project_factory_actions(actions: list[EvaAction]) -> list[dict[str, object]]:

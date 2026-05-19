@@ -48,6 +48,14 @@ class Settings:
     ollama_temperature: float = _env_float("OLLAMA_TEMPERATURE", 0.7)
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     eva_api_token: str = os.getenv("EVA_API_TOKEN", "")
+    eva_autonomy_mode: str = os.getenv("EVA_AUTONOMY_MODE", "operator")
+    eva_auto_execute_actions: bool = _env_bool("EVA_AUTO_EXECUTE_ACTIONS", True)
+    eva_auto_execute_commands: bool = _env_bool("EVA_AUTO_EXECUTE_COMMANDS", True)
+    eva_auto_write_files: bool = _env_bool("EVA_AUTO_WRITE_FILES", True)
+    eva_allow_write_any_path: bool = _env_bool("EVA_ALLOW_WRITE_ANY_PATH", False)
+    eva_allow_auto_delete: bool = _env_bool("EVA_ALLOW_AUTO_DELETE", False)
+    eva_allow_auto_git_push: bool = _env_bool("EVA_ALLOW_AUTO_GIT_PUSH", False)
+    eva_allow_auto_external_send: bool = _env_bool("EVA_ALLOW_AUTO_EXTERNAL_SEND", False)
     eva_system_actions_enabled: bool = _env_bool("EVA_SYSTEM_ACTIONS_ENABLED", True)
     eva_action_timeout_seconds: float = _env_float("EVA_ACTION_TIMEOUT_SECONDS", 120.0)
     eva_web_search_enabled: bool = _env_bool("EVA_WEB_SEARCH_ENABLED", True)
@@ -83,7 +91,7 @@ class Settings:
     eva_cursor_agent_background: bool = _env_bool("EVA_CURSOR_AGENT_BACKGROUND", True)
     eva_telegram_context_messages: int = _env_int("EVA_TELEGRAM_CONTEXT_MESSAGES", 16)
     eva_projects_dir: str = os.getenv("EVA_PROJECTS_DIR", r"C:\Users\victo\Desktop\Cursor")
-    eva_project_factory_auto_execute: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_EXECUTE", False)
+    eva_project_factory_auto_execute: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_EXECUTE", True)
     eva_project_factory_auto_commit: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_COMMIT", True)
     eva_project_factory_auto_copy_prompt: bool = _env_bool(
         "EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT",
@@ -93,7 +101,7 @@ class Settings:
         "EVA_PROJECT_FACTORY_AUTO_OPEN_CURSOR",
         True,
     )
-    eva_project_factory_auto_github: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_GITHUB", False)
+    eva_project_factory_auto_github: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_GITHUB", True)
     eva_project_factory_auto_push: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_PUSH", False)
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")

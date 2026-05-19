@@ -14,7 +14,7 @@ from app.project_factory.executor import (
     execute_github_repo_create,
     execute_project_workspace_create,
 )
-from app.security.action_policy import is_blocked, requires_confirmation
+from app.security.action_policy import can_auto_execute, is_blocked
 
 
 class ActionExecutionError(Exception):
@@ -23,6 +23,21 @@ class ActionExecutionError(Exception):
 
 def _resolve_path(path_value: str) -> Path:
     return Path(path_value).expanduser().resolve()
+
+
+def _path_in_allowed_roots(path: Path) -> bool:
+    try:
+        roots = load_allowed_roots()
+    except LocalFileError as exc:
+        raise ActionExecutionError(str(exc)) from exc
+
+    for root in roots:
+        try:
+            path.relative_to(root.path)
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 def _execute_command(action: EvaAction) -> str:
@@ -86,6 +101,12 @@ def _write_file(action: EvaAction) -> str:
     content = str(action.payload.get("content", ""))
     mode = str(action.payload.get("mode", "overwrite"))
 
+    if not settings.eva_allow_write_any_path and not _path_in_allowed_roots(path):
+        raise ActionExecutionError(
+            "Ecriture refusee: chemin hors dossiers autorises. "
+            "Ajoute le dossier dans data/eva_allowed_paths.json ou active EVA_ALLOW_WRITE_ANY_PATH=true."
+        )
+
     path.parent.mkdir(parents=True, exist_ok=True)
 
     if mode == "append":
@@ -142,8 +163,10 @@ def execute_action(action_id: int, require_approval: bool = True) -> dict[str, o
     if is_blocked(action.action_type, action.payload):
         raise ActionExecutionError("Cette action est bloquee par la politique de securite.")
 
-    if not require_approval and requires_confirmation(action.action_type, action.payload):
-        raise ActionExecutionError("Cette action est critique et necessite une validation.")
+    if not require_approval:
+        allowed, reason = can_auto_execute(action.action_type, action.payload)
+        if not allowed:
+            raise ActionExecutionError(f"Action non auto-executable: {reason}.")
 
     if not require_approval and action.status == "pending":
         action = update_action_status(action.id, "approved")

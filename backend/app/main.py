@@ -119,7 +119,7 @@ from app.projects.task_store import (
     list_tasks,
     task_to_dict,
 )
-from app.security.action_policy import autonomy_policy_text, policy_levels, requires_confirmation
+from app.security.action_policy import autonomy_policy_text, can_auto_execute, policy_levels
 from app.security.api_auth import is_request_trusted, require_sensitive_access
 from app.skills.registry import list_skills
 from app.social.instagram_public import (
@@ -446,10 +446,18 @@ async def skills() -> dict[str, object]:
 @app.get("/autonomy", dependencies=[Depends(require_sensitive_access)])
 async def autonomy() -> dict[str, object]:
     return {
+        "mode": settings.eva_autonomy_mode,
+        "auto_execute_actions": settings.eva_auto_execute_actions,
+        "auto_execute_commands": settings.eva_auto_execute_commands,
+        "auto_write_files": settings.eva_auto_write_files,
+        "allow_write_any_path": settings.eva_allow_write_any_path,
+        "allow_auto_delete": settings.eva_allow_auto_delete,
+        "allow_auto_git_push": settings.eva_allow_auto_git_push,
+        "allow_auto_external_send": settings.eva_allow_auto_external_send,
         "policy": autonomy_policy_text(),
         "levels": policy_levels(),
         "project_factory": project_factory_auto_status(),
-        "safe_without_confirmation": [
+        "auto_without_confirmation": [
             "lecture/analyse dans les dossiers configures",
             "recherche web gratuite",
             "lecture Gmail si OAuth local est configure",
@@ -459,16 +467,21 @@ async def autonomy() -> dict[str, object]:
             "resume",
             "creation de taches locales",
             "preparation de prompts Cursor/Codex",
+            "ouverture de sites et apps supportees",
+            "commandes locales non critiques",
+            "creation de workspace projet",
+            "copie presse-papiers et ouverture Cursor",
+            "commit Git local initial",
+            "creation de repo GitHub si gh est connecte",
         ],
-        "requires_confirmation": [
-            "commande systeme hors Project Factory auto configuree",
-            "modification ou suppression de fichier hors workspace Project Factory",
-            "git push",
+        "protected_even_in_operator": [
+            "suppression de fichiers sauf EVA_ALLOW_AUTO_DELETE=true",
+            "git push sauf EVA_ALLOW_AUTO_GIT_PUSH=true ou EVA_PROJECT_FACTORY_AUTO_PUSH=true",
             "publication",
             "envoi de message",
             "envoi d'email",
             "publication LinkedIn",
-            "compte externe",
+            "commandes critiques: reset, clean, delete, shutdown, format, execution policy",
         ],
     }
 
@@ -607,7 +620,8 @@ async def action_create(request: ActionCreateRequest) -> dict[str, object]:
             description=request.description,
             payload=request.payload,
         )
-        if not requires_confirmation(request.action_type, request.payload):
+        allowed, _reason = can_auto_execute(request.action_type, request.payload)
+        if allowed:
             return execute_action(action.id, require_approval=False)
     except ActionStoreError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -629,10 +643,15 @@ async def action_command_create(request: CommandActionRequest) -> dict[str, obje
         action = create_action(
             action_type="command",
             title=request.title,
-            description="Commande locale creee depuis l'API. Validation obligatoire.",
+            description="Commande locale creee depuis l'API.",
             payload=payload,
         )
+        allowed, _reason = can_auto_execute("command", payload)
+        if allowed:
+            return execute_action(action.id, require_approval=False)
     except ActionStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ActionExecutionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {

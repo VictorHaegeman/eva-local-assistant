@@ -2,6 +2,7 @@ from typing import Any
 
 from app.actions.action_detector import create_pending_action_from_message
 from app.actions.action_store import ActionStoreError, action_to_dict, list_actions
+from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.config import settings
 from app.files.file_context import detect_file_context
@@ -375,6 +376,41 @@ async def process_chat_messages(
                     "pending_action": None,
                 }
 
+            if settings.eva_auto_execute_actions:
+                try:
+                    execution = execute_action(pending_action.id, require_approval=False)
+                except ActionExecutionError as exc:
+                    return {
+                        "message": {
+                            "role": "assistant",
+                            "content": (
+                                f"J'ai detecte l'action #{pending_action.id}, mais elle est protegee: {exc}\n"
+                                "Je ne l'execute pas automatiquement. Reformule avec une action locale moins risquee "
+                                "ou active explicitement le flag correspondant dans .env."
+                            ),
+                        },
+                        "saved_memory": None,
+                        "pending_action": action_to_dict(pending_action),
+                    }
+                action_payload = execution.get("action")
+                executed = bool(execution.get("executed"))
+                result_text = ""
+                if isinstance(action_payload, dict):
+                    result_text = str(action_payload.get("result", "")).strip()
+
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            f"Action #{pending_action.id} executee automatiquement: {pending_action.title}.\n"
+                            f"Statut: {'executee' if executed else 'echec'}\n\n"
+                            f"{result_text[:3000]}"
+                        ).strip(),
+                    },
+                    "saved_memory": None,
+                    "pending_action": action_payload if isinstance(action_payload, dict) else None,
+                }
+
             return {
                 "message": {
                     "role": "assistant",
@@ -387,7 +423,7 @@ async def process_chat_messages(
                 "saved_memory": None,
                 "pending_action": action_to_dict(pending_action),
             }
-    except (ActionStoreError, ProjectFactoryError, ScreenReaderError) as exc:
+    except (ActionExecutionError, ActionStoreError, ProjectFactoryError, ScreenReaderError) as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:

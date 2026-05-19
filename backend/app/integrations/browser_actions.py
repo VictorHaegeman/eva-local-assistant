@@ -26,6 +26,8 @@ SITE_ALIASES = {
     "youtu": "https://www.youtube.com",
     "youtub": "https://www.youtube.com",
     "yourube": "https://www.youtube.com",
+    "yuoutube": "https://www.youtube.com",
+    "youtbe": "https://www.youtube.com",
     "you tube": "https://www.youtube.com",
     "yt": "https://www.youtube.com",
     "gmail": "https://mail.google.com",
