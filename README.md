@@ -271,9 +271,9 @@ Gmail:
 
 - integration optionnelle;
 - OAuth local, sans token versionne;
-- lecture inbox/envoyes en lecture seule;
+- lecture inbox/envoyes;
 - lecture Google Calendar en lecture seule via le meme OAuth;
-- brouillon de reponse genere par Ollama;
+- brouillon de reponse genere par Ollama puis cree dans Gmail;
 - aucun envoi automatique.
 
 Routes Gmail:
@@ -282,7 +282,7 @@ Routes Gmail:
 - `POST /gmail/connect`;
 - `GET /gmail/messages`;
 - `GET /gmail/messages/{message_id}`;
-- `POST /gmail/reply-draft`.
+- `POST /gmail/reply-draft`: redige et cree un brouillon Gmail reel, sans envoyer;
 - `GET /calendar/status`;
 - `GET /calendar/events`.
 
@@ -330,8 +330,11 @@ Scopes Google utilises:
 
 ```text
 https://www.googleapis.com/auth/gmail.readonly
+https://www.googleapis.com/auth/gmail.compose
 https://www.googleapis.com/auth/calendar.readonly
 ```
+
+Le scope `gmail.compose` sert uniquement a creer un brouillon Gmail. Eva garde `can_send=false`: elle ne clique pas sur envoyer et n'utilise pas `gmail.send`.
 
 Alternative PowerShell:
 

@@ -11,7 +11,8 @@ Eva peut maintenant:
 - extraire le texte utile sans stocker les pages completes;
 - scorer les articles selon Victor: IA, business, finance, DreamLense, LinkedIn, risques et opportunites;
 - produire un brief court avec seulement l'important;
-- lire Gmail en lecture seule si OAuth est connecte;
+- lire Gmail si OAuth est connecte;
+- creer des brouillons Gmail via la brique Gmail, hors Smart Brief;
 - detecter les notifications LinkedIn via Gmail si elles arrivent dans la boite mail.
 
 ## Ce que le Smart Brief sort
@@ -39,14 +40,14 @@ POST /brief/daily-launch
 
 ## Gmail et LinkedIn
 
-Gmail reste en lecture seule avec le scope `gmail.readonly`.
+Gmail utilise `gmail.readonly` pour lire les mails et `gmail.compose` pour creer des brouillons.
 
-Eva ne peut pas envoyer de mail depuis cette brique. Elle peut seulement:
+Eva ne peut pas envoyer de mail depuis cette brique. Elle peut:
 
 - lire les mails recents;
 - extraire les signaux importants;
 - reperer des notifications LinkedIn recues par email;
-- preparer des brouillons via les routes Gmail existantes.
+- creer des brouillons via les routes Gmail existantes.
 
 LinkedIn direct reste volontairement limite. La version propre actuelle:
 

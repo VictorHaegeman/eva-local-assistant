@@ -43,6 +43,7 @@ from app.heartbeat.scheduler import (
 )
 from app.integrations.gmail_client import (
     GmailIntegrationError,
+    create_gmail_reply_draft,
     find_sent_examples,
     format_email_for_prompt,
     format_sent_examples_for_prompt,
@@ -51,6 +52,7 @@ from app.integrations.gmail_client import (
     list_gmail_messages,
     message_to_dict,
 )
+from app.integrations.gmail_chat import parse_reply_draft
 from app.integrations.gmail_auth import GmailAuthLaunchError, start_gmail_oauth_flow
 from app.integrations.google_calendar_client import (
     calendar_event_to_dict,
@@ -277,6 +279,8 @@ class GmailReplyDraftRequest(BaseModel):
         min_length=1,
         max_length=5000,
     )
+    create_in_gmail: bool = True
+    open_in_browser: bool = True
 
 
 class LinkedInPostDraftRequest(BaseModel):
@@ -936,7 +940,9 @@ async def gmail_reply_draft(request: GmailReplyDraftRequest) -> dict[str, object
         prompt = f"""
 Tu dois rediger un brouillon de reponse email pour Victor.
 Ne dis jamais que le mail a ete envoye.
-La reponse doit etre prete a relire, modifier et valider par Victor.
+La reponse sera creee dans Gmail comme brouillon reel si possible, mais jamais envoyee automatiquement.
+Tu reponds comme Victor, jamais comme l'expediteur.
+Utilise uniquement le contenu du mail recu. N'invente pas de donnees absentes.
 
 Instruction de Victor:
 {request.instruction}
@@ -947,12 +953,21 @@ Mail recu:
 Exemples de mails deja envoyes par Victor:
 {format_sent_examples_for_prompt(examples)}
 
-Donne uniquement:
-1. Objet propose;
-2. Brouillon du mail;
-3. Points a verifier avant envoi.
+Format obligatoire:
+Objet: ...
+Corps:
+...
 """.strip()
         draft = await ask_ollama([{"role": "user", "content": prompt}])
+        subject, body = parse_reply_draft(draft, message.subject)
+        gmail_draft = None
+        if request.create_in_gmail:
+            gmail_draft = create_gmail_reply_draft(
+                message,
+                body=body,
+                subject=subject,
+                open_in_browser=request.open_in_browser,
+            )
     except GmailIntegrationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except OllamaClientError as exc:
@@ -960,10 +975,14 @@ Donne uniquement:
 
     return {
         "sent": False,
+        "created_in_gmail": bool(gmail_draft),
         "requires_confirmation_before_send": True,
         "source_message": message_to_dict(message),
         "sent_examples_used": len(examples),
+        "subject": subject,
+        "body": body,
         "draft": draft,
+        "gmail_draft": gmail_draft,
     }
 
 

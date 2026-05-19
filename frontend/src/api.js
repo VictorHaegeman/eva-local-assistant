@@ -182,6 +182,22 @@ export async function getGmailMessages() {
 }
 
 
+export async function createGmailReplyDraft(messageId, instruction = "Redige une reponse claire, directe et cordiale.") {
+  return request("/gmail/reply-draft", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message_id: messageId,
+      instruction,
+      create_in_gmail: true,
+      open_in_browser: true,
+    }),
+  });
+}
+
+
 export async function getLinkedInStatus() {
   return request("/linkedin/status");
 }

@@ -90,9 +90,9 @@ def build_google_setup_response(
         f"Token local: {gmail['token_path']}",
         "",
         "Acces prevus:",
-        "- Gmail: lecture seule;",
+        "- Gmail: lecture + creation de brouillons;",
         "- Calendar: lecture seule;",
-        "- aucun envoi mail;",
+        "- aucun envoi mail automatique;",
         "- aucune modification calendrier;",
         "- aucun mot de passe stocke dans Eva.",
         "",
@@ -165,7 +165,7 @@ def build_google_setup_response(
         [
             "",
             str(result.get("message", "Flux OAuth Google lance.")),
-            "Valide le compte dans la page Google ouverte. Ensuite Eva pourra lire Gmail et Calendar en lecture seule.",
+            "Valide le compte dans la page Google ouverte. Ensuite Eva pourra lire Gmail, creer des brouillons Gmail et lire Calendar.",
         ]
     )
     return "\n".join(lines)

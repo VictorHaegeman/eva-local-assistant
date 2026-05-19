@@ -131,17 +131,36 @@ def classify_user_intent(message: str) -> UserIntent:
             summary="Lire les prochains evenements Google Calendar en lecture seule.",
         )
 
-    if _has_any(text, ("gmail", "mes mails", "mes emails", "boite mail", "dernier mail", "dernier email")):
-        if _has_any(text, ("repond", "reponse", "brouillon", "redige")):
+    gmail_context = _has_any(
+        text,
+        ("gmail", "mes mails", "mes emails", "boite mail", "dernier mail", "dernier email", "le mail", "ce mail", "au mail"),
+    )
+    reply_context = _has_any(
+        text,
+        (
+            "repond",
+            "reponse",
+            "brouillon",
+            "redige",
+            "ecris",
+            "ecrit",
+            "pret a etre envoye",
+            "pret a envoyer",
+            "a approuver",
+            "bouton repondre",
+        ),
+    )
+    if gmail_context:
+        if reply_context:
             return UserIntent(
                 name="gmail_reply_draft",
                 confidence=0.86,
-                summary="Lire Gmail en lecture seule et preparer un brouillon de reponse.",
+                summary="Lire le mail reel, rediger une reponse et creer un brouillon Gmail si le scope compose est autorise.",
             )
         return UserIntent(
             name="gmail_read",
             confidence=0.78,
-            summary="Lire les derniers mails Gmail en lecture seule.",
+            summary="Lire les derniers mails Gmail reels via l'API Google.",
         )
 
     if _has_any(

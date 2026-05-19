@@ -38,6 +38,7 @@ import {
   getTools,
   generateSmartBrief,
   connectGmail,
+  createGmailReplyDraft,
   createProjectFactoryActions,
   getChatHistory,
   planProjectFactory,
@@ -344,8 +345,32 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     setError("");
 
     try {
-      const result = await connectGmail();
+      const status = data?.status || {};
+      const needsScopeReconnect = Boolean(status.token_exists && !status.token_has_required_scopes);
+      const result = await connectGmail(needsScopeReconnect);
       setJobResult(result.message || "Flux OAuth Gmail lance.");
+      await loadPanel();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
+  async function handleCreateGmailDraft(messageId) {
+    const jobKey = `gmail_draft_${messageId}`;
+    setRunningJob(jobKey);
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await createGmailReplyDraft(messageId);
+      const draft = result.gmail_draft || {};
+      setJobResult(
+        draft.draft_id
+          ? `Brouillon Gmail cree: ${draft.subject || result.subject || "sans objet"}`
+          : "Brouillon redige, mais non cree dans Gmail."
+      );
       await loadPanel();
     } catch (requestError) {
       setError(requestError.message);
@@ -624,6 +649,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
         <div className="panel-metrics">
           <Metric label="integration" value={status.enabled ? "active" : "off"} tone={status.enabled ? "ok" : "warning"} />
           <Metric label="OAuth token" value={status.token_exists ? "connecte" : "absent"} tone={status.token_exists ? "ok" : "warning"} />
+          <Metric label="brouillons" value={status.can_create_drafts ? "actifs" : "scope"} tone={status.can_create_drafts ? "ok" : "warning"} />
           <Metric label="envoi" value={status.can_send ? "possible" : "bloque"} tone={status.can_send ? "warning" : "ok"} />
         </div>
         {!status.token_exists && (
@@ -639,15 +665,15 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               {status.token_exists ? "connecte" : "a connecter"}
             </StatusPill>
           </div>
-          <p>Eva ouvre Google dans ton navigateur. Tu valides toi-meme le compte et le scope Gmail lecture seule.</p>
+          <p>Eva ouvre Google dans ton navigateur. Tu valides toi-meme Gmail lecture + brouillons, et Calendar lecture.</p>
           <div className="panel-actions">
             <button
               type="button"
               className="panel-action-button"
               onClick={handleConnectGmail}
-              disabled={Boolean(runningJob) || !status.enabled || !status.credentials_exists || status.token_exists}
+              disabled={Boolean(runningJob) || !status.enabled || !status.credentials_exists || (status.token_exists && status.token_has_required_scopes)}
             >
-              {runningJob === "gmail_connect" ? "Ouverture..." : "Connecter Gmail"}
+              {runningJob === "gmail_connect" ? "Ouverture..." : status.token_exists ? "Completer scopes" : "Connecter Gmail"}
             </button>
             <button type="button" className="panel-action-button secondary" onClick={loadPanel}>
               Rafraichir statut
@@ -678,7 +704,17 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
                   <strong>{message.subject || "Sans objet"}</strong>
                   <span>{message.from || message.sender_email || "Expediteur inconnu"}</span>
                 </div>
-                <StatusPill>{message.date || "inbox"}</StatusPill>
+                <div className="panel-row-actions">
+                  <button
+                    type="button"
+                    className="panel-mini-button"
+                    onClick={() => handleCreateGmailDraft(message.id)}
+                    disabled={Boolean(runningJob) || !status.can_create_drafts}
+                  >
+                    {runningJob === `gmail_draft_${message.id}` ? "Creation..." : "Brouillon"}
+                  </button>
+                  <StatusPill>{message.date || "inbox"}</StatusPill>
+                </div>
               </div>
             ))}
           </div>

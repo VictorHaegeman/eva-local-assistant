@@ -1,6 +1,6 @@
 # Activation Google, Gmail et Calendar pour Eva
 
-Ce guide active Google en lecture seule pour Eva: Gmail + Google Calendar.
+Ce guide active Google pour Eva: lecture Gmail, creation de brouillons Gmail et lecture Google Calendar.
 
 Eva pourra:
 
@@ -8,12 +8,13 @@ Eva pourra:
 - lire un mail precis;
 - consulter des exemples dans les mails envoyes;
 - lire les prochains evenements Google Calendar;
-- rediger un brouillon de reponse avec Ollama.
+- rediger un brouillon de reponse avec Ollama;
+- creer un brouillon reel dans Gmail, pret a etre relu puis envoye manuellement par Victor.
 
 Eva ne pourra pas:
 
 - envoyer un email automatiquement;
-- modifier Gmail;
+- modifier Gmail hors creation de brouillon;
 - modifier Google Calendar;
 - supprimer des mails;
 - utiliser l'API OpenAI.
@@ -24,21 +25,21 @@ Scopes actifs:
 
 ```text
 https://www.googleapis.com/auth/gmail.readonly
+https://www.googleapis.com/auth/gmail.compose
 https://www.googleapis.com/auth/calendar.readonly
 ```
 
-Ces scopes permettent uniquement de lire Gmail et Google Calendar. Ils ne permettent pas d'envoyer un email ni de modifier ton agenda.
+Ces scopes permettent de lire Gmail, creer des brouillons Gmail et lire Google Calendar. Ils ne permettent pas d'envoyer un email ni de modifier ton agenda.
 
 Scopes a ne pas activer maintenant:
 
 ```text
 https://www.googleapis.com/auth/gmail.send
-https://www.googleapis.com/auth/gmail.compose
 https://www.googleapis.com/auth/gmail.modify
 https://mail.google.com/
 ```
 
-Ces scopes permettent d'envoyer, composer, modifier ou acceder trop largement a Gmail. On les garde pour une version future avec validation humaine stricte.
+Ces scopes permettent d'envoyer, modifier ou acceder trop largement a Gmail. On les garde pour une version future avec validation humaine stricte.
 
 ## Google Cloud
 
@@ -130,7 +131,7 @@ Depuis l'interface Eva:
 1. Ouvre le panneau `Gmail`.
 2. Clique `Connecter Gmail`.
 3. Une page Google s'ouvre.
-4. Connecte-toi toi-meme et accepte uniquement les scopes `gmail.readonly` et `calendar.readonly`.
+4. Connecte-toi toi-meme et accepte les scopes `gmail.readonly`, `gmail.compose` et `calendar.readonly`.
 5. Reviens dans Eva et clique `Rafraichir statut`.
 
 Alternative en PowerShell:
@@ -150,7 +151,7 @@ Depuis Telegram:
 /google
 ```
 
-Une page Google va s'ouvrir sur le PC. Connecte-toi avec ton compte Gmail et accepte les scopes lecture seule.
+Une page Google va s'ouvrir sur le PC. Connecte-toi avec ton compte Gmail et accepte les scopes lecture Gmail, brouillons Gmail et Calendar lecture.
 
 Eva creera ensuite:
 
@@ -189,10 +190,10 @@ Exemples:
 ```text
 liste mes derniers mails gmail
 redige une reponse au dernier mail recu
-prepare un brouillon de reponse au dernier mail Gmail
+prepare un brouillon de reponse au dernier mail Gmail et cree-le dans Gmail
 ```
 
-Eva redige seulement un brouillon. Elle ne repond pas a ta place.
+Eva cree un brouillon Gmail si `gmail.compose` est autorise. Elle ne clique pas sur envoyer a ta place.
 
 ## Sources officielles
 

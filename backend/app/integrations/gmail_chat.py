@@ -5,6 +5,7 @@ from app.integrations.browser import open_url
 from app.integrations.gmail_client import (
     GmailIntegrationError,
     GmailMessage,
+    create_gmail_reply_draft,
     find_sent_examples,
     format_email_for_prompt,
     format_sent_examples_for_prompt,
@@ -30,6 +31,9 @@ def _has_gmail_context(normalized: str) -> bool:
             "boite email",
             "mes mails",
             "mes emails",
+            "le mail",
+            "ce mail",
+            "au mail",
             "dernier mail",
             "dernier email",
             "mail recu",
@@ -117,12 +121,54 @@ def wants_gmail_inspect(message: str) -> bool:
 
 def wants_gmail_reply_draft(message: str) -> bool:
     normalized = _normalize(message)
-    if not _has_gmail_context(normalized):
+    reply_markers = (
+        "repond",
+        "reponse",
+        "brouillon",
+        "redige",
+        "ecris",
+        "ecrit",
+        "prepare",
+        "pret a etre envoye",
+        "pret a envoyer",
+        "a approuver",
+        "bouton repondre",
+        "direct dans mes mails",
+        "dans mes mails",
+    )
+    has_strong_context = _has_gmail_context(normalized)
+    has_weak_reply_context = "mail" in normalized and any(
+        marker in normalized for marker in ("repond", "reponse", "brouillon")
+    )
+    if not has_strong_context and not has_weak_reply_context:
         return False
 
-    return any(marker in normalized for marker in ("repond", "reponse", "brouillon")) or (
-        "redige" in normalized and any(marker in normalized for marker in ("reponse", "recu", "dernier"))
+    return any(marker in normalized for marker in reply_markers)
+
+
+def parse_reply_draft(raw_draft: str, original_subject: str) -> tuple[str, str]:
+    subject = ""
+    body = raw_draft.strip()
+
+    subject_match = re.search(
+        r"(?im)^\s*(?:objet|subject)\s*:\s*(?P<subject>.+?)\s*$",
+        raw_draft,
     )
+    body_match = re.search(
+        r"(?is)^\s*(?:corps|body)\s*:\s*(?P<body>.+)$",
+        raw_draft,
+    )
+
+    if subject_match:
+        subject = subject_match.group("subject").strip()
+    if body_match:
+        body = body_match.group("body").strip()
+
+    if not subject:
+        clean_subject = original_subject.strip() or "(sans objet)"
+        subject = clean_subject if clean_subject.lower().startswith("re:") else f"Re: {clean_subject}"
+
+    return subject, body
 
 
 def _gmail_thread_url(message: GmailMessage) -> str:
@@ -250,7 +296,7 @@ def format_gmail_message_list() -> str:
         return "Source: Gmail API.\nJe n'ai trouve aucun mail recent dans Gmail."
 
     lines = [
-        "Source: Gmail API, lecture seule.",
+        "Source: Gmail API, inbox reelle.",
         "Derniers mails Gmail reels renvoyes par Google:",
     ]
     for index, message in enumerate(messages, start=1):
@@ -279,10 +325,8 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
             return f"Source: Gmail API.\nJe n'ai trouve que {len(messages)} mail(s) recent(s), pas de mail numero {selected_index + 1}."
 
         original = get_gmail_message(messages[selected_index].id)
-        lines = [
-            "Source: Gmail API, lecture seule.",
-            f"Mail source: {original.subject} ({original.sender})",
-        ]
+        source_label = "Source: Gmail API + brouillon Gmail." if reply_requested else "Source: Gmail API, inbox reelle."
+        lines = [source_label, f"Mail source: {original.subject} ({original.sender})"]
 
         should_open_related_link = open_requested and (
             "annonce" in _normalize(message) or _looks_like_housing_message(original)
@@ -312,7 +356,7 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
         if _looks_like_automated_message(original):
             lines.extend(
                 [
-                    "Je ne prepare pas de faux brouillon de reponse: ce mail ressemble a une alerte, une notification ou une adresse automatique.",
+                    "Je ne cree pas de faux brouillon de reponse: ce mail ressemble a une alerte, une notification ou une adresse automatique.",
                     "Action conseillee: traiter le lien ou le site source plutot que repondre directement a l'expediteur.",
                 ]
             )
@@ -328,7 +372,7 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
         prompt = f"""
 Tu dois rediger un brouillon de reponse email pour Victor.
 Ne dis jamais que le mail a ete envoye.
-La reponse doit etre prete a relire, modifier et valider par Victor.
+La reponse va etre creee comme brouillon reel dans Gmail, mais jamais envoyee automatiquement.
 Tu reponds comme Victor, jamais comme l'expediteur du mail.
 Utilise uniquement le contenu du mail recu ci-dessous. N'invente pas de prix, surface, rendez-vous, adresse ou caracteristiques absentes.
 Adresse expediteur verifiee: {original.sender_email}
@@ -347,11 +391,10 @@ Mail recu:
 Exemples de mails deja envoyes par Victor:
 {format_sent_examples_for_prompt(examples)}
 
-Donne uniquement:
-1. Diagnostic du mail;
-2. Reponse conseillee: oui/non;
-3. Brouillon uniquement si une reponse email a du sens;
-4. Actions proposees a Victor.
+Format obligatoire:
+Objet: ...
+Corps:
+...
 """.strip()
 
         try:
@@ -359,7 +402,37 @@ Donne uniquement:
         except OllamaClientError as exc:
             raise GmailIntegrationError(str(exc)) from exc
 
-        lines.extend(["J'ai prepare une proposition, sans envoyer le mail.", draft])
+        subject, body = parse_reply_draft(draft, original.subject)
+        try:
+            gmail_draft = create_gmail_reply_draft(
+                original,
+                body=body,
+                subject=subject,
+                open_in_browser=True,
+            )
+        except GmailIntegrationError as exc:
+            lines.extend(
+                [
+                    "J'ai redige le contenu, mais je n'ai pas pu creer le brouillon dans Gmail.",
+                    str(exc),
+                    "Action a faire: ouvre le panneau Gmail et clique `Reconnecter scopes` pour donner le scope gmail.compose.",
+                    "",
+                    f"Objet: {subject}",
+                    "Corps:",
+                    body,
+                ]
+            )
+            return "\n\n".join(lines)
+
+        lines.extend(
+            [
+                "Brouillon reel cree dans Gmail. Je ne l'ai pas envoye.",
+                f"Destinataire: {gmail_draft['to']}",
+                f"Objet: {gmail_draft['subject']}",
+                f"Fil Gmail ouvert dans Brave: {gmail_draft['thread_url']}",
+                "Tu peux relire/modifier puis cliquer Envoyer toi-meme dans Gmail.",
+            ]
+        )
         return "\n\n".join(lines)
 
     if force_list or wants_gmail_list(message):

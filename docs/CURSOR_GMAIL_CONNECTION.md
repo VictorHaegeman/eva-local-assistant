@@ -37,6 +37,7 @@ Etat actuel:
 - lecture des derniers mails;
 - lecture du dossier Envoyes pour retrouver des exemples de style;
 - brouillon de reponse genere par Ollama;
+- creation d'un brouillon reel dans Gmail avec `gmail.compose`;
 - aucun envoi automatique.
 
 Guide d'activation detaille:
@@ -79,10 +80,10 @@ python -m app.integrations.gmail_auth
 
 Important:
 
-- Eva demande toujours validation avant envoi;
-- cette version ne cree pas encore de brouillon dans Gmail;
-- elle genere le brouillon dans Eva seulement;
-- le scope OAuth utilise est `gmail.readonly`.
+- Eva ne clique jamais sur envoyer;
+- elle cree seulement un brouillon Gmail pret a relire;
+- Victor garde le clic final dans Gmail;
+- les scopes OAuth utilises sont `gmail.readonly`, `gmail.compose` et `calendar.readonly`.
 
 Reference officielle:
 

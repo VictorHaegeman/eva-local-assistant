@@ -1,6 +1,7 @@
 import base64
 import re
 from dataclasses import dataclass
+from email.message import EmailMessage
 from email.utils import parseaddr
 from pathlib import Path
 from typing import Any
@@ -18,18 +19,26 @@ class GmailMessage:
     thread_id: str
     sender: str
     sender_email: str
+    reply_to: str
+    reply_to_email: str
     to: str
     subject: str
     date: str
     snippet: str
     body: str = ""
+    message_id_header: str = ""
+    references: str = ""
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
+GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
+GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose"
+CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 GMAIL_SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/calendar.readonly",
+    GMAIL_READONLY_SCOPE,
+    GMAIL_COMPOSE_SCOPE,
+    CALENDAR_READONLY_SCOPE,
 ]
 
 
@@ -50,6 +59,7 @@ def gmail_token_path() -> Path:
 
 def gmail_status() -> dict[str, object]:
     token_scope_status = google_token_scope_status()
+    compose_status = google_token_scope_status([GMAIL_COMPOSE_SCOPE])
     return {
         "enabled": settings.eva_gmail_enabled,
         "credentials_path": str(gmail_credentials_path()),
@@ -59,17 +69,20 @@ def gmail_status() -> dict[str, object]:
         "token_has_required_scopes": token_scope_status["has_required_scopes"],
         "missing_scopes": token_scope_status["missing_scopes"],
         "scopes": GMAIL_SCOPES,
+        "can_create_drafts": compose_status["has_required_scopes"],
+        "drafts_require_manual_send": True,
         "can_send": False,
         "send_requires_confirmation": True,
     }
 
 
-def google_token_scope_status() -> dict[str, object]:
+def google_token_scope_status(required_scopes: list[str] | None = None) -> dict[str, object]:
+    scopes_to_check = required_scopes or GMAIL_SCOPES
     token_file = gmail_token_path()
     if not token_file.exists():
         return {
             "has_required_scopes": False,
-            "missing_scopes": GMAIL_SCOPES,
+            "missing_scopes": scopes_to_check,
         }
 
     try:
@@ -79,7 +92,7 @@ def google_token_scope_status() -> dict[str, object]:
     except (OSError, ValueError):
         return {
             "has_required_scopes": False,
-            "missing_scopes": GMAIL_SCOPES,
+            "missing_scopes": scopes_to_check,
         }
 
     raw_scopes = payload.get("scopes") or payload.get("scope") or []
@@ -90,11 +103,24 @@ def google_token_scope_status() -> dict[str, object]:
     else:
         scopes = set()
 
-    missing = [scope for scope in GMAIL_SCOPES if scope not in scopes]
+    missing = [scope for scope in scopes_to_check if scope not in scopes]
     return {
         "has_required_scopes": not missing,
         "missing_scopes": missing,
     }
+
+
+def _require_token_scopes(required_scopes: list[str]) -> None:
+    status = google_token_scope_status(required_scopes)
+    if status["has_required_scopes"]:
+        return
+
+    missing = ", ".join(str(scope) for scope in status["missing_scopes"])
+    raise GmailIntegrationError(
+        "Token Google incomplet pour cette action. "
+        "Reconnecte Google depuis le panneau Gmail avec 'Reconnecter scopes'. "
+        f"Scopes manquants: {missing}"
+    )
 
 
 def _google_imports() -> tuple[Any, Any, Any]:
@@ -207,6 +233,8 @@ def _message_from_payload(payload: dict[str, Any], include_body: bool) -> GmailM
 
     sender = _header(headers, "From")
     _, sender_email = parseaddr(sender)
+    reply_to = _header(headers, "Reply-To")
+    _, reply_to_email = parseaddr(reply_to)
 
     body = ""
     if include_body:
@@ -217,11 +245,15 @@ def _message_from_payload(payload: dict[str, Any], include_body: bool) -> GmailM
         thread_id=str(payload.get("threadId", "")),
         sender=sender,
         sender_email=sender_email,
+        reply_to=reply_to,
+        reply_to_email=reply_to_email,
         to=_header(headers, "To"),
         subject=_header(headers, "Subject") or "(sans objet)",
         date=_header(headers, "Date"),
         snippet=str(payload.get("snippet", "")),
         body=body,
+        message_id_header=_header(headers, "Message-ID"),
+        references=_header(headers, "References"),
     )
 
 
@@ -231,6 +263,8 @@ def message_to_dict(message: GmailMessage, include_body: bool = False) -> dict[s
         "thread_id": message.thread_id,
         "from": message.sender,
         "from_email": message.sender_email,
+        "reply_to": message.reply_to,
+        "reply_to_email": message.reply_to_email,
         "to": message.to,
         "subject": message.subject,
         "date": message.date,
@@ -284,6 +318,83 @@ def get_gmail_message(message_id: str) -> GmailMessage:
         .execute()
     )
     return _message_from_payload(payload, include_body=True)
+
+
+def _reply_subject(subject: str) -> str:
+    clean_subject = (subject or "(sans objet)").strip()
+    if clean_subject.lower().startswith("re:"):
+        return clean_subject
+    return f"Re: {clean_subject}"
+
+
+def _encode_raw_message(message: EmailMessage) -> str:
+    return base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+
+
+def create_gmail_reply_draft(
+    original: GmailMessage,
+    body: str,
+    subject: str = "",
+    open_in_browser: bool = False,
+) -> dict[str, str]:
+    clean_body = body.strip()
+    if not clean_body:
+        raise GmailIntegrationError("Brouillon vide: Eva refuse de creer un draft Gmail vide.")
+
+    _require_token_scopes([GMAIL_COMPOSE_SCOPE])
+    service = _gmail_service()
+
+    recipient = original.reply_to_email or original.sender_email
+    if not recipient:
+        raise GmailIntegrationError("Impossible de creer le brouillon: destinataire introuvable.")
+
+    profile = service.users().getProfile(userId="me").execute()
+    from_email = str(profile.get("emailAddress", "")).strip()
+
+    email = EmailMessage()
+    if from_email:
+        email["From"] = from_email
+    email["To"] = recipient
+    email["Subject"] = subject.strip() or _reply_subject(original.subject)
+    if original.message_id_header:
+        email["In-Reply-To"] = original.message_id_header
+        references = " ".join(
+            part for part in (original.references, original.message_id_header) if part
+        )
+        if references:
+            email["References"] = references
+    email.set_content(clean_body)
+
+    request_body: dict[str, object] = {
+        "message": {
+            "raw": _encode_raw_message(email),
+            "threadId": original.thread_id,
+        }
+    }
+    draft = service.users().drafts().create(userId="me", body=request_body).execute()
+    draft_id = str(draft.get("id", ""))
+    draft_message = draft.get("message", {})
+    draft_message_id = str(draft_message.get("id", "")) if isinstance(draft_message, dict) else ""
+    thread_id = str(draft_message.get("threadId", original.thread_id)) if isinstance(draft_message, dict) else original.thread_id
+    thread_url = f"https://mail.google.com/mail/u/0/#all/{thread_id or original.thread_id}"
+    drafts_url = "https://mail.google.com/mail/u/0/#drafts"
+
+    if open_in_browser:
+        from app.integrations.browser import open_url
+
+        open_url(thread_url)
+
+    return {
+        "created": "true",
+        "sent": "false",
+        "draft_id": draft_id,
+        "draft_message_id": draft_message_id,
+        "thread_id": thread_id,
+        "thread_url": thread_url,
+        "drafts_url": drafts_url,
+        "to": recipient,
+        "subject": str(email["Subject"]),
+    }
 
 
 def find_sent_examples(recipient_email: str = "", max_results: int | None = None) -> list[GmailMessage]:

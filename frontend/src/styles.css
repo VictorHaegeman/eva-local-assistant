@@ -1166,6 +1166,36 @@ button.nav-item:hover {
     rgba(12, 20, 31, 0.9);
 }
 
+.panel-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.panel-mini-button {
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid rgba(115, 214, 255, 0.34);
+  border-radius: 7px;
+  color: var(--text);
+  background: rgba(33, 135, 212, 0.2);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.panel-mini-button:hover:not(:disabled) {
+  border-color: rgba(115, 214, 255, 0.7);
+  background: rgba(33, 135, 212, 0.32);
+}
+
+.panel-mini-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .panel-row strong {
   display: block;
   color: var(--text);
@@ -1564,6 +1594,11 @@ button.nav-item:hover {
     grid-template-columns: 1fr;
     align-items: start;
     gap: 10px;
+  }
+
+  .panel-row-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .panel-card {
