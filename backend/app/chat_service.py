@@ -17,6 +17,7 @@ from app.integrations.gmail_chat import (
     wants_gmail_reply_draft,
 )
 from app.integrations.gmail_client import GmailIntegrationError
+from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
 from app.integrations.google_setup_chat import (
     build_calendar_events_response,
     build_google_setup_response,
@@ -506,6 +507,20 @@ async def process_chat_messages(
                 "pending_action": None,
             }
     except GmailIntegrationError as exc:
+        raise ChatServiceError(str(exc)) from exc
+
+    try:
+        browser_response = open_browser_from_message(latest_user_message) if trusted_actions else None
+        if browser_response:
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": browser_response,
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+    except BrowserActionError as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:

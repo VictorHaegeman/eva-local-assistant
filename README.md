@@ -298,6 +298,8 @@ Depuis Telegram, tu peux aussi demander:
 ```text
 /google
 connecte mon compte Google pour Gmail et Calendar
+ouvre youtube
+ouvre https://dreamlense-ai.com
 ```
 
 Eva trouve alors le script local `backend/app/integrations/gmail_auth.py`. Si `data/gmail_credentials.json` manque, elle ouvre Google Cloud dans Brave pour que tu recuperes le JSON OAuth complet. Si le JSON est present, elle lance le flux OAuth local et tu valides toi-meme dans Google.

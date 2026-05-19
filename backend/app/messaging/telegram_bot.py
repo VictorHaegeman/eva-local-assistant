@@ -148,7 +148,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/approve ID - valider et executer une action\n"
                 "/reject ID - refuser une action\n"
                 "/status - verifier la connexion\n\n"
-                "Tout message normal est envoye au chat local Eva."
+                "Tu peux aussi envoyer un message normal, par exemple: ouvre youtube."
             ),
         )
         return True
