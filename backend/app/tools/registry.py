@@ -64,6 +64,13 @@ TOOLS = (
         description="Ouvre Brave ou YouTube quand un support web/video aide mieux que du texte.",
     ),
     ToolDescriptor(
+        key="spotify_local",
+        label="Spotify local",
+        category="media",
+        policy_level="draft_only",
+        description="Ouvre Spotify ou Spotify Web et lance une recherche musicale demandee par Victor.",
+    ),
+    ToolDescriptor(
         key="cursor_prompt",
         label="Prompt Cursor",
         category="code",

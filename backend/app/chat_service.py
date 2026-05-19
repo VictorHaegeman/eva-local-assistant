@@ -21,6 +21,7 @@ from app.integrations.gmail_chat import (
 from app.integrations.gmail_client import GmailIntegrationError
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
+from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
 from app.integrations.google_setup_chat import (
     build_calendar_events_response,
     build_google_setup_response,
@@ -555,6 +556,17 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
+        spotify_response = open_spotify_from_message(latest_user_message) if trusted_actions else None
+        if spotify_response:
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": spotify_response,
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         browser_assist_response = open_assisted_browser_from_message(latest_user_message) if trusted_actions else None
         if browser_assist_response:
             return {
@@ -576,7 +588,7 @@ async def process_chat_messages(
                 "saved_memory": None,
                 "pending_action": None,
             }
-    except (BrowserActionError, BrowserAssistError) as exc:
+    except (BrowserActionError, BrowserAssistError, SpotifyAssistError) as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:

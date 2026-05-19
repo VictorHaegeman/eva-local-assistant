@@ -66,6 +66,11 @@ from app.integrations.browser_assistant import (
     detect_browser_assist,
     open_assisted_browser_from_message,
 )
+from app.integrations.spotify_assistant import (
+    SpotifyAssistError,
+    detect_spotify_request,
+    open_spotify_from_message,
+)
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
     draft_linkedin_comment,
@@ -269,6 +274,10 @@ class BrowserOpenTabsRequest(BaseModel):
 
 
 class BrowserAssistRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=1000)
+
+
+class SpotifyOpenRequest(BaseModel):
     message: str = Field(min_length=1, max_length=1000)
 
 
@@ -850,6 +859,21 @@ async def browser_assist(request: BrowserAssistRequest) -> dict[str, object]:
         detected = detect_browser_assist(request.message)
         response = open_assisted_browser_from_message(request.message)
     except BrowserAssistError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "opened": bool(response),
+        "response": response,
+        "detected": detected,
+    }
+
+
+@app.post("/spotify/open", dependencies=[Depends(require_sensitive_access)])
+async def spotify_open(request: SpotifyOpenRequest) -> dict[str, object]:
+    try:
+        detected = detect_spotify_request(request.message)
+        response = open_spotify_from_message(request.message)
+    except SpotifyAssistError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {

@@ -266,6 +266,18 @@ Eva, montre-moi un tuto pour utiliser Cursor Agent.
 
 Eva ouvre seulement la recherche ou la page locale. Elle ne pretend pas avoir regarde la video si elle l'a seulement ouverte.
 
+## Spotify local
+
+Eva peut ouvrir Spotify depuis le PC ou Telegram:
+
+```text
+Eva, ouvre Spotify.
+Eva, lance Bohemian Rhapsody sur Spotify.
+Eva, mets du jazz calme sur Spotify.
+```
+
+Eva tente d'abord l'app Spotify locale via le protocole Windows `spotify:`. Si l'app n'est pas disponible, elle ouvre Spotify Web dans Brave. Spotify peut encore demander un clic sur `Play` selon ta session et l'appareil actif.
+
 ## Connexion Cursor et Gmail
 
 La strategie Cursor/Gmail est documentee ici:
