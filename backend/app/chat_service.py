@@ -23,6 +23,7 @@ from app.integrations.gmail_client import GmailIntegrationError
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
+from app.integrations.desktop_chat import DesktopChatError, execute_desktop_control_from_message
 from app.integrations.google_setup_chat import (
     build_calendar_events_response,
     build_google_setup_response,
@@ -90,11 +91,8 @@ PROJECT_CONTEXT_MARKERS = (
 PROJECT_FACTORY_MARKERS = (
     "nouveau projet",
     "nouvelle idee projet",
-    "nouvelle idée projet",
     "cree un projet",
-    "crée un projet",
     "creer un projet",
-    "créer un projet",
     "project factory",
 )
 
@@ -113,7 +111,7 @@ def _remove_bad_tool_refusal(answer: str, user_message: str) -> str:
         return answer
 
     normalized_request = user_message.lower()
-    if any(marker in normalized_request for marker in ("ouvre", "ouvrir", "brave", "gmail", "mail", "ecran", "écran")):
+    if any(marker in normalized_request for marker in ("ouvre", "ouvrir", "brave", "gmail", "mail", "ecran")):
         return (
             "Je ne dois pas repondre comme une IA sans outils. "
             "Pour cette demande, je dois d'abord chercher l'outil local adapte "
@@ -573,6 +571,21 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
+        desktop_response = (
+            execute_desktop_control_from_message(latest_user_message)
+            if trusted_actions
+            else None
+        )
+        if desktop_response:
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": desktop_response,
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         browser_assist_response = open_assisted_browser_from_message(latest_user_message) if trusted_actions else None
         if browser_assist_response:
             return {
@@ -594,7 +607,7 @@ async def process_chat_messages(
                 "saved_memory": None,
                 "pending_action": None,
             }
-    except (BrowserActionError, BrowserAssistError, SpotifyAssistError) as exc:
+    except (BrowserActionError, BrowserAssistError, SpotifyAssistError, DesktopChatError) as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:

@@ -18,6 +18,7 @@ PlanRoute = Literal[
     "local_status",
     "browser_or_video",
     "spotify",
+    "desktop_control",
     "web_search",
     "generic_chat",
 ]
@@ -58,6 +59,9 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
     if _has_any(text, ("spotify", "musique", "playlist", "lance une chanson", "mets ")):
         return "spotify"
 
+    if _has_any(text, ("clique", "click", "appuie", "presse", "touche", "play", "pause")):
+        return "desktop_control"
+
     if _has_any(
         text,
         (
@@ -95,7 +99,14 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
 def _policy_for_route(route: PlanRoute) -> ActionPolicyLevel:
     if route in {"generic_chat", "local_status", "calendar_read", "gmail_read", "gmail_reply_audit", "web_search"}:
         return "read_only"
-    if route in {"gmail_reply_draft", "cursor_work", "browser_or_video", "spotify", "project_factory"}:
+    if route in {
+        "gmail_reply_draft",
+        "cursor_work",
+        "browser_or_video",
+        "spotify",
+        "desktop_control",
+        "project_factory",
+    }:
         return "draft_only"
     if route in {"terminal_error", "screen_read", "google_oauth_setup"}:
         return "draft_only"
@@ -116,6 +127,7 @@ def _tool_for_route(route: PlanRoute) -> str:
         "local_status": "doctor",
         "browser_or_video": "browser_assistant",
         "spotify": "spotify_assistant",
+        "desktop_control": "desktop_automation",
         "web_search": "web_search",
         "generic_chat": "ollama_chat",
     }[route]

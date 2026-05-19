@@ -75,7 +75,14 @@ TOOLS = (
         label="Spotify local",
         category="media",
         policy_level="draft_only",
-        description="Ouvre Spotify ou Spotify Web et lance une recherche musicale demandee par Victor.",
+        description="Ouvre Spotify, lance une recherche musicale et tente le controle clavier/souris local.",
+    ),
+    ToolDescriptor(
+        key="desktop_automation",
+        label="Hands desktop",
+        category="system",
+        policy_level="draft_only",
+        description="Clics pixels, touches media et clavier local pour piloter le PC sans API externe.",
     ),
     ToolDescriptor(
         key="cursor_prompt",

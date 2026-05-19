@@ -71,6 +71,13 @@ from app.integrations.spotify_assistant import (
     detect_spotify_request,
     open_spotify_from_message,
 )
+from app.integrations.desktop_automation import (
+    DesktopAutomationError,
+    click_pixel,
+    click_ratio,
+    desktop_status,
+    press_key,
+)
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
     draft_linkedin_comment,
@@ -279,6 +286,32 @@ class BrowserAssistRequest(BaseModel):
 
 class SpotifyOpenRequest(BaseModel):
     message: str = Field(min_length=1, max_length=1000)
+
+
+class DesktopClickRequest(BaseModel):
+    x: int = Field(ge=0, le=20000)
+    y: int = Field(ge=0, le=20000)
+
+
+class DesktopClickRatioRequest(BaseModel):
+    x_ratio: float = Field(ge=0.0, le=1.0)
+    y_ratio: float = Field(ge=0.0, le=1.0)
+
+
+class DesktopKeyRequest(BaseModel):
+    key: Literal[
+        "enter",
+        "space",
+        "tab",
+        "escape",
+        "media_play_pause",
+        "media_next",
+        "media_previous",
+        "volume_up",
+        "volume_down",
+        "volume_mute",
+    ]
+    presses: int = Field(default=1, ge=1, le=20)
 
 
 class DailyLaunchRequest(BaseModel):
@@ -880,6 +913,47 @@ async def spotify_open(request: SpotifyOpenRequest) -> dict[str, object]:
         "opened": bool(response),
         "response": response,
         "detected": detected,
+    }
+
+
+@app.get("/desktop/status", dependencies=[Depends(require_sensitive_access)])
+async def desktop_automation_status() -> dict[str, object]:
+    return desktop_status()
+
+
+@app.post("/desktop/click", dependencies=[Depends(require_sensitive_access)])
+async def desktop_automation_click(request: DesktopClickRequest) -> dict[str, object]:
+    try:
+        result = click_pixel(request.x, request.y)
+    except DesktopAutomationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "executed": result.executed,
+        "message": result.message,
+    }
+
+
+@app.post("/desktop/click-ratio", dependencies=[Depends(require_sensitive_access)])
+async def desktop_automation_click_ratio(request: DesktopClickRatioRequest) -> dict[str, object]:
+    try:
+        result = click_ratio(request.x_ratio, request.y_ratio)
+    except DesktopAutomationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "executed": result.executed,
+        "message": result.message,
+    }
+
+
+@app.post("/desktop/key", dependencies=[Depends(require_sensitive_access)])
+async def desktop_automation_key(request: DesktopKeyRequest) -> dict[str, object]:
+    try:
+        result = press_key(request.key, presses=request.presses)
+    except DesktopAutomationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "executed": result.executed,
+        "message": result.message,
     }
 
 

@@ -117,6 +117,9 @@ Configuration locale utile:
 
 ```env
 EVA_BROWSER_PREFERENCE=brave
+EVA_DESKTOP_AUTOMATION_ENABLED=true
+EVA_SPOTIFY_AUTO_UI_ENABLED=true
+EVA_SPOTIFY_UI_DELAY_SECONDS=2.5
 EVA_CURSOR_AUTO_COPY_PROMPT=true
 EVA_CURSOR_AUTO_OPEN_PROJECT=true
 EVA_CURSOR_WRITE_PROMPT_FILE=true
@@ -277,6 +280,25 @@ Eva, mets du jazz calme sur Spotify.
 ```
 
 Eva tente d'abord l'app Spotify locale via le protocole Windows `spotify:`. Si l'app n'est pas disponible, elle ouvre Spotify Web dans Brave. Spotify peut encore demander un clic sur `Play` selon ta session et l'appareil actif.
+
+Eva dispose aussi de hands locales Windows pour Spotify:
+
+- activation de la fenetre Spotify;
+- clic pixel approximatif sur le premier resultat visible;
+- touche `Enter`;
+- touche media `Play/Pause`;
+- commandes media `pause`, `suivant`, `precedent`.
+
+Ces gestes restent locaux au PC et ne passent par aucune API payante. Ils sont volontairement simples: si Spotify change d'interface ou ne prend pas le focus, Eva ouvre au minimum la bonne recherche et indique ce qu'elle a tente.
+
+Routes desktop utiles:
+
+```text
+GET /desktop/status
+POST /desktop/click
+POST /desktop/click-ratio
+POST /desktop/key
+```
 
 ## Connexion Cursor et Gmail
 
