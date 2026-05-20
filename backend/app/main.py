@@ -71,6 +71,12 @@ from app.integrations.spotify_assistant import (
     detect_spotify_request,
     open_spotify_from_message,
 )
+from app.integrations.beeper_assistant import (
+    BeeperAssistantError,
+    build_beeper_chat_response,
+    open_beeper,
+    wants_beeper_reply,
+)
 from app.integrations.desktop_automation import (
     DesktopAutomationError,
     click_pixel,
@@ -286,6 +292,14 @@ class BrowserAssistRequest(BaseModel):
 
 class SpotifyOpenRequest(BaseModel):
     message: str = Field(min_length=1, max_length=1000)
+
+
+class BeeperRequest(BaseModel):
+    message: str = Field(
+        default="Lis mes messages Beeper visibles et fais-moi un debrief.",
+        min_length=1,
+        max_length=2000,
+    )
 
 
 class DesktopClickRequest(BaseModel):
@@ -913,6 +927,27 @@ async def spotify_open(request: SpotifyOpenRequest) -> dict[str, object]:
         "opened": bool(response),
         "response": response,
         "detected": detected,
+    }
+
+
+@app.post("/beeper/open", dependencies=[Depends(require_sensitive_access)])
+async def beeper_open() -> dict[str, object]:
+    try:
+        return open_beeper()
+    except BeeperAssistantError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/beeper/debrief", dependencies=[Depends(require_sensitive_access)])
+async def beeper_debrief(request: BeeperRequest) -> dict[str, object]:
+    try:
+        response = await build_beeper_chat_response(request.message)
+    except BeeperAssistantError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "response": response,
+        "reply_requested": wants_beeper_reply(request.message),
     }
 
 

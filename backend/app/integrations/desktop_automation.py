@@ -26,6 +26,10 @@ KeyName = Literal[
 
 
 KEY_CODES: dict[str, int] = {
+    "ctrl": 0x11,
+    "shift": 0x10,
+    "alt": 0x12,
+    "v": 0x56,
     "enter": 0x0D,
     "space": 0x20,
     "tab": 0x09,
@@ -102,6 +106,58 @@ def press_key(key: KeyName, presses: int = 1, delay_seconds: float = 0.08) -> De
     return DesktopActionResult(True, f"Touche envoyee: {key} x{safe_presses}.")
 
 
+def press_hotkey(keys: tuple[str, ...], delay_seconds: float = 0.08) -> DesktopActionResult:
+    _ensure_enabled()
+    if not keys:
+        raise DesktopAutomationError("Raccourci clavier vide.")
+
+    codes = []
+    for key in keys:
+        code = KEY_CODES.get(key.strip().lower())
+        if code is None:
+            raise DesktopAutomationError(f"Touche non supportee dans le raccourci: {key}.")
+        codes.append(code)
+
+    user32 = ctypes.windll.user32
+    for code in codes:
+        user32.keybd_event(code, 0, 0, 0)
+        time.sleep(0.02)
+    for code in reversed(codes):
+        user32.keybd_event(code, 0, KEYEVENTF_KEYUP, 0)
+        time.sleep(0.02)
+
+    time.sleep(max(float(delay_seconds), 0.0))
+    label = "+".join(keys)
+    return DesktopActionResult(True, f"Raccourci envoye: {label}.")
+
+
+def set_clipboard_text(text: str) -> DesktopActionResult:
+    _ensure_enabled()
+    clean_text = text.strip()
+    if not clean_text:
+        raise DesktopAutomationError("Texte vide: rien a copier dans le presse-papiers.")
+
+    command = "Set-Clipboard -Value ([Console]::In.ReadToEnd())"
+    completed = subprocess.run(
+        ["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", command],
+        input=clean_text,
+        text=True,
+        capture_output=True,
+        timeout=8,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or "Set-Clipboard a echoue."
+        raise DesktopAutomationError(detail)
+
+    return DesktopActionResult(True, "Texte copie dans le presse-papiers Windows.")
+
+
+def paste_text(text: str) -> DesktopActionResult:
+    set_clipboard_text(text)
+    press_hotkey(("ctrl", "v"))
+    return DesktopActionResult(True, "Texte colle via Ctrl+V.")
+
+
 def activate_window(title: str) -> DesktopActionResult:
     _ensure_enabled()
     clean_title = title.strip().replace("'", "''")
@@ -130,7 +186,15 @@ def desktop_status() -> dict[str, object]:
         "enabled": settings.eva_desktop_automation_enabled,
         "available": available,
         "local_only": True,
-        "supports": ["click_pixel", "click_ratio", "press_key", "activate_window"],
+        "supports": [
+            "click_pixel",
+            "click_ratio",
+            "press_key",
+            "press_hotkey",
+            "clipboard",
+            "paste_text",
+            "activate_window",
+        ],
     }
     if settings.eva_desktop_automation_enabled and available:
         try:

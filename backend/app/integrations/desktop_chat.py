@@ -4,6 +4,7 @@ from app.integrations.desktop_automation import (
     DesktopAutomationError,
     click_pixel,
     click_ratio,
+    press_hotkey,
     press_key,
 )
 
@@ -41,6 +42,9 @@ def wants_desktop_control(message: str) -> bool:
             "appuie",
             "presse",
             "touche",
+            "colle",
+            "coller",
+            "ctrl v",
             "play",
             "pause",
             "suivant",
@@ -75,6 +79,10 @@ def execute_desktop_control_from_message(message: str) -> str | None:
     normalized = " ".join(message.lower().split())
 
     try:
+        if "colle" in normalized or "coller" in normalized or "ctrl v" in normalized:
+            result = press_hotkey(("ctrl", "v"))
+            return f"Commande clavier envoyee au PC: {result.message}"
+
         if "clique" in normalized or "click" in normalized:
             coordinates = _detect_click(message)
             if coordinates:

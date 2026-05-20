@@ -85,6 +85,13 @@ TOOLS = (
         description="Clics pixels, touches media et clavier local pour piloter le PC sans API externe.",
     ),
     ToolDescriptor(
+        key="beeper_assistant",
+        label="Beeper",
+        category="messaging",
+        policy_level="draft_only",
+        description="Ouvre Beeper, lit les messages visibles via vision locale et prepare des reponses sans envoyer.",
+    ),
+    ToolDescriptor(
         key="cursor_prompt",
         label="Prompt Cursor",
         category="code",

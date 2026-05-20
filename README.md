@@ -300,6 +300,44 @@ POST /desktop/click-ratio
 POST /desktop/key
 ```
 
+## Beeper desktop
+
+Eva peut utiliser Beeper sans API payante:
+
+- ouvrir Beeper Desktop si installe;
+- sinon ouvrir Beeper Web dans Brave;
+- lire les messages visibles a l'ecran avec le modele vision Ollama local;
+- faire un debrief des conversations visibles;
+- preparer un brouillon de reponse dans le presse-papiers;
+- coller le brouillon si `EVA_BEEPER_AUTO_PASTE_DRAFT=true`, sans appuyer sur Envoyer.
+
+Exemples:
+
+```text
+Eva, lis mes messages Beeper et fais-moi un debrief.
+Eva, lis Beeper et prepare une reponse courte au message visible.
+Eva, colle le brouillon dans Beeper.
+Eva, clique x=850 y=920.
+```
+
+Configuration:
+
+```env
+EVA_BEEPER_ENABLED=true
+EVA_BEEPER_WEB_URL=https://chat.beeper.com
+EVA_BEEPER_OPEN_DELAY_SECONDS=2.5
+EVA_BEEPER_AUTO_PASTE_DRAFT=false
+```
+
+Routes:
+
+```text
+POST /beeper/open
+POST /beeper/debrief
+```
+
+Limite importante: cette V1 lit ce qui est visible a l'ecran. Pour lire toute la messagerie Beeper, il faudra ensuite ajouter une navigation visuelle plus avancee: ouvrir conversation par conversation, capturer, resumer, puis revenir.
+
 ## Connexion Cursor et Gmail
 
 La strategie Cursor/Gmail est documentee ici:
