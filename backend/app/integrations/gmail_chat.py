@@ -56,6 +56,30 @@ def _message_index_from_request(message: str) -> int:
     return 0
 
 
+def _has_specific_mail_target(message: str) -> bool:
+    normalized = _normalize(message)
+    return any(
+        marker in normalized
+        for marker in (
+            "dernier mail",
+            "dernier email",
+            "premier mail",
+            "premier email",
+            "deuxieme mail",
+            "2eme mail",
+            "2e mail",
+            "second mail",
+            "troisieme mail",
+            "3eme mail",
+            "3e mail",
+            "mail qui concerne",
+            "mail concernant",
+            "mail sur",
+            "mail a propos",
+        )
+    )
+
+
 def wants_gmail_open(message: str) -> bool:
     normalized = _normalize(message)
     open_markers = ("ouvre", "ouvrir", "open", "brave", "navigateur", "browser")
@@ -125,6 +149,26 @@ def wants_gmail_inspect(message: str) -> bool:
         "dis moi",
     )
     return ordinal_context and any(marker in normalized for marker in inspect_markers)
+
+
+def wants_gmail_read_body(message: str) -> bool:
+    normalized = _normalize(message)
+    if not _has_gmail_context(normalized) and "mail" not in normalized:
+        return False
+    return any(
+        marker in normalized
+        for marker in (
+            "lis",
+            "lire",
+            "lecture",
+            "resume",
+            "resumer",
+            "analyse",
+            "contenu",
+            "dis moi",
+            "explique",
+        )
+    )
 
 
 def wants_gmail_reply_draft(message: str) -> bool:
@@ -277,6 +321,25 @@ def _select_relevant_external_link(message: GmailMessage) -> str:
     return ""
 
 
+def _wants_related_external_link(message: str) -> bool:
+    normalized = _normalize(message)
+    if not any(marker in normalized for marker in ("ouvre", "ouvrir", "open", "lance")):
+        return False
+    return any(
+        marker in normalized
+        for marker in (
+            "lien",
+            "liens",
+            "annonce",
+            "site",
+            "page",
+            "url",
+            "offre",
+            "article",
+        )
+    )
+
+
 def _looks_like_housing_message(message: GmailMessage) -> bool:
     text = _normalize(" ".join([message.subject, message.sender, message.snippet, message.body[:1500]]))
     return any(
@@ -350,6 +413,29 @@ def format_gmail_message_list() -> str:
             f"   Date: {message.date}\n"
             f"   ID: {message.id}\n"
             f"   Extrait: {message.snippet}"
+        )
+    return "\n\n".join(lines)
+
+
+def format_gmail_topic_message_list(topic: str, max_results: int = 8) -> str:
+    messages = _list_topic_messages(topic, max_results=max_results)
+    if not messages:
+        return f"Source: Gmail API.\nJe n'ai trouve aucun mail recent lie a {topic}."
+
+    lines = [
+        "Source: Gmail API, inbox reelle.",
+        f"Sujet recherche: {topic}.",
+        "Mails Gmail reels trouves:",
+    ]
+    for index, shallow_message in enumerate(messages, start=1):
+        message = get_gmail_message(shallow_message.id)
+        lines.append(
+            f"{index}. {message.subject}\n"
+            f"   De: {message.sender}\n"
+            f"   Date: {message.date}\n"
+            f"   ID: {message.id}\n"
+            f"   Extrait: {message.snippet}\n"
+            f"   Lecture: {(message.body or message.snippet)[:600].strip()}"
         )
     return "\n\n".join(lines)
 
@@ -471,9 +557,12 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
     inbox_open_requested = wants_gmail_inbox_open(message)
     open_requested = wants_gmail_open(message)
     inspect_requested = wants_gmail_inspect(message)
+    read_body_requested = wants_gmail_read_body(message)
     reply_requested = wants_gmail_reply_draft(message)
+    topic = _extract_topic_from_message(message)
+    specific_mail_requested = bool(topic) or _has_specific_mail_target(message)
 
-    if inbox_open_requested and not inspect_requested and not reply_requested:
+    if inbox_open_requested and not specific_mail_requested and not inspect_requested and not read_body_requested and not reply_requested:
         url = open_gmail_inbox_in_browser()
         return (
             "Interpretation Eva: tu veux ouvrir ta boite Gmail, pas traiter un mail precis.\n\n"
@@ -482,8 +571,17 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
 
     if open_requested or inspect_requested or reply_requested:
         selected_index = _message_index_from_request(message)
-        messages = list_gmail_messages(max_results=max(5, selected_index + 1))
+        if topic:
+            messages = _list_topic_messages(topic, max_results=max(8, selected_index + 1))
+        else:
+            messages = list_gmail_messages(max_results=max(5, selected_index + 1))
+
         if not messages:
+            if topic:
+                return (
+                    "Interpretation Eva: tu veux un mail precis lie a un sujet, pas le dernier mail global.\n\n"
+                    f"Source: Gmail API.\nJe n'ai trouve aucun mail recent lie a {topic}."
+                )
             return "Source: Gmail API.\nJe n'ai trouve aucun mail recent a ouvrir ou traiter."
 
         if selected_index >= len(messages):
@@ -491,11 +589,17 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
 
         original = get_gmail_message(messages[selected_index].id)
         source_label = "Source: Gmail API + brouillon Gmail." if reply_requested else "Source: Gmail API, inbox reelle."
-        lines = [source_label, f"Mail source: {original.subject} ({original.sender})"]
+        lines = [source_label]
+        if topic:
+            lines.extend(
+                [
+                    "Interpretation Eva: tu veux le dernier mail lie a ce sujet, pas ouvrir les liens internes d'un autre mail.",
+                    f"Sujet recherche: {topic}",
+                ]
+            )
+        lines.append(f"Mail source: {original.subject} ({original.sender})")
 
-        should_open_related_link = open_requested and (
-            "annonce" in _normalize(message) or _looks_like_housing_message(original)
-        )
+        should_open_related_link = open_requested and _wants_related_external_link(message)
         if open_requested:
             opened = open_gmail_message_in_browser(
                 original,
@@ -504,6 +608,8 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
             lines.append(f"J'ai ouvert le mail reel dans Brave: {opened['gmail_url']}")
             if opened["related_link"]:
                 lines.append(f"J'ai aussi ouvert le lien pertinent detecte dans le mail: {opened['related_link']}")
+            else:
+                lines.append("Je n'ai pas ouvert les liens internes du mail, car tu as demande le mail lui-meme.")
 
         if _looks_like_housing_message(original):
             lines.append(
@@ -513,7 +619,7 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
             )
 
         if not reply_requested:
-            if inspect_requested and original.body:
+            if (inspect_requested or read_body_requested or topic) and original.body:
                 preview = original.body[:1200].strip()
                 lines.append(f"Extrait lu dans le mail:\n{preview}")
             return "\n\n".join(lines)
@@ -601,6 +707,8 @@ Corps:
         return "\n\n".join(lines)
 
     if force_list or wants_gmail_list(message):
+        if topic:
+            return format_gmail_topic_message_list(topic)
         return format_gmail_message_list()
 
     return None
