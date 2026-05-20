@@ -89,6 +89,8 @@ class Settings:
         "EVA_SCREEN_WATCH_CONTEXT_MAX_AGE_SECONDS",
         180,
     )
+    eva_visual_action_enabled: bool = _env_bool("EVA_VISUAL_ACTION_ENABLED", True)
+    eva_visual_action_min_confidence: float = _env_float("EVA_VISUAL_ACTION_MIN_CONFIDENCE", 0.62)
     eva_obsidian_memory_enabled: bool = _env_bool("EVA_OBSIDIAN_MEMORY_ENABLED", True)
     eva_obsidian_vault_path: str = os.getenv("EVA_OBSIDIAN_VAULT_PATH", "data/obsidian_vault")
     eva_cursor_auto_copy_prompt: bool = _env_bool("EVA_CURSOR_AUTO_COPY_PROMPT", True)

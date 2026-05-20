@@ -298,7 +298,20 @@ GET /desktop/status
 POST /desktop/click
 POST /desktop/click-ratio
 POST /desktop/key
+POST /screen/act
 ```
+
+`POST /screen/act` est la version intelligente: Eva capture l'ecran, demande au modele vision Ollama quel bouton ou champ est le plus probable, puis clique ou envoie le raccourci clavier seulement si la confiance est suffisante.
+
+Exemple:
+
+```text
+Eva, regarde l'ecran et clique sur le bouton Repondre.
+Eva, colle le brouillon dans le champ de message visible.
+Eva, clique sur le bouton Envoyer.
+```
+
+Par securite, les boutons qui semblent envoyer ou publier restent bloques tant que `EVA_ALLOW_AUTO_EXTERNAL_SEND=false`.
 
 ## Beeper desktop
 
@@ -337,6 +350,25 @@ POST /beeper/debrief
 ```
 
 Limite importante: cette V1 lit ce qui est visible a l'ecran. Pour lire toute la messagerie Beeper, il faudra ensuite ajouter une navigation visuelle plus avancee: ouvrir conversation par conversation, capturer, resumer, puis revenir.
+
+## Memoire et apprentissage
+
+Eva utilise une memoire locale SQLite et un vault Obsidian local. L'objectif n'est pas d'entrainer le modele Ollama, mais de reinjecter les bonnes informations dans le contexte:
+
+- profil local de Victor;
+- souvenirs explicites et preferences;
+- historique de chats;
+- notes Obsidian locales;
+- recherche FTS5/BM25 locale sur les souvenirs;
+- souvenirs pertinents injectes selon la demande actuelle;
+- lecons d'usage ajoutees progressivement dans le code ou la memoire.
+
+OpenJarvis documente une approche similaire centree sur une memoire locale SQLite avec recherche texte et, selon les configurations, des modules de retrieval plus avances. Pour Eva, le chemin propre est:
+
+1. garder SQLite comme base gratuite et locale;
+2. utiliser FTS5/BM25 sur les souvenirs;
+3. extraire des lecons courtes depuis tes corrections, sans stocker les phrases brutes;
+4. ajouter plus tard une memoire vectorielle locale si on installe un modele d'embeddings local.
 
 ## Connexion Cursor et Gmail
 

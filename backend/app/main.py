@@ -159,6 +159,7 @@ from app.screen.screen_reader import (
     capture_screen,
     screen_status,
 )
+from app.screen.visual_action import VisualActionError, analyze_visual_action
 from app.screen.screen_watcher import (
     latest_screen_analysis,
     run_screen_watch_once,
@@ -335,6 +336,11 @@ class DailyLaunchRequest(BaseModel):
 class ScreenAnalyzeRequest(BaseModel):
     instruction: str = Field(default="", max_length=2000)
     auto_fix: bool = False
+
+
+class VisualActionRequest(BaseModel):
+    instruction: str = Field(min_length=1, max_length=2000)
+    execute: bool = True
 
 
 class GmailReplyDraftRequest(BaseModel):
@@ -1029,6 +1035,14 @@ async def screen_reader_analyze(request: ScreenAnalyzeRequest) -> dict[str, obje
             auto_fix=request.auto_fix,
         )
     except ScreenReaderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/screen/act", dependencies=[Depends(require_sensitive_access)])
+async def screen_visual_action(request: VisualActionRequest) -> dict[str, object]:
+    try:
+        return await analyze_visual_action(request.instruction, execute=request.execute)
+    except VisualActionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 

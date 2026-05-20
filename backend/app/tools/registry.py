@@ -85,6 +85,13 @@ TOOLS = (
         description="Clics pixels, touches media et clavier local pour piloter le PC sans API externe.",
     ),
     ToolDescriptor(
+        key="visual_action",
+        label="Vision action",
+        category="system",
+        policy_level="draft_only",
+        description="Regarde l'ecran avec Ollama vision, trouve un bouton/champ et agit sans coordonnees manuelles.",
+    ),
+    ToolDescriptor(
         key="beeper_assistant",
         label="Beeper",
         category="messaging",

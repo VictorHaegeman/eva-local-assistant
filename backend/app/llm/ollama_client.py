@@ -4,7 +4,11 @@ import httpx
 
 from app.agents.modes import get_mode_prompt
 from app.config import settings
-from app.memory.memory_store import MemoryStoreError, build_memory_prompt_context
+from app.memory.memory_store import (
+    MemoryStoreError,
+    build_memory_prompt_context,
+    build_relevant_memory_prompt_context,
+)
 from app.memory.profile_store import ProfileStoreError, build_profile_prompt_context
 from app.prompts.system_prompt import EVA_SYSTEM_PROMPT
 from app.skills.registry import build_skills_prompt_context
@@ -61,6 +65,7 @@ async def ask_ollama(
             f"{get_mode_prompt(mode)}\n\n"
             f"{build_profile_prompt_context()}\n\n"
             f"{build_memory_prompt_context()}\n\n"
+            f"{build_relevant_memory_prompt_context(latest_user_message)}\n\n"
             f"{build_skills_prompt_context(latest_user_message)}"
         )
         if extra_context:

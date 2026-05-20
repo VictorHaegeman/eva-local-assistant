@@ -42,6 +42,7 @@ from app.memory.memory_store import (
     add_memory,
     detect_auto_memory_candidate,
     detect_explicit_memory_request,
+    detect_operating_lesson_candidate,
     memory_to_dict,
 )
 from app.memory.obsidian_store import ObsidianMemoryError, mirror_memory_to_obsidian
@@ -61,6 +62,12 @@ from app.project_factory.automation import (
 )
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
 from app.screen.screen_reader import ScreenReaderError, analyze_screen
+from app.screen.visual_action import (
+    VisualActionError,
+    analyze_visual_action,
+    format_visual_action_response,
+    wants_visual_action,
+)
 from app.screen.screen_watcher import latest_screen_context
 from app.skills.registry import list_skills
 from app.terminal.terminal_doctor import (
@@ -572,6 +579,17 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
+        if trusted_actions and wants_visual_action(latest_user_message):
+            visual_result = await analyze_visual_action(latest_user_message, execute=True)
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": format_visual_action_response(visual_result),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         desktop_response = (
             execute_desktop_control_from_message(latest_user_message)
             if trusted_actions
@@ -625,6 +643,7 @@ async def process_chat_messages(
         SpotifyAssistError,
         DesktopChatError,
         BeeperAssistantError,
+        VisualActionError,
     ) as exc:
         raise ChatServiceError(str(exc)) from exc
 
@@ -685,7 +704,9 @@ async def process_chat_messages(
             _mirror_memory(memory)
             saved_memory = memory_to_dict(memory)
         elif trusted_actions:
-            memory_candidate = detect_auto_memory_candidate(latest_user_message)
+            memory_candidate = detect_operating_lesson_candidate(
+                latest_user_message
+            ) or detect_auto_memory_candidate(latest_user_message)
             if memory_candidate:
                 memory = add_memory(
                     memory_candidate.content,
