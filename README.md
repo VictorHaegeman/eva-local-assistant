@@ -441,6 +441,39 @@ Route de debug locale:
 POST /understand
 ```
 
+## Journal operateur et reflexes
+
+Inspiration OpenJarvis utile pour Eva: garder une boucle locale qui observe la demande,
+choisit l'outil, trace le resultat, puis note le reflexe a appliquer si le resultat est faible.
+
+Eva ajoute maintenant un journal SQLite local:
+
+```text
+data/eva_operator_journal.sqlite
+```
+
+Ce journal enregistre, pour le chat web et Telegram:
+
+- message de Victor;
+- canal: web ou Telegram;
+- domaine compris: Gmail, terminal, navigateur, projet, etc.;
+- outil prefere;
+- route d'action;
+- niveau de securite;
+- resultat;
+- statut: completed, needs_followup, blocked ou failed;
+- reflexe propose pour la prochaine relance.
+
+Routes utiles:
+
+```text
+GET /operator/status
+GET /operator/ticks
+```
+
+Objectif: quand Eva donne une reponse faible, voit une erreur terminal ou n'arrive pas a ouvrir quelque chose,
+elle laisse une trace exploitable au lieu d'oublier. C'est la base pour ajouter ensuite une boucle de relance automatique.
+
 ## Connexion Cursor et Gmail
 
 La strategie Cursor/Gmail est documentee ici:

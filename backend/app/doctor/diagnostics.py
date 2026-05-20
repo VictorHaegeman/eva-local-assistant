@@ -9,6 +9,7 @@ from app.heartbeat.scheduler import HEARTBEATS_PATH
 from app.integrations.linkedin_assistant import LINKEDIN_PATH
 from app.integrations.browser import find_browser
 from app.integrations.cli_tools import find_cursor_agent, find_gh, is_gh_authenticated
+from app.agents.operator_journal import OperatorJournalError, operator_status
 from app.memory.embedding_store import EmbeddingStoreError, embedding_status
 from app.memory.memory_store import MEMORY_DB_PATH
 from app.memory.obsidian_store import obsidian_status
@@ -372,6 +373,20 @@ def _api_security_check() -> dict[str, Any]:
     return _check("api_security", level, message, status)
 
 
+def _operator_journal_check() -> dict[str, Any]:
+    try:
+        status = operator_status()
+    except OperatorJournalError as exc:
+        return _check("operator_journal", "warning", str(exc))
+
+    return _check(
+        "operator_journal",
+        "ok",
+        f"Journal operateur actif: {status.get('ticks', 0)} ticks traces.",
+        status,
+    )
+
+
 async def run_doctor() -> dict[str, Any]:
     checks = []
     checks.extend(await _ollama_checks())
@@ -387,6 +402,7 @@ async def run_doctor() -> dict[str, Any]:
     checks.append(_telegram_check())
     checks.append(_project_factory_check())
     checks.append(_browser_check())
+    checks.append(_operator_journal_check())
     checks.append(_api_security_check())
 
     status = _overall_status(checks)

@@ -25,6 +25,14 @@ from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.agents.understanding import build_understanding_frame, understanding_to_dict
+from app.agents.operator_journal import (
+    OperatorJournalError,
+    init_operator_journal,
+    list_operator_ticks,
+    operator_status,
+    operator_tick_to_dict,
+    record_operator_tick,
+)
 from app.doctor.autonomy_readiness import autonomy_readiness
 from app.doctor.diagnostics import run_doctor
 from app.files.local_files import (
@@ -425,6 +433,7 @@ init_brief_store()
 init_task_store()
 init_action_store()
 init_chat_history_store()
+init_operator_journal()
 
 telegram_task: asyncio.Task[None] | None = None
 heartbeat_task: asyncio.Task[None] | None = None
@@ -600,6 +609,25 @@ async def autonomy() -> dict[str, object]:
 @app.get("/autonomy/readiness", dependencies=[Depends(require_sensitive_access)])
 async def autonomy_readiness_route() -> dict[str, object]:
     return autonomy_readiness()
+
+
+@app.get("/operator/status", dependencies=[Depends(require_sensitive_access)])
+async def operator_journal_status() -> dict[str, object]:
+    try:
+        return operator_status()
+    except OperatorJournalError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/operator/ticks", dependencies=[Depends(require_sensitive_access)])
+async def operator_journal_ticks(limit: int = Query(default=50, ge=1, le=200)) -> dict[str, object]:
+    try:
+        ticks = list_operator_ticks(limit=limit)
+    except OperatorJournalError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {
+        "ticks": [operator_tick_to_dict(tick) for tick in ticks],
+    }
 
 
 @app.get("/profile", dependencies=[Depends(require_sensitive_access)])
@@ -1621,11 +1649,12 @@ async def chat(chat_request: ChatRequest, http_request: Request) -> ChatResponse
             detail="La conversation doit se terminer par un message utilisateur.",
         )
 
+    trusted_actions = is_request_trusted(http_request)
     try:
         result = await process_chat_messages(
             safe_messages,
             mode=chat_request.mode,
-            trusted_actions=is_request_trusted(http_request),
+            trusted_actions=trusted_actions,
         )
     except ChatServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -1639,6 +1668,17 @@ async def chat(chat_request: ChatRequest, http_request: Request) -> ChatResponse
         )
     except ChatHistoryError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    try:
+        record_operator_tick(
+            str(safe_messages[-1]["content"]),
+            str(result["message"]["content"]),
+            channel="web",
+            trusted_actions=trusted_actions,
+            conversation_context=safe_messages[:-1],
+        )
+    except OperatorJournalError:
+        pass
 
     return ChatResponse(
         message=Message(**result["message"]),

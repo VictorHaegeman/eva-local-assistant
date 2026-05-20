@@ -12,6 +12,7 @@ from app.actions.action_store import (
     update_action_status,
 )
 from app.actions.executor import ActionExecutionError, execute_action
+from app.agents.operator_journal import OperatorJournalError, record_operator_tick
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
@@ -386,6 +387,16 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             channel="telegram",
         )
     except ChatHistoryError:
+        pass
+    try:
+        record_operator_tick(
+            text,
+            assistant_text,
+            channel="telegram",
+            trusted_actions=True,
+            conversation_context=context,
+        )
+    except OperatorJournalError:
         pass
     await _send_message(client, chat_id, f"{assistant_text}{suffix}")
 

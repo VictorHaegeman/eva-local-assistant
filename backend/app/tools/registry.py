@@ -64,6 +64,13 @@ TOOLS = (
         description="Interprete chaque message avant reponse ou action, avec domaine, objectif, preuves et outil prefere.",
     ),
     ToolDescriptor(
+        key="operator_journal",
+        label="Journal operateur",
+        category="agents",
+        policy_level="read_only",
+        description="Trace les demandes, decisions, resultats et reflexes de relance pour ameliorer l'autonomie locale.",
+    ),
+    ToolDescriptor(
         key="file_read",
         label="Lecture fichiers",
         category="files",
