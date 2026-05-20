@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
 
+from app.agents.intent_router import UserIntent, classify_user_intent
 from app.memory.cluster_store import (
     ClusterRoute,
     cluster_label,
+    get_memory_cluster,
     infer_memory_cluster,
     route_memory_clusters,
 )
@@ -26,14 +28,62 @@ class RoutedMemoryResult:
 @dataclass(frozen=True)
 class RoutedMemoryContext:
     query: str
+    intent_name: str
+    intent_summary: str
     clusters: list[ClusterRoute]
     results: list[RoutedMemoryResult]
     vector_available: bool
     vector_error: str = ""
 
 
+INTENT_CLUSTER_HINTS: dict[str, tuple[str, ...]] = {
+    "google_oauth_setup": ("gmail_calendar", "eva_operating_rules"),
+    "calendar_read": ("gmail_calendar", "victor_identity"),
+    "gmail_read": ("gmail_calendar", "dreamlense", "housing", "writing_preferences"),
+    "gmail_reply_audit": ("gmail_calendar", "dreamlense", "writing_preferences"),
+    "gmail_reply_draft": ("gmail_calendar", "writing_preferences", "dreamlense", "housing"),
+    "project_factory": ("code_projects", "dreamlense", "eva_operating_rules"),
+    "cursor_work": ("code_projects", "eva_operating_rules"),
+    "terminal_error": ("code_projects", "eva_operating_rules"),
+    "screen_read": ("eva_operating_rules", "messages"),
+    "local_status": ("eva_operating_rules",),
+}
+
+
 def _cluster_keys(routes: list[ClusterRoute]) -> set[str]:
     return {route.cluster.key for route in routes}
+
+
+def _route_clusters_with_intent(query: str, intent: UserIntent, limit: int = 4) -> list[ClusterRoute]:
+    combined: dict[str, ClusterRoute] = {
+        route.cluster.key: route for route in route_memory_clusters(query, limit=limit)
+    }
+
+    for index, cluster_key in enumerate(INTENT_CLUSTER_HINTS.get(intent.name, ())):
+        cluster = get_memory_cluster(cluster_key)
+        if not cluster:
+            continue
+        score = max(0.42, intent.confidence - (index * 0.08))
+        existing = combined.get(cluster_key)
+        if existing and existing.score >= score:
+            continue
+        combined[cluster_key] = ClusterRoute(cluster=cluster, score=min(score, 1.0))
+
+    return sorted(combined.values(), key=lambda route: route.score, reverse=True)[: max(1, limit)]
+
+
+def _expanded_query(query: str, intent: UserIntent, clusters: list[ClusterRoute]) -> str:
+    parts = [
+        query,
+        f"Intent: {intent.name}",
+        f"Objectif interprete: {intent.summary}",
+    ]
+    for route in clusters:
+        parts.append(
+            f"Cluster: {route.cluster.label}. {route.cluster.description}. "
+            f"Mots cles: {', '.join(route.cluster.keywords)}"
+        )
+    return "\n".join(parts)
 
 
 def _add_lexical_scores(
@@ -96,17 +146,19 @@ def _add_vector_scores(
 
 
 def route_memory(query: str, limit: int = 8) -> RoutedMemoryContext:
-    clusters = route_memory_clusters(query)
+    intent = classify_user_intent(query)
+    clusters = _route_clusters_with_intent(query, intent)
+    retrieval_query = _expanded_query(query, intent, clusters)
     routed_cluster_keys = _cluster_keys(clusters)
     combined: dict[int, RoutedMemoryResult] = {}
 
-    lexical_results = search_memories(query, limit=max(limit * 2, 8))
+    lexical_results = search_memories(retrieval_query, limit=max(limit * 2, 8))
     _add_lexical_scores(combined, lexical_results, routed_cluster_keys)
 
     vector_available = True
     vector_error = ""
     try:
-        vector_results = search_vector_memories(query, limit=max(limit * 2, 8))
+        vector_results = search_vector_memories(retrieval_query, limit=max(limit * 2, 8))
         _add_vector_scores(combined, vector_results, routed_cluster_keys)
     except EmbeddingUnavailableError as exc:
         vector_available = False
@@ -118,6 +170,8 @@ def route_memory(query: str, limit: int = 8) -> RoutedMemoryContext:
     ranked = sorted(combined.values(), key=lambda result: result.score, reverse=True)[: max(1, limit)]
     return RoutedMemoryContext(
         query=query,
+        intent_name=intent.name,
+        intent_summary=intent.summary,
         clusters=clusters,
         results=ranked,
         vector_available=vector_available,
@@ -143,6 +197,7 @@ def build_relevant_memory_prompt_context(query: str) -> str:
     )
     lines = [
         "Memoires pertinentes retrouvees par routeur hybride local.",
+        f"Intent memoire: {context.intent_name} - {context.intent_summary}",
         f"Clusters probables: {cluster_line}.",
         (
             "Recherche utilisee: FTS5/BM25 + embeddings Ollama locaux."

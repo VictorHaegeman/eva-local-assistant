@@ -107,7 +107,7 @@ from app.memory.memory_store import (
     list_memories,
     memory_to_dict,
 )
-from app.memory.cluster_store import list_memory_clusters, route_memory_clusters
+from app.memory.cluster_store import list_memory_clusters
 from app.memory.embedding_store import (
     EmbeddingStoreError,
     embedding_status,
@@ -634,13 +634,17 @@ async def memory_route(request: MemoryRouteRequest) -> dict[str, object]:
     context = route_memory(request.query, limit=request.limit)
     return {
         "query": request.query,
+        "intent": {
+            "name": context.intent_name,
+            "summary": context.intent_summary,
+        },
         "clusters": [
             {
                 "key": route.cluster.key,
                 "label": route.cluster.label,
                 "score": route.score,
             }
-            for route in route_memory_clusters(request.query)
+            for route in context.clusters
         ],
         "vector_available": context.vector_available,
         "vector_error": context.vector_error,

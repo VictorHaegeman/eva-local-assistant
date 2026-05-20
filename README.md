@@ -393,6 +393,7 @@ Eva utilise une memoire locale SQLite et un vault Obsidian local. L'objectif n'e
 - embeddings Ollama locaux avec `nomic-embed-text`;
 - clusters de memoire pour orienter la recherche;
 - routeur hybride intent + clusters + FTS/BM25 + similarite vectorielle;
+- enrichissement de la requete par l'intention detectee avant recherche;
 - souvenirs pertinents injectes selon la demande actuelle;
 - lecons d'usage ajoutees progressivement dans le code ou la memoire.
 
@@ -401,7 +402,7 @@ OpenJarvis documente une approche similaire centree sur une memoire locale SQLit
 1. garder SQLite comme base gratuite et locale;
 2. utiliser FTS5/BM25 sur les souvenirs;
 3. ajouter une memoire vectorielle locale via Ollama;
-4. router les demandes vers les bons clusters;
+4. interpreter l'intention, puis router les demandes vers les bons clusters;
 5. extraire des lecons courtes depuis tes corrections, sans stocker les phrases brutes.
 
 Installation du modele d'embedding local:

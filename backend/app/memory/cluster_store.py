@@ -103,6 +103,13 @@ def list_memory_clusters() -> list[dict[str, object]]:
     ]
 
 
+def get_memory_cluster(key: str) -> MemoryCluster | None:
+    for cluster in CLUSTERS:
+        if cluster.key == key:
+            return cluster
+    return None
+
+
 def route_memory_clusters(query: str, limit: int = 4) -> list[ClusterRoute]:
     query_tokens = _tokens(query)
     normalized = _normalize(query)
