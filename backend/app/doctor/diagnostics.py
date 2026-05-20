@@ -9,6 +9,7 @@ from app.heartbeat.scheduler import HEARTBEATS_PATH
 from app.integrations.linkedin_assistant import LINKEDIN_PATH
 from app.integrations.browser import find_browser
 from app.integrations.cli_tools import find_cursor_agent, find_gh, is_gh_authenticated
+from app.memory.embedding_store import EmbeddingStoreError, embedding_status
 from app.memory.memory_store import MEMORY_DB_PATH
 from app.memory.obsidian_store import obsidian_status
 from app.memory.profile_store import PROFILE_PATH, ProfileStoreError, load_profile
@@ -140,6 +141,42 @@ def _memory_check() -> dict[str, Any]:
         "Memoire SQLite presente." if exists else "Memoire SQLite pas encore creee.",
         {"path": str(MEMORY_DB_PATH), "exists": exists},
     )
+
+
+def _memory_embeddings_check() -> dict[str, Any]:
+    if not settings.eva_embeddings_enabled:
+        return _check(
+            "memory_embeddings",
+            "warning",
+            "Memoire vectorielle desactivee.",
+            {"enabled": False},
+        )
+
+    try:
+        status = embedding_status()
+    except EmbeddingStoreError as exc:
+        return _check(
+            "memory_embeddings",
+            "warning",
+            f"Memoire vectorielle non initialisee: {exc}",
+        )
+
+    memory_count = int(status.get("memory_count", 0))
+    embedding_count = int(status.get("embedding_count", 0))
+    if memory_count == 0:
+        level: CheckStatus = "ok"
+        message = "Memoire vectorielle prete, aucun souvenir a indexer."
+    elif embedding_count > 0:
+        level = "ok"
+        message = f"Memoire vectorielle active: {embedding_count}/{memory_count} souvenirs indexes."
+    else:
+        level = "warning"
+        message = (
+            "Memoire vectorielle prete mais pas encore indexee. "
+            f"Lance: ollama pull {settings.eva_embedding_model}, puis POST /memory/embeddings/rebuild."
+        )
+
+    return _check("memory_embeddings", level, message, status)
 
 
 def _obsidian_memory_check() -> dict[str, Any]:
@@ -341,6 +378,7 @@ async def run_doctor() -> dict[str, Any]:
     checks.append(_profile_check())
     checks.append(_gitignore_profile_check())
     checks.append(_memory_check())
+    checks.append(_memory_embeddings_check())
     checks.append(_obsidian_memory_check())
     checks.append(_instructions_check())
     checks.append(_heartbeat_check())

@@ -107,6 +107,13 @@ from app.memory.memory_store import (
     list_memories,
     memory_to_dict,
 )
+from app.memory.cluster_store import list_memory_clusters, route_memory_clusters
+from app.memory.embedding_store import (
+    EmbeddingStoreError,
+    embedding_status,
+    rebuild_memory_embeddings,
+)
+from app.memory.memory_router import route_memory
 from app.memory.chat_history_store import (
     ChatHistoryError,
     append_chat_exchange,
@@ -203,6 +210,15 @@ class ChatResponse(BaseModel):
 class MemoryCreateRequest(BaseModel):
     content: str = Field(min_length=1, max_length=600)
     category: str = Field(default="general", min_length=1, max_length=40)
+
+
+class MemoryRouteRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=2000)
+    limit: int = Field(default=8, ge=1, le=20)
+
+
+class MemoryEmbeddingRebuildRequest(BaseModel):
+    limit: int = Field(default=200, ge=1, le=1000)
 
 
 class FileReadRequest(BaseModel):
@@ -604,6 +620,56 @@ async def memories() -> dict[str, object]:
         "loaded": True,
         "memories": [memory_to_dict(memory) for memory in loaded_memories],
     }
+
+
+@app.get("/memory/clusters", dependencies=[Depends(require_sensitive_access)])
+async def memory_clusters() -> dict[str, object]:
+    return {
+        "clusters": list_memory_clusters(),
+    }
+
+
+@app.post("/memory/route", dependencies=[Depends(require_sensitive_access)])
+async def memory_route(request: MemoryRouteRequest) -> dict[str, object]:
+    context = route_memory(request.query, limit=request.limit)
+    return {
+        "query": request.query,
+        "clusters": [
+            {
+                "key": route.cluster.key,
+                "label": route.cluster.label,
+                "score": route.score,
+            }
+            for route in route_memory_clusters(request.query)
+        ],
+        "vector_available": context.vector_available,
+        "vector_error": context.vector_error,
+        "results": [
+            {
+                "memory": memory_to_dict(result.memory),
+                "score": result.score,
+                "cluster_key": result.cluster_key,
+                "signals": result.signals,
+            }
+            for result in context.results
+        ],
+    }
+
+
+@app.get("/memory/embeddings/status", dependencies=[Depends(require_sensitive_access)])
+async def memory_embeddings_status() -> dict[str, object]:
+    try:
+        return embedding_status()
+    except EmbeddingStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/memory/embeddings/rebuild", dependencies=[Depends(require_sensitive_access)])
+async def memory_embeddings_rebuild(request: MemoryEmbeddingRebuildRequest) -> dict[str, object]:
+    try:
+        return rebuild_memory_embeddings(limit=request.limit)
+    except EmbeddingStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.get("/chat/history", dependencies=[Depends(require_sensitive_access)])

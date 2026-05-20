@@ -390,6 +390,9 @@ Eva utilise une memoire locale SQLite et un vault Obsidian local. L'objectif n'e
 - historique de chats;
 - notes Obsidian locales;
 - recherche FTS5/BM25 locale sur les souvenirs;
+- embeddings Ollama locaux avec `nomic-embed-text`;
+- clusters de memoire pour orienter la recherche;
+- routeur hybride intent + clusters + FTS/BM25 + similarite vectorielle;
 - souvenirs pertinents injectes selon la demande actuelle;
 - lecons d'usage ajoutees progressivement dans le code ou la memoire.
 
@@ -397,8 +400,26 @@ OpenJarvis documente une approche similaire centree sur une memoire locale SQLit
 
 1. garder SQLite comme base gratuite et locale;
 2. utiliser FTS5/BM25 sur les souvenirs;
-3. extraire des lecons courtes depuis tes corrections, sans stocker les phrases brutes;
-4. ajouter plus tard une memoire vectorielle locale si on installe un modele d'embeddings local.
+3. ajouter une memoire vectorielle locale via Ollama;
+4. router les demandes vers les bons clusters;
+5. extraire des lecons courtes depuis tes corrections, sans stocker les phrases brutes.
+
+Installation du modele d'embedding local:
+
+```powershell
+ollama pull nomic-embed-text
+```
+
+Routes utiles:
+
+```text
+GET /memory/clusters
+POST /memory/route
+GET /memory/embeddings/status
+POST /memory/embeddings/rebuild
+```
+
+Si `nomic-embed-text` n'est pas installe, Eva ne plante pas: elle retombe sur la recherche FTS5/BM25 locale.
 
 ## Connexion Cursor et Gmail
 

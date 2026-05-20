@@ -7,8 +7,8 @@ from app.config import settings
 from app.memory.memory_store import (
     MemoryStoreError,
     build_memory_prompt_context,
-    build_relevant_memory_prompt_context,
 )
+from app.memory.memory_router import build_relevant_memory_prompt_context
 from app.memory.profile_store import ProfileStoreError, build_profile_prompt_context
 from app.prompts.system_prompt import EVA_SYSTEM_PROMPT
 from app.skills.registry import build_skills_prompt_context

@@ -29,6 +29,13 @@ TOOLS = (
         description="Lecture et ajout prudent de souvenirs non sensibles.",
     ),
     ToolDescriptor(
+        key="hybrid_memory_router",
+        label="Routeur memoire",
+        category="memory",
+        policy_level="read_only",
+        description="Route les demandes vers clusters + FTS/BM25 + embeddings Ollama locaux.",
+    ),
+    ToolDescriptor(
         key="obsidian_memory",
         label="Obsidian Memory",
         category="memory",
