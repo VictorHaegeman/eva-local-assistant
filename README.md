@@ -422,6 +422,25 @@ POST /memory/embeddings/rebuild
 
 Si `nomic-embed-text` n'est pas installe, Eva ne plante pas: elle retombe sur la recherche FTS5/BM25 locale.
 
+## Couche de comprehension
+
+Avant de repondre ou d'utiliser un outil, Eva construit un cadre local de comprehension:
+
+- objectif interprete;
+- domaine principal: Gmail, ecran, terminal, projet, Cursor, navigateur, etc.;
+- resultat attendu: lire, auditer, ouvrir, diagnostiquer, brouillonner, creer;
+- preuves a obtenir avant de conclure;
+- outil local prefere;
+- niveau de securite.
+
+Cette couche est utilisee par le chat web et par Telegram. Les messages Telegram normaux passent donc par le meme flux que l'interface Eva, au lieu d'ouvrir directement un outil sans contexte. Les commandes explicites comme `/open youtube` restent disponibles.
+
+Route de debug locale:
+
+```text
+POST /understand
+```
+
 ## Connexion Cursor et Gmail
 
 La strategie Cursor/Gmail est documentee ici:

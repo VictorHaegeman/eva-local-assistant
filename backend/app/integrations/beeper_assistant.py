@@ -132,7 +132,7 @@ async def read_beeper_screen(instruction: str = "") -> dict[str, object]:
     try:
         screen_result = await analyze_screen(
             instruction=f"{BEEPER_SCREEN_INSTRUCTION}\n\nInstruction de Victor:\n{instruction}".strip(),
-            auto_fix=False,
+            auto_fix=True,
         )
     except ScreenReaderError as exc:
         raise BeeperAssistantError(str(exc)) from exc
@@ -181,6 +181,27 @@ async def build_beeper_chat_response(message: str) -> str | None:
         "Debrief visible:",
         analysis or "Aucune analyse exploitable renvoyee par le modele vision.",
     ]
+    terminal_diagnosis = screen.get("terminal_diagnosis")
+    if isinstance(terminal_diagnosis, dict) and terminal_diagnosis.get("detected"):
+        lines.extend(
+            [
+                "",
+                "Diagnostic terminal detecte a l'ecran:",
+                str(terminal_diagnosis.get("title", "Erreur terminal detectee.")),
+                str(terminal_diagnosis.get("cause", "")),
+            ]
+        )
+        fix = terminal_diagnosis.get("fix")
+        if isinstance(fix, dict):
+            lines.append(f"Correctif propose: {fix.get('label', fix.get('key', 'correctif connu'))}")
+        launched = screen.get("launched")
+        if isinstance(launched, dict):
+            lines.extend(
+                [
+                    "Correctif local lance automatiquement:",
+                    str(launched.get("message", launched)),
+                ]
+            )
 
     if wants_beeper_reply(message):
         draft = await _draft_beeper_reply(message, analysis)

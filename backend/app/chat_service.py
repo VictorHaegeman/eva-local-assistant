@@ -8,8 +8,9 @@ from app.config import settings
 from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
 from app.heartbeat.scheduler import HeartbeatError, heartbeat_status
-from app.agents.action_planner import build_action_plan, format_action_plan_context
-from app.agents.intent_router import classify_user_intent, format_intent_context
+from app.agents.action_planner import format_action_plan_context
+from app.agents.intent_router import format_intent_context
+from app.agents.understanding import build_understanding_frame, format_understanding_context
 from app.integrations.gmail_chat import (
     build_gmail_chat_response,
     format_gmail_message_list,
@@ -254,14 +255,29 @@ async def process_chat_messages(
 
     saved_memory = None
     latest_user_message = safe_messages[-1]["content"]
-    user_intent = classify_user_intent(latest_user_message)
-    action_plan = build_action_plan(
+    conversation_context = safe_messages[:-1]
+    understanding = build_understanding_frame(
         latest_user_message,
-        user_intent,
+        conversation_context=conversation_context,
         trusted_actions=trusted_actions,
     )
+    user_intent = understanding.intent
+    action_plan = understanding.action_plan
     intent_context = format_intent_context(user_intent)
-    context_blocks: list[str] = [format_action_plan_context(action_plan)]
+    context_blocks: list[str] = [
+        format_understanding_context(understanding),
+        format_action_plan_context(action_plan),
+    ]
+
+    if understanding.clarification_question and understanding.safety_level in {"external_draft", "critical"}:
+        return {
+            "message": {
+                "role": "assistant",
+                "content": understanding.clarification_question,
+            },
+            "saved_memory": None,
+            "pending_action": None,
+        }
 
     try:
         if trusted_actions:
@@ -493,14 +509,26 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        calendar_requested = action_plan.route == "calendar_read" or wants_calendar_events(latest_user_message)
+        gmail_context_message = latest_user_message
+        if understanding.primary_domain == "gmail" and understanding.context_focus:
+            gmail_context_message = (
+                f"{latest_user_message}\n\n"
+                f"Contexte recent utile:\n{understanding.context_focus}"
+            )
+
+        calendar_requested = (
+            action_plan.route == "calendar_read"
+            or understanding.primary_domain == "calendar"
+            or wants_calendar_events(latest_user_message)
+        )
         gmail_requested = (
             action_plan.route in {"gmail_read", "gmail_reply_audit", "gmail_reply_draft"}
-            or wants_gmail_inspect(latest_user_message)
-            or wants_gmail_open(latest_user_message)
-            or wants_gmail_list(latest_user_message)
-            or wants_gmail_reply_audit(latest_user_message)
-            or wants_gmail_reply_draft(latest_user_message)
+            or understanding.primary_domain == "gmail"
+            or wants_gmail_inspect(gmail_context_message)
+            or wants_gmail_open(gmail_context_message)
+            or wants_gmail_list(gmail_context_message)
+            or wants_gmail_reply_audit(gmail_context_message)
+            or wants_gmail_reply_draft(gmail_context_message)
         )
 
         if not trusted_actions and (calendar_requested or gmail_requested):
@@ -559,7 +587,7 @@ async def process_chat_messages(
             }
 
         gmail_response = await build_gmail_chat_response(
-            latest_user_message,
+            gmail_context_message,
             force_list=action_plan.route == "gmail_read",
         )
         if gmail_response:

@@ -362,29 +362,6 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             return
 
     try:
-        browser_response = open_spotify_from_message(text)
-        if not browser_response:
-            browser_response = open_assisted_browser_from_message(text)
-        if not browser_response:
-            browser_response = open_browser_from_message(text)
-    except (BrowserActionError, BrowserAssistError, SpotifyAssistError) as exc:
-        await _send_message(client, chat_id, f"Ouverture navigateur refusee: {exc}")
-        return
-    if browser_response:
-        append_telegram_exchange(chat_id, text, browser_response)
-        try:
-            append_chat_exchange(
-                f"telegram-{chat_id}",
-                text,
-                browser_response,
-                channel="telegram",
-            )
-        except ChatHistoryError:
-            pass
-        await _send_message(client, chat_id, browser_response)
-        return
-
-    try:
         context = load_telegram_context(chat_id)
         result = await process_chat_messages(
             [*context, {"role": "user", "content": text}],

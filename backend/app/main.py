@@ -24,6 +24,7 @@ from app.briefs.rss_brief import RssBriefError, ensure_sources_file, generate_mo
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.agents.understanding import build_understanding_frame, understanding_to_dict
 from app.doctor.autonomy_readiness import autonomy_readiness
 from app.doctor.diagnostics import run_doctor
 from app.files.local_files import (
@@ -198,6 +199,11 @@ class ChatRequest(BaseModel):
     messages: list[Message] = Field(default_factory=list, max_length=50)
     mode: AgentModeName = "chat"
     session_id: str = Field(default="", max_length=120)
+
+
+class UnderstandRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=20_000)
+    context: list[Message] = Field(default_factory=list, max_length=20)
 
 
 class ChatResponse(BaseModel):
@@ -1640,3 +1646,18 @@ async def chat(chat_request: ChatRequest, http_request: Request) -> ChatResponse
         pending_action=result.get("pending_action"),
         session_id=session.id,
     )
+
+
+@app.post("/understand", dependencies=[Depends(require_sensitive_access)])
+async def understand(request: UnderstandRequest, http_request: Request) -> dict[str, object]:
+    safe_context = [
+        {"role": message.role, "content": message.content.strip()}
+        for message in request.context
+        if message.content.strip()
+    ]
+    frame = build_understanding_frame(
+        request.message.strip(),
+        conversation_context=safe_context,
+        trusted_actions=is_request_trusted(http_request),
+    )
+    return understanding_to_dict(frame)

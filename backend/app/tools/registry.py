@@ -57,6 +57,13 @@ TOOLS = (
         description="Boucle interne comprendre, router, choisir l'outil, verifier la securite puis executer.",
     ),
     ToolDescriptor(
+        key="understanding_layer",
+        label="Couche comprehension",
+        category="agents",
+        policy_level="read_only",
+        description="Interprete chaque message avant reponse ou action, avec domaine, objectif, preuves et outil prefere.",
+    ),
+    ToolDescriptor(
         key="file_read",
         label="Lecture fichiers",
         category="files",
