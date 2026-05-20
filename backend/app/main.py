@@ -169,7 +169,7 @@ from app.projects.task_store import (
 )
 from app.security.action_policy import autonomy_policy_text, can_auto_execute, policy_levels
 from app.security.api_auth import is_request_trusted, require_sensitive_access
-from app.skills.registry import list_skills
+from app.skills.registry import ensure_skills_file, list_skills
 from app.social.instagram_public import (
     InstagramPublicError,
     ensure_socials_file,
@@ -429,6 +429,7 @@ ensure_projects_file()
 ensure_heartbeats_file()
 ensure_linkedin_file()
 ensure_socials_file()
+ensure_skills_file()
 init_brief_store()
 init_task_store()
 init_action_store()

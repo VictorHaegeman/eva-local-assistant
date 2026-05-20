@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "description": "Catalogue local de skills/extension Eva. Copie vers eva_skills.json pour personnaliser.",
+  "skills": [
+    {
+      "key": "screen_autopilot",
+      "label": "Autopilote ecran",
+      "category": "desktop",
+      "policy_level": "draft_only",
+      "trigger_words": [
+        "ecran",
+        "pixels",
+        "clique",
+        "bouton",
+        "interface",
+        "fenetre"
+      ],
+      "description": "Utiliser la vision locale pour comprendre l'ecran puis agir sur les boutons visibles.",
+      "instructions": "Avant un clic, lis l'ecran, identifie la fenetre active, le bouton cible et le risque. N'envoie pas de message externe sans validation explicite.",
+      "tool_hints": [
+        "screen_reader",
+        "visual_action",
+        "desktop_automation"
+      ],
+      "status": "experimental",
+      "extension_type": "vision_toolflow",
+      "requires": [
+        "EVA_SCREEN_ENABLED=true",
+        "modele vision Ollama"
+      ],
+      "next_steps": [
+        "ajouter OCR local",
+        "ajouter detection de boutons plus robuste"
+      ],
+      "enabled": true
+    },
+    {
+      "key": "operator_reflexes",
+      "label": "Reflexes operateur",
+      "category": "agents",
+      "policy_level": "read_only",
+      "trigger_words": [
+        "autonome",
+        "corrige",
+        "resous",
+        "solution",
+        "reessaie",
+        "probleme"
+      ],
+      "description": "Relire le journal operateur pour proposer ou lancer une meilleure deuxieme tentative.",
+      "instructions": "Si une reponse precedente etait faible ou bloquee, consulte le journal operateur, reprends le reflexe note et tente un plan B autorise.",
+      "tool_hints": [
+        "operator_journal",
+        "understanding_layer",
+        "terminal_doctor"
+      ],
+      "status": "experimental",
+      "extension_type": "reflection_loop",
+      "requires": [
+        "journal operateur actif"
+      ],
+      "next_steps": [
+        "auto-relance pour actions non critiques",
+        "score de confiance par tentative"
+      ],
+      "enabled": true
+    },
+    {
+      "key": "telegram_operator",
+      "label": "Operateur Telegram",
+      "category": "messaging",
+      "policy_level": "draft_only",
+      "trigger_words": [
+        "telegram",
+        "depuis mon telephone",
+        "quand je suis pas chez moi",
+        "iphone"
+      ],
+      "description": "Interpreter les messages Telegram comme des taches longues avec contexte et updates.",
+      "instructions": "Utilise le contexte Telegram recent, garde les updates courts et dis ce qui est vraiment en cours. Pour les actions locales non critiques, agis si la session Telegram est autorisee.",
+      "tool_hints": [
+        "telegram_remote",
+        "operator_journal",
+        "project_factory"
+      ],
+      "status": "active",
+      "extension_type": "remote_control",
+      "requires": [
+        "EVA_TELEGRAM_ENABLED=true",
+        "EVA_TELEGRAM_ALLOWED_CHAT_ID"
+      ],
+      "next_steps": [
+        "updates de progression par tache longue",
+        "queue de jobs Telegram"
+      ],
+      "enabled": true
+    },
+    {
+      "key": "project_factory_operator",
+      "label": "Project Factory autonome",
+      "category": "code",
+      "policy_level": "draft_only",
+      "trigger_words": [
+        "nouveau projet",
+        "idee projet",
+        "workspace",
+        "github",
+        "repo",
+        "cursor"
+      ],
+      "description": "Transformer une idee en workspace local, documents projet, repo GitHub et prompt Cursor.",
+      "instructions": "Transforme l'idee en brief, cree les fichiers projet autorises, prepare Cursor et garde une trace. Git push et actions critiques restent soumis aux flags de securite.",
+      "tool_hints": [
+        "project_factory",
+        "cursor_prompt",
+        "local_command"
+      ],
+      "status": "active",
+      "extension_type": "workflow",
+      "requires": [
+        "Git",
+        "GitHub CLI pour creation repo",
+        "Cursor CLI optionnel"
+      ],
+      "next_steps": [
+        "suivi automatique des jobs Cursor",
+        "audit post-generation"
+      ],
+      "enabled": true
+    },
+    {
+      "key": "gmail_inbox_operator",
+      "label": "Inbox Gmail intelligente",
+      "category": "gmail",
+      "policy_level": "draft_only",
+      "trigger_words": [
+        "gmail",
+        "mail",
+        "inbox",
+        "dernier mail",
+        "pas repondu",
+        "brouillon"
+      ],
+      "description": "Lire les vrais mails, auditer les fils sans reponse, creer des brouillons sans envoi.",
+      "instructions": "Lis le mail reel avant tout brouillon. Ne reponds pas aux alertes automatiques comme si elles etaient humaines. Ne dis jamais qu'un mail est envoye.",
+      "tool_hints": [
+        "gmail_reply_draft",
+        "google_calendar"
+      ],
+      "status": "active",
+      "extension_type": "connector",
+      "requires": [
+        "OAuth Gmail local",
+        "scope gmail.readonly",
+        "scope gmail.compose pour brouillons"
+      ],
+      "next_steps": [
+        "tri prioritaire",
+        "creation calendrier apres validation"
+      ],
+      "enabled": true
+    },
+    {
+      "key": "linkedin_growth_operator",
+      "label": "LinkedIn Growth",
+      "category": "business",
+      "policy_level": "draft_only",
+      "trigger_words": [
+        "linkedin",
+        "post",
+        "contenu",
+        "dreamlense",
+        "prospect",
+        "commentaire"
+      ],
+      "description": "Proposer posts, commentaires et idees LinkedIn pour DreamLense sans publication automatique.",
+      "instructions": "Prepare des brouillons pertinents, premium et actionnables. Ne publie jamais sans validation humaine.",
+      "tool_hints": [
+        "linkedin_draft",
+        "linkedin_browser_bridge",
+        "smart_brief"
+      ],
+      "status": "active",
+      "extension_type": "browser_bridge",
+      "requires": [
+        "session LinkedIn dans Brave pour ouverture navigateur"
+      ],
+      "next_steps": [
+        "score opportunite LinkedIn depuis Gmail",
+        "calendrier editorial"
+      ],
+      "enabled": true
+    },
+    {
+      "key": "voice_operator",
+      "label": "Voix Eva",
+      "category": "voice",
+      "policy_level": "draft_only",
+      "trigger_words": [
+        "voix",
+        "parle",
+        "micro",
+        "ok eva",
+        "jarvis"
+      ],
+      "description": "Piloter Eva a la voix avec wake word local et reponses vocales.",
+      "instructions": "Pour la voix, garder des confirmations courtes, lire les actions en cours et demander validation avant envoi/publication/suppression.",
+      "tool_hints": [
+        "voice_control",
+        "desktop_automation"
+      ],
+      "status": "planned",
+      "extension_type": "voice",
+      "requires": [
+        "wake word local",
+        "STT local ou navigateur",
+        "TTS local"
+      ],
+      "next_steps": [
+        "choisir moteur STT local",
+        "ajouter push-to-talk desktop"
+      ],
+      "enabled": false
+    },
+    {
+      "key": "mcp_gateway_candidate",
+      "label": "Gateway MCP locale",
+      "category": "extensions",
+      "policy_level": "confirmation_required",
+      "trigger_words": [
+        "mcp",
+        "extension",
+        "plugin",
+        "serveur local",
+        "tools externes"
+      ],
+      "description": "Future passerelle pour exposer des outils locaux sous forme de connecteurs standardises.",
+      "instructions": "Ne charge aucun serveur MCP inconnu automatiquement. Verifie les permissions, la source, les chemins autorises et le niveau de risque avant usage.",
+      "tool_hints": [
+        "doctor",
+        "action_policy"
+      ],
+      "status": "candidate",
+      "extension_type": "mcp",
+      "requires": [
+        "modele de permissions",
+        "audit des outils",
+        "allowlist"
+      ],
+      "next_steps": [
+        "catalogue de serveurs locaux fiables",
+        "hash/schema des tools"
+      ],
+      "enabled": false
+    }
+  ]
+}

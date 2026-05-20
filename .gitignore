@@ -32,6 +32,7 @@ data/*
 !data/eva_heartbeats.example.json
 !data/eva_linkedin.example.json
 !data/eva_socials.example.json
+!data/eva_skills.example.json
 !data/gmail_credentials.example.json
 data/eva_profile.json
 data/eva_memory.sqlite

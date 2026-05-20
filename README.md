@@ -1445,11 +1445,40 @@ Eva possede maintenant un registre de skills locales:
 
 Ces skills ne sont pas des services externes. Elles sont des consignes locales injectees dans le prompt Ollama pour guider Eva selon la demande.
 
+Eva a aussi un catalogue d'extensions locales personnalisables:
+
+```text
+data/eva_skills.example.json
+data/eva_skills.json
+```
+
+`eva_skills.json` est local et ignore par Git. Tu peux y activer/desactiver des extensions sans modifier le code.
+
+Extensions deja modelisees:
+
+- Autopilote ecran: lecture pixels + action visuelle;
+- Reflexes operateur: relance apres reponse faible;
+- Operateur Telegram: controle depuis iPhone;
+- Project Factory autonome;
+- Inbox Gmail intelligente;
+- LinkedIn Growth;
+- Voix Eva;
+- Gateway MCP locale candidate.
+
 Endpoint utile:
 
 ```text
 GET /skills
 ```
+
+Chaque skill expose maintenant:
+
+- source: `core` ou `local`;
+- statut: `active`, `candidate`, `experimental`, `planned`;
+- type d'extension;
+- prerequis;
+- prochaines etapes;
+- niveau de securite.
 
 Les skills respectent la politique de securite: lecture et brouillons sans confirmation, validation humaine pour envoi, publication, modification de fichier, commande systeme ou `git push`.
 

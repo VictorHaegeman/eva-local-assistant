@@ -574,11 +574,12 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
   function renderSkills() {
     const skills = data?.skills || [];
     const categories = new Set(skills.map((skill) => skill.category));
+    const enabledSkills = skills.filter((skill) => skill.enabled !== false);
 
     return (
       <>
         <div className="panel-metrics">
-          <Metric label="skills actives" value={skills.length} tone={skills.length ? "ok" : "warning"} />
+          <Metric label="skills actives" value={enabledSkills.length} tone={enabledSkills.length ? "ok" : "warning"} />
           <Metric label="categories" value={categories.size} />
           <Metric label="mode" value="local" tone="ok" />
         </div>
@@ -591,11 +592,17 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               </div>
               <p>{skill.description}</p>
               <Field label="Categorie" value={skill.category} />
+              <Field label="Source" value={skill.source || "core"} />
+              <Field label="Statut" value={skill.status || "active"} />
+              {skill.extension_type && <Field label="Extension" value={skill.extension_type} />}
               <div className="panel-chip-list">
                 {(skill.trigger_words || []).slice(0, 6).map((trigger) => (
                   <StatusPill key={trigger}>{trigger}</StatusPill>
                 ))}
               </div>
+              {(skill.next_steps || []).length > 0 && (
+                <Field label="Prochaine etape" value={(skill.next_steps || []).slice(0, 2).join(" | ")} />
+              )}
             </section>
           ))}
         </div>
