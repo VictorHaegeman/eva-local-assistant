@@ -113,6 +113,13 @@ TOOLS = (
         description="Prepare et peut lancer un workspace, un prompt Cursor, un commit local et un repo GitHub en mode operator.",
     ),
     ToolDescriptor(
+        key="google_stitch_bridge",
+        label="Google Stitch",
+        category="design",
+        policy_level="draft_only",
+        description="Prepare un brief UI pour Google Stitch, le copie dans le presse-papiers et ouvre Stitch dans Brave.",
+    ),
+    ToolDescriptor(
         key="gmail_reply_draft",
         label="Brouillon Gmail",
         category="gmail",

@@ -77,6 +77,13 @@ from app.integrations.beeper_assistant import (
     open_beeper,
     wants_beeper_reply,
 )
+from app.integrations.stitch_design import (
+    StitchDesignError,
+    build_stitch_prompt,
+    format_stitch_design_response,
+    prepare_stitch_design,
+    wants_stitch_design,
+)
 from app.integrations.desktop_automation import (
     DesktopAutomationError,
     click_pixel,
@@ -289,6 +296,13 @@ class BrowserOpenTabsRequest(BaseModel):
 
 class BrowserAssistRequest(BaseModel):
     message: str = Field(min_length=1, max_length=1000)
+
+
+class StitchDesignRequest(BaseModel):
+    request: str = Field(min_length=1, max_length=8000)
+    project_name: str = Field(default="Projet frontend", max_length=120)
+    design_direction: str = Field(default="", max_length=2000)
+    open_in_browser: bool = True
 
 
 class SpotifyOpenRequest(BaseModel):
@@ -918,6 +932,39 @@ async def browser_assist(request: BrowserAssistRequest) -> dict[str, object]:
         "opened": bool(response),
         "response": response,
         "detected": detected,
+    }
+
+
+@app.post("/stitch/design", dependencies=[Depends(require_sensitive_access)])
+async def stitch_design(request: StitchDesignRequest) -> dict[str, object]:
+    try:
+        package = prepare_stitch_design(
+            request=request.request,
+            project_name=request.project_name,
+            design_direction=request.design_direction,
+            open_in_browser=request.open_in_browser,
+        )
+    except StitchDesignError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "detected": wants_stitch_design(request.request),
+        "prompt": package.prompt,
+        "opened_url": package.opened_url,
+        "copied_to_clipboard": package.copied_to_clipboard,
+        "response": format_stitch_design_response(package),
+    }
+
+
+@app.post("/stitch/prompt")
+async def stitch_prompt(request: StitchDesignRequest) -> dict[str, object]:
+    return {
+        "detected": wants_stitch_design(request.request),
+        "prompt": build_stitch_prompt(
+            request=request.request,
+            project_name=request.project_name,
+            design_direction=request.design_direction,
+        ),
     }
 
 

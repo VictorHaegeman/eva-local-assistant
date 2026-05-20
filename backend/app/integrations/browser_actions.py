@@ -36,6 +36,8 @@ SITE_ALIASES = {
     "calendrier": "https://calendar.google.com",
     "linkedin": "https://www.linkedin.com",
     "github": "https://github.com",
+    "stitch": "https://stitch.withgoogle.com",
+    "google stitch": "https://stitch.withgoogle.com",
     "chatgpt": "https://chatgpt.com",
     "dreamlense": "https://dreamlense-ai.com",
 }

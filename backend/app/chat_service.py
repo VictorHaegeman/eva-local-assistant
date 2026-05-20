@@ -25,6 +25,13 @@ from app.integrations.browser_actions import BrowserActionError, open_browser_fr
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
 from app.integrations.desktop_chat import DesktopChatError, execute_desktop_control_from_message
 from app.integrations.beeper_assistant import BeeperAssistantError, build_beeper_chat_response
+from app.integrations.stitch_design import (
+    StitchDesignError,
+    build_stitch_prompt,
+    format_stitch_design_response,
+    prepare_stitch_design,
+    wants_stitch_design,
+)
 from app.integrations.google_setup_chat import (
     build_calendar_events_response,
     build_google_setup_response,
@@ -616,6 +623,31 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
+        if wants_stitch_design(latest_user_message):
+            if trusted_actions:
+                stitch_package = prepare_stitch_design(latest_user_message)
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": format_stitch_design_response(stitch_package),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+
+            prompt = build_stitch_prompt(latest_user_message)
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "Je peux preparer un prompt Google Stitch depuis le PC local ou Telegram autorise.\n\n"
+                        f"Prompt Stitch propose:\n\n```text\n{prompt}\n```"
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         browser_assist_response = open_assisted_browser_from_message(latest_user_message) if trusted_actions else None
         if browser_assist_response:
             return {
@@ -644,6 +676,7 @@ async def process_chat_messages(
         DesktopChatError,
         BeeperAssistantError,
         VisualActionError,
+        StitchDesignError,
     ) as exc:
         raise ChatServiceError(str(exc)) from exc
 

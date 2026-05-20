@@ -4,6 +4,7 @@ from typing import Any
 
 from app.actions.action_store import create_action
 from app.config import settings
+from app.integrations.stitch_design import stitch_prompt_file_content
 
 
 class ProjectFactoryError(Exception):
@@ -118,12 +119,13 @@ Construire une V1 propre, simple et maintenable.
 
 Instructions:
 1. Lis d'abord PROJECT_BRIEF.md, TASKS.md et README.md.
-2. Propose une architecture minimale.
-3. Commence par le squelette du projet.
-4. Garde les changements scopes.
-5. N'ajoute pas d'API payante.
-6. Documente les commandes de lancement.
-7. Ne pousse rien sur GitHub sans validation de Victor.
+2. Si STITCH_DESIGN_PROMPT.md existe, utilise-le pour demander une maquette Google Stitch ou pour aligner le design.
+3. Propose une architecture minimale.
+4. Commence par le squelette du projet.
+5. Garde les changements scopes.
+6. N'ajoute pas d'API payante.
+7. Documente les commandes de lancement.
+8. Ne pousse rien sur GitHub sans validation de Victor.
 
 Livrable attendu:
 - code initial;
@@ -152,6 +154,11 @@ def build_project_plan(idea: str, project_name: str | None = None) -> dict[str, 
         "CURSOR_PROMPT.md": cursor_prompt + "\n",
         ".gitignore": "node_modules/\ndist/\nbuild/\n.env\n.env.*\n!.env.example\n.venv/\n__pycache__/\n*.pyc\n.DS_Store\nThumbs.db\n",
     }
+    if stack["frontend"] != "none":
+        files["STITCH_DESIGN_PROMPT.md"] = stitch_prompt_file_content(
+            request=clean_idea,
+            project_name=name,
+        )
 
     commands = {
         "open_cursor": f'cursor "{workspace_path}"',

@@ -269,6 +269,36 @@ Eva, montre-moi un tuto pour utiliser Cursor Agent.
 
 Eva ouvre seulement la recherche ou la page locale. Elle ne pretend pas avoir regarde la video si elle l'a seulement ouverte.
 
+## Google Stitch pour les designs frontend
+
+Eva peut preparer un brief Google Stitch quand tu demandes un design, une maquette ou une interface frontend.
+
+Mode actuel:
+
+- pas d'API Stitch obligatoire;
+- pas de cle `STITCH_API_KEY` dans le projet;
+- Eva genere un prompt UI premium;
+- Eva copie le prompt dans le presse-papiers;
+- Eva ouvre `https://stitch.withgoogle.com` dans Brave;
+- Project Factory ajoute `STITCH_DESIGN_PROMPT.md` aux nouveaux projets frontend.
+
+Exemples:
+
+```text
+Eva, prepare un design Google Stitch pour une app SaaS DreamLense.
+Eva, fais une maquette frontend premium pour ce dashboard React.
+Eva, cree un nouveau projet avec une maquette Stitch avant de coder.
+```
+
+Routes utiles:
+
+```text
+POST /stitch/prompt
+POST /stitch/design
+```
+
+`/stitch/prompt` genere seulement le prompt. `/stitch/design` copie le prompt et ouvre Stitch depuis le PC local ou Telegram autorise.
+
 ## Spotify local
 
 Eva peut ouvrir Spotify depuis le PC ou Telegram:
