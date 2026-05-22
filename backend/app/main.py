@@ -212,6 +212,7 @@ class Message(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=20_000)
     web_preview: dict[str, object] | None = None
+    cognitive_trace: dict[str, object] | None = None
 
 
 class ChatRequest(BaseModel):

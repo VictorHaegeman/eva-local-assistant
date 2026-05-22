@@ -299,6 +299,7 @@ export default function App() {
         ...currentMessages,
         createMessage("assistant", assistantMessage.content, {
           webPreview: assistantMessage.web_preview || assistantMessage.webPreview || null,
+          cognitiveTrace: assistantMessage.cognitive_trace || assistantMessage.cognitiveTrace || null,
         }),
       ]);
       speakEva(assistantMessage.content);

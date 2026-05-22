@@ -133,6 +133,7 @@ Phase 1 operationnelle:
 - chaque outil retourne un resultat normalise avec statut, preuves, erreur et prochaines actions;
 - le critic bloque les reponses faibles du type action pretendue sans preuve ou question finale inutile;
 - si une action locale vient d'une session non fiable, Eva donne la raison exacte et la prochaine action utile.
+- le frontend affiche une trace publique facon Jarvis: classification, routes candidates, chemin choisi, execution et verification.
 
 Configuration locale utile:
 

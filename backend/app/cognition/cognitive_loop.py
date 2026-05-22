@@ -61,6 +61,22 @@ ACTION_ROUTES = {
 }
 
 
+ROUTE_LABELS = {
+    "map_preview": "Carte integree",
+    "map3d": "Vue 3D",
+    "web_search": "Recherche web",
+    "browser_or_video": "Navigateur",
+    "cursor_work": "Projet / Cursor",
+    "gmail_read": "Gmail lecture",
+    "gmail_reply_audit": "Audit reponses",
+    "gmail_reply_draft": "Brouillon Gmail",
+    "spotify": "Spotify",
+    "desktop_control": "Controle PC",
+    "beeper_messages": "Beeper",
+    "generic_chat": "Reponse directe",
+}
+
+
 def _blocked(tool: str, reason: str, next_actions: tuple[str, ...] = ()) -> ToolResult:
     return ToolResult(
         tool=tool,
@@ -91,6 +107,110 @@ def _success(
 
 def _requires_trusted(route: str) -> bool:
     return route in {"browser_or_video", "cursor_work", "spotify", "desktop_control", "beeper_messages"}
+
+
+def _route_options(selected_route: str, understanding: UnderstandingFrame) -> list[dict[str, object]]:
+    base_options = [selected_route]
+    domain = understanding.primary_domain
+
+    if selected_route in {"map_preview", "map3d"}:
+        base_options.extend(["web_search", "browser_or_video"])
+    elif domain == "gmail":
+        base_options.extend(["gmail_read", "gmail_reply_draft", "generic_chat"])
+    elif domain in {"cursor", "project"} or selected_route == "cursor_work":
+        base_options.extend(["cursor_work", "web_search", "generic_chat"])
+    elif domain == "browser":
+        base_options.extend(["browser_or_video", "web_search", "generic_chat"])
+    elif selected_route == "web_search":
+        base_options.extend(["browser_or_video", "generic_chat"])
+    else:
+        base_options.extend(["web_search", "generic_chat"])
+
+    unique_options: list[str] = []
+    for option in base_options:
+        if option not in unique_options:
+            unique_options.append(option)
+
+    confidence = max(0.3, min(0.98, understanding.intent.confidence))
+    options: list[dict[str, object]] = []
+    for index, option in enumerate(unique_options[:4]):
+        score = confidence - (index * 0.14)
+        if option == selected_route:
+            score = max(score, confidence)
+        options.append(
+            {
+                "key": option,
+                "label": ROUTE_LABELS.get(option, option.replace("_", " ")),
+                "score": round(max(0.12, score) * 100),
+                "selected": option == selected_route,
+            }
+        )
+    return options
+
+
+def _trace_payload(
+    understanding: UnderstandingFrame,
+    state: CognitiveState,
+    selected_route: str,
+) -> dict[str, object]:
+    latest_result = state.tool_results[-1] if state.tool_results else None
+    evidence = list(latest_result.evidence[:4]) if latest_result else []
+    status = latest_result.status if latest_result else "pending"
+    confidence = latest_result.confidence if latest_result else understanding.intent.confidence
+    selected_label = ROUTE_LABELS.get(selected_route, selected_route.replace("_", " "))
+
+    return {
+        "title": "Decision pipeline",
+        "summary": state.goal.goal,
+        "selected": selected_label,
+        "confidence": round(max(0.0, min(1.0, confidence)) * 100),
+        "status": status,
+        "stages": [
+            {
+                "key": "classify",
+                "label": "Classify",
+                "status": "done",
+                "detail": f"{understanding.primary_domain} / {understanding.expected_outcome}",
+            },
+            {
+                "key": "route",
+                "label": "Route",
+                "status": "done",
+                "detail": selected_label,
+                "options": _route_options(selected_route, understanding),
+            },
+            {
+                "key": "execute",
+                "label": "Process",
+                "status": "done" if latest_result and latest_result.status in {"success", "partial"} else status,
+                "detail": latest_result.tool if latest_result else understanding.tool_preference,
+            },
+            {
+                "key": "verify",
+                "label": "Verify",
+                "status": "done" if evidence else "blocked",
+                "detail": evidence[0] if evidence else "preuve absente",
+            },
+        ],
+        "evidence": evidence,
+    }
+
+
+def _assistant_payload(
+    content: str,
+    understanding: UnderstandingFrame,
+    state: CognitiveState,
+    selected_route: str,
+    web_preview: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "role": "assistant",
+        "content": content,
+        "cognitive_trace": _trace_payload(understanding, state, selected_route),
+    }
+    if web_preview:
+        payload["web_preview"] = web_preview
+    return payload
 
 
 async def _map_preview(
@@ -159,15 +279,10 @@ async def run_cognitive_loop(
         critic = criticize_response(content, state.tool_results, requires_action=False)
         if not critic.passed:
             content = build_critic_response(critic)
-        payload: dict[str, Any] = {
-            "role": "assistant",
-            "content": content,
-        }
-        if web_preview:
-            payload["web_preview"] = web_preview
+        selected_route = "map3d" if web_preview and web_preview.get("type") == "map3d" else "map_preview"
         return CognitiveLoopResult(
             handled=True,
-            message=payload,
+            message=_assistant_payload(content, understanding, state, selected_route, web_preview=web_preview),
             state=state,
             critic=critic_report_to_dict(critic),
         )
@@ -185,7 +300,12 @@ async def run_cognitive_loop(
         state.handled = True
         return CognitiveLoopResult(
             handled=True,
-            message={"role": "assistant", "content": build_blocked_response(result)},
+            message=_assistant_payload(
+                build_blocked_response(result),
+                understanding,
+                state,
+                route,
+            ),
             state=state,
         )
 
@@ -206,7 +326,7 @@ async def run_cognitive_loop(
                 content = build_critic_response(critic)
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, route),
                 state=state,
                 critic=critic_report_to_dict(critic),
             )
@@ -236,7 +356,7 @@ async def run_cognitive_loop(
                 state.add_result(result)
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, route),
                 state=state,
                 critic=critic_report_to_dict(critic),
             )
@@ -250,7 +370,7 @@ async def run_cognitive_loop(
             state.handled = True
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, route),
                 state=state,
             )
 
@@ -263,7 +383,7 @@ async def run_cognitive_loop(
             state.handled = True
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, route),
                 state=state,
             )
 
@@ -276,7 +396,7 @@ async def run_cognitive_loop(
             state.handled = True
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, route),
                 state=state,
             )
 
@@ -288,7 +408,7 @@ async def run_cognitive_loop(
             state.handled = True
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, "screen_read"),
                 state=state,
             )
 
@@ -301,7 +421,7 @@ async def run_cognitive_loop(
             state.handled = True
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, route),
                 state=state,
             )
 
@@ -314,7 +434,7 @@ async def run_cognitive_loop(
             state.handled = True
             return CognitiveLoopResult(
                 handled=True,
-                message={"role": "assistant", "content": content},
+                message=_assistant_payload(content, understanding, state, route),
                 state=state,
             )
     except Exception as exc:  # noqa: BLE001 - normalize tool failures for the loop.
@@ -331,7 +451,7 @@ async def run_cognitive_loop(
         state.handled = True
         return CognitiveLoopResult(
             handled=True,
-            message={"role": "assistant", "content": build_blocked_response(result)},
+            message=_assistant_payload(build_blocked_response(result), understanding, state, route),
             state=state,
         )
 
