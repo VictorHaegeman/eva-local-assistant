@@ -135,6 +135,12 @@ class Settings:
         "EVA_PROJECT_FACTORY_AGENT_TIMEOUT_SECONDS",
         3600.0,
     )
+    eva_self_improve_enabled: bool = _env_bool("EVA_SELF_IMPROVE_ENABLED", True)
+    eva_self_improve_project_name: str = os.getenv("EVA_SELF_IMPROVE_PROJECT_NAME", "Eva")
+    eva_self_improve_auto_cursor_agent: bool = _env_bool(
+        "EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT",
+        False,
+    )
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")
     eva_telegram_allowed_chat_id: str = os.getenv("EVA_TELEGRAM_ALLOWED_CHAT_ID", "")

@@ -77,6 +77,12 @@ from app.screen.visual_action import (
     wants_visual_action,
 )
 from app.screen.screen_watcher import latest_screen_context
+from app.self_improvement.loop import (
+    SelfImproveError,
+    detect_self_improvement_request,
+    execute_self_improvement_loop,
+    format_self_improvement_response,
+)
 from app.skills.registry import list_skills
 from app.terminal.terminal_doctor import (
     analyze_terminal_error,
@@ -399,6 +405,34 @@ async def process_chat_messages(
                 "pending_action": action_to_dict(first_action),
             }
 
+        if detect_self_improvement_request(latest_user_message):
+            if not trusted_actions:
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            "Modifier ou apprendre durablement le comportement d'Eva demande une session fiable. "
+                            "Refais la demande depuis le PC local ou Telegram autorise."
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
+
+            result = execute_self_improvement_loop(
+                latest_user_message,
+                source="chat",
+                trusted_actions=True,
+            )
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": format_self_improvement_response(result),
+                },
+                "saved_memory": result.get("saved_memory"),
+                "pending_action": None,
+            }
+
         pending_action = create_pending_action_from_message(latest_user_message)
         if pending_action:
             if not trusted_actions:
@@ -461,7 +495,7 @@ async def process_chat_messages(
                 "saved_memory": None,
                 "pending_action": action_to_dict(pending_action),
             }
-    except (ActionExecutionError, ActionStoreError, ProjectFactoryError, ScreenReaderError) as exc:
+    except (ActionExecutionError, ActionStoreError, ProjectFactoryError, ScreenReaderError, SelfImproveError) as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:

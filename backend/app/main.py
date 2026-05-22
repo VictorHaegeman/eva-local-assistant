@@ -189,6 +189,15 @@ from app.screen.screen_watcher import (
     run_screen_watch_once,
     start_screen_watch_background_task,
 )
+from app.self_improvement.loop import (
+    SelfImproveError,
+    build_self_improvement_plan,
+    detect_self_improvement_request,
+    execute_self_improvement_loop,
+    format_self_improvement_response,
+    list_self_improvement_events,
+    self_improvement_plan_to_dict,
+)
 from app.terminal.terminal_doctor import (
     TerminalDoctorError,
     analyze_terminal_error,
@@ -213,6 +222,12 @@ class ChatRequest(BaseModel):
 class UnderstandRequest(BaseModel):
     message: str = Field(min_length=1, max_length=20_000)
     context: list[Message] = Field(default_factory=list, max_length=20)
+
+
+class SelfImproveRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=20_000)
+    source: str = Field(default="api", max_length=80)
+    auto_launch_agent: bool | None = None
 
 
 class ChatResponse(BaseModel):
@@ -595,6 +610,7 @@ async def autonomy() -> dict[str, object]:
             "copie presse-papiers et ouverture Cursor",
             "commit Git local initial",
             "creation de repo GitHub si gh est connecte",
+            "self-improvement: memoire, tache locale et prompt Cursor",
         ],
         "protected_even_in_operator": [
             "suppression de fichiers sauf EVA_ALLOW_AUTO_DELETE=true",
@@ -604,6 +620,7 @@ async def autonomy() -> dict[str, object]:
             "envoi d'email",
             "publication LinkedIn",
             "commandes critiques: reset, clean, delete, shutdown, format, execution policy",
+            "auto-modification par cursor-agent sauf EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT=true ou demande explicite",
         ],
     }
 
@@ -1710,3 +1727,59 @@ async def understand(request: UnderstandRequest, http_request: Request) -> dict[
         trusted_actions=is_request_trusted(http_request),
     )
     return understanding_to_dict(frame)
+
+
+@app.get("/self-improve/status", dependencies=[Depends(require_sensitive_access)])
+async def self_improve_status() -> dict[str, object]:
+    return {
+        "enabled": settings.eva_self_improve_enabled,
+        "project_name": settings.eva_self_improve_project_name,
+        "auto_cursor_agent": settings.eva_self_improve_auto_cursor_agent,
+        "detects_examples": [
+            "Eva, dorenavant...",
+            "A partir de maintenant...",
+            "Je veux que Eva...",
+            "Corrige ton comportement...",
+        ],
+    }
+
+
+@app.post("/self-improve", dependencies=[Depends(require_sensitive_access)])
+async def self_improve(request: SelfImproveRequest, http_request: Request) -> dict[str, object]:
+    trusted_actions = is_request_trusted(http_request)
+    message = request.message.strip()
+    try:
+        result = execute_self_improvement_loop(
+            message,
+            source=request.source.strip() or "api",
+            trusted_actions=trusted_actions,
+            auto_launch_agent=request.auto_launch_agent,
+        )
+    except SelfImproveError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        **result,
+        "detected": detect_self_improvement_request(message),
+        "response": format_self_improvement_response(result),
+    }
+
+
+@app.post("/self-improve/plan", dependencies=[Depends(require_sensitive_access)])
+async def self_improve_plan(request: SelfImproveRequest) -> dict[str, object]:
+    plan = build_self_improvement_plan(
+        request.message.strip(),
+        source=request.source.strip() or "api",
+        auto_launch_agent=request.auto_launch_agent,
+    )
+    return {
+        "detected": detect_self_improvement_request(request.message),
+        "plan": self_improvement_plan_to_dict(plan),
+    }
+
+
+@app.get("/self-improve/log", dependencies=[Depends(require_sensitive_access)])
+async def self_improve_log(limit: int = Query(default=30, ge=1, le=200)) -> dict[str, object]:
+    return {
+        "events": list_self_improvement_events(limit=limit),
+    }

@@ -1197,6 +1197,47 @@ Important:
 - Eva ne fait pas de `git push` sauf si `EVA_ALLOW_AUTO_GIT_PUSH=true` ou `EVA_PROJECT_FACTORY_AUTO_PUSH=true`;
 - elle peut lire/analyser les projets configures et preparer plans, prompts, README drafts et PR plans.
 
+## Self Improvement Loop
+
+Eva peut maintenant transformer tes corrections en ameliorations structurees au lieu de seulement repondre dans le chat.
+
+Exemples:
+
+```text
+Eva, dorenavant, lis le mail reel avant d'ouvrir un lien.
+Je veux que Eva comprenne mieux les demandes Telegram avant d'agir.
+Corrige ton comportement: si une action echoue, propose un plan B et cree une tache.
+```
+
+Flux local:
+
+1. Eva interprete la correction.
+2. Elle choisit automatiquement une cible: `memory`, `skill`, `code` ou `mixed`.
+3. Si c'est une regle durable, elle ajoute une memoire `operating_rule`.
+4. Si c'est une evolution technique, elle cree une tache locale pour le projet `Eva`.
+5. Elle genere `EVA_SELF_IMPROVE_PROMPT.md` avec un prompt Cursor propre.
+6. Si `EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT=true` ou `auto_launch_agent=true`, elle peut lancer `cursor-agent`.
+7. Elle journalise l'evenement dans `data/eva_self_improvements.jsonl`.
+
+Routes:
+
+```text
+GET /self-improve/status
+POST /self-improve/plan
+POST /self-improve
+GET /self-improve/log
+```
+
+Variables:
+
+```env
+EVA_SELF_IMPROVE_ENABLED=true
+EVA_SELF_IMPROVE_PROJECT_NAME=Eva
+EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT=false
+```
+
+Par defaut, Eva ne lance pas `cursor-agent` automatiquement pour se modifier elle-meme. Elle cree la memoire, la tache et le prompt. Tu peux activer le lancement agent quand le workflow est stable sur ton PC.
+
 ## Installation Ollama
 
 Dans PowerShell:
