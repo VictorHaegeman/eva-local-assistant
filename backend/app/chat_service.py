@@ -9,6 +9,7 @@ from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
 from app.heartbeat.scheduler import HeartbeatError, heartbeat_status
 from app.agents.action_planner import format_action_plan_context
+from app.agents.answer_guard import guard_ollama_answer
 from app.agents.intent_router import format_intent_context
 from app.agents.understanding import build_understanding_frame, format_understanding_context
 from app.integrations.gmail_chat import (
@@ -844,6 +845,7 @@ async def process_chat_messages(
         extra_context = "\n\n---\n\n".join(context_blocks) if context_blocks else None
         answer = await ask_ollama(safe_messages, extra_context=extra_context, mode=mode)
         answer = _remove_bad_tool_refusal(answer, latest_user_message)
+        answer = guard_ollama_answer(answer, latest_user_message)
     except OllamaClientError as exc:
         raise ChatServiceError(str(exc)) from exc
 
