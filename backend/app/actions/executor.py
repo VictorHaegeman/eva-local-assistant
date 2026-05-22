@@ -14,6 +14,7 @@ from app.project_factory.executor import (
     execute_github_repo_create,
     execute_project_workspace_create,
 )
+from app.project_factory.agent_runner import ProjectFactoryAgentError, start_project_factory_agent
 from app.security.action_policy import can_auto_execute, is_blocked
 
 
@@ -149,6 +150,24 @@ def _codex_prompt(action: EvaAction) -> str:
     )
 
 
+def _cursor_agent_project_run(action: EvaAction) -> str:
+    try:
+        result = start_project_factory_agent(action.payload)
+    except ProjectFactoryAgentError as exc:
+        raise ActionExecutionError(str(exc)) from exc
+
+    lines = [
+        str(result.get("message", "")),
+        f"available={result.get('available')}",
+        f"started={result.get('started')}",
+    ]
+    if result.get("workspace_path"):
+        lines.append(f"workspace={result['workspace_path']}")
+    if result.get("runs_log"):
+        lines.append(f"runs_log={result['runs_log']}")
+    return "\n".join(line for line in lines if line)
+
+
 def execute_action(action_id: int, require_approval: bool = True) -> dict[str, object]:
     from app.actions.action_store import action_to_dict, get_action
 
@@ -188,6 +207,8 @@ def execute_action(action_id: int, require_approval: bool = True) -> dict[str, o
             result = execute_clipboard_set_prompt(action)
         elif action.action_type == "cursor_open_project":
             result = execute_cursor_open_project(action)
+        elif action.action_type == "cursor_agent_project_run":
+            result = _cursor_agent_project_run(action)
         elif action.action_type == "git_initial_commit":
             result = execute_git_initial_commit(action)
         elif action.action_type == "github_repo_create":

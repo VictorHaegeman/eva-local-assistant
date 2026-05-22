@@ -10,7 +10,8 @@ AUTO_ACTION_ORDER = {
     "cursor_open_project": 30,
     "git_initial_commit": 40,
     "github_repo_create": 50,
-    "git_push": 60,
+    "cursor_agent_project_run": 60,
+    "git_push": 90,
 }
 
 
@@ -30,6 +31,9 @@ def _auto_enabled_for(action: EvaAction) -> tuple[bool, str]:
     if action.action_type == "github_repo_create":
         return settings.eva_project_factory_auto_github, "auto_github desactive"
 
+    if action.action_type == "cursor_agent_project_run":
+        return settings.eva_project_factory_auto_cursor_agent, "auto_cursor_agent desactive"
+
     if action.action_type == "git_push":
         return settings.eva_project_factory_auto_push, "auto_push desactive"
 
@@ -40,8 +44,20 @@ def _auto_enabled_for(action: EvaAction) -> tuple[bool, str]:
 def auto_execute_project_factory_actions(actions: list[EvaAction]) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
     ordered_actions = sorted(actions, key=lambda action: AUTO_ACTION_ORDER.get(action.action_type, 999))
+    has_agent_run = any(action.action_type == "cursor_agent_project_run" for action in actions)
 
     for action in ordered_actions:
+        if action.action_type == "git_push" and has_agent_run:
+            results.append(
+                {
+                    "executed": False,
+                    "skipped": True,
+                    "reason": "push differe jusqu'a la fin de cursor-agent",
+                    "action": action_to_dict(action),
+                }
+            )
+            continue
+
         enabled, reason = _auto_enabled_for(action)
         if not enabled:
             results.append(
@@ -68,6 +84,9 @@ def project_factory_auto_status() -> dict[str, object]:
         "auto_commit": settings.eva_project_factory_auto_commit,
         "auto_github": settings.eva_project_factory_auto_github,
         "auto_push": settings.eva_project_factory_auto_push,
+        "auto_cursor_agent": settings.eva_project_factory_auto_cursor_agent,
+        "agent_repair_once": settings.eva_project_factory_agent_repair_once,
+        "agent_auto_commit": settings.eva_project_factory_agent_auto_commit,
     }
 
 

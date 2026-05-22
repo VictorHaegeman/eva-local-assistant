@@ -165,6 +165,7 @@ def build_project_plan(idea: str, project_name: str | None = None) -> dict[str, 
         "github_create_repo": f'gh repo create {repo_name} --private --source "{workspace_path}" --remote origin',
         "git_initial_commit": f'cd /d "{workspace_path}" && git init && git add . && git commit -m "Initial project scaffold"',
         "git_push": f'cd /d "{workspace_path}" && git push -u origin main',
+        "cursor_agent_run": "cursor-agent -p <CURSOR_PROMPT.md>",
     }
 
     return {
@@ -183,6 +184,7 @@ def build_project_plan(idea: str, project_name: str | None = None) -> dict[str, 
                 "ecrire les fichiers",
                 "copier dans le presse-papiers",
                 "ouvrir Cursor",
+                "lancer cursor-agent pour coder la V1",
                 "creer le repo GitHub",
                 "git push",
             ],
@@ -228,6 +230,21 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
         description="Ouvre Cursor sur le dossier projet. Validation obligatoire.",
         payload={"workspace_path": plan["workspace_path"]},
     )
+    cursor_agent_action = create_action(
+        action_type="cursor_agent_project_run",
+        title=f"Lancer cursor-agent pour coder {plan['project_name']}",
+        description=(
+            "Lance cursor-agent en arriere-plan, surveille le log, audite le resultat "
+            "et relance une correction si l'audit echoue."
+        ),
+        payload={
+            "workspace_path": plan["workspace_path"],
+            "project_name": plan["project_name"],
+            "repo_name": plan["repo_name"],
+            "idea": plan["idea"],
+            "cursor_prompt": plan["cursor_prompt"],
+        },
+    )
     github_action = create_action(
         action_type="github_repo_create",
         title=f"Creer le repo GitHub {plan['repo_name']}",
@@ -262,6 +279,7 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
             cursor_action,
             commit_action,
             github_action,
+            cursor_agent_action,
             push_action,
         ],
     }

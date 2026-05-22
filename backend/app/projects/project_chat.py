@@ -1,5 +1,12 @@
 from app.integrations.cursor_bridge import CursorBridgeError, prepare_cursor_work_session
-from app.projects.project_store import ProjectStoreError, build_cursor_prompt, load_projects, project_tree
+from app.projects.project_store import (
+    ProjectResolution,
+    ProjectStoreError,
+    build_cursor_prompt,
+    load_projects,
+    project_tree,
+    resolve_project_reference,
+)
 
 
 CURSOR_MARKERS = ("cursor", "codex")
@@ -30,31 +37,61 @@ def detect_cursor_prompt_request(message: str) -> bool:
     )
 
 
-def infer_project_name(message: str) -> str | None:
+def infer_project_resolution(message: str) -> ProjectResolution | None:
     normalized = _normalize(message)
     projects = load_projects()
 
     for project in projects:
         project_name = str(project["name"])
         if _normalize(project_name) in normalized:
-            return project_name
+            return ProjectResolution(
+                project=project,
+                confidence=0.98,
+                reason=f"nom detecte: {project_name}",
+                exact=True,
+            )
 
     if len(projects) == 1:
-        return str(projects[0]["name"])
+        return ProjectResolution(
+            project=projects[0],
+            confidence=0.72,
+            reason="un seul projet configure",
+            exact=False,
+        )
 
     if "eva" in normalized or "ce projet" in normalized or "repo actuel" in normalized:
         for project in projects:
             if _normalize(str(project["name"])) == "eva":
-                return str(project["name"])
+                return ProjectResolution(
+                    project=project,
+                    confidence=0.9,
+                    reason="reference au repo Eva actuel",
+                    exact=False,
+                )
 
-    return None
+    return resolve_project_reference(message)
+
+
+def infer_project_name(message: str) -> str | None:
+    resolution = infer_project_resolution(message)
+    return str(resolution.project["name"]) if resolution else None
+
+
+def _resolution_intro(resolution: ProjectResolution) -> str:
+    project_name = str(resolution.project["name"])
+    if resolution.exact:
+        return f"Projet detecte: {project_name}."
+    return (
+        f"Je suppose que tu parles de {project_name} "
+        f"({round(resolution.confidence * 100)}%, {resolution.reason})."
+    )
 
 
 def build_chat_cursor_prompt_response(message: str) -> str:
     projects = load_projects()
-    project_name = infer_project_name(message)
+    resolution = infer_project_resolution(message)
 
-    if not project_name:
+    if not resolution:
         project_list = "\n".join(f"- {project['name']}" for project in projects)
         return (
             "Je peux preparer le prompt Cursor, mais il me manque le projet cible.\n\n"
@@ -62,11 +99,13 @@ def build_chat_cursor_prompt_response(message: str) -> str:
             "Renvoie ta demande avec le nom du projet."
         )
 
+    project_name = str(resolution.project["name"])
     prompt = build_cursor_prompt(project_name, message)
     tree = project_tree(project_name, limit=20)
     preview = "\n".join(f"- {item['path']}" for item in tree["items"][:20])
 
     return (
+        f"{_resolution_intro(resolution)}\n"
         f"Oui. Je peux lire le projet {project_name} et preparer un prompt de travail pour Cursor.\n"
         "Je ne l'envoie pas a l'API OpenAI et je ne controle pas Cursor directement.\n\n"
         "Prompt pret a coller dans Cursor:\n\n"
@@ -79,9 +118,9 @@ def build_chat_cursor_prompt_response(message: str) -> str:
 
 def build_cursor_work_session_response(message: str) -> str:
     projects = load_projects()
-    project_name = infer_project_name(message)
+    resolution = infer_project_resolution(message)
 
-    if not project_name:
+    if not resolution:
         project_list = "\n".join(f"- {project['name']}" for project in projects)
         return (
             "Je peux ouvrir Cursor et preparer le prompt, mais il me manque le projet cible.\n\n"
@@ -89,6 +128,7 @@ def build_cursor_work_session_response(message: str) -> str:
             "Renvoie par exemple: ouvre le projet Eva dans Cursor et prepare un prompt Codex pour ..."
         )
 
+    project_name = str(resolution.project["name"])
     try:
         session = prepare_cursor_work_session(project_name, message)
     except CursorBridgeError as exc:
@@ -96,6 +136,7 @@ def build_cursor_work_session_response(message: str) -> str:
 
     project = session["project"]
     lines = [
+        _resolution_intro(resolution),
         f"Session Cursor preparee pour {project['name']}.",
         f"Projet: {project['path']}",
     ]
@@ -124,15 +165,17 @@ def build_cursor_work_session_response(message: str) -> str:
 
 
 def build_project_context_for_chat(message: str) -> str | None:
-    project_name = infer_project_name(message)
-    if not project_name:
+    resolution = infer_project_resolution(message)
+    if not resolution:
         return None
 
+    project_name = str(resolution.project["name"])
     tree = project_tree(project_name, limit=100)
     project = tree["project"]
     file_list = "\n".join(f"- {item['path']}" for item in tree["items"][:100])
 
     return (
+        f"{_resolution_intro(resolution)}\n"
         f"Projet local detecte: {project['name']}\n"
         f"Chemin: {project['path']}\n"
         f"Description: {project.get('description', '')}\n\n"

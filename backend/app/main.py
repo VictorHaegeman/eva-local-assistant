@@ -159,6 +159,7 @@ from app.project_factory.automation import (
     auto_execute_project_factory_actions,
     project_factory_auto_status,
 )
+from app.project_factory.agent_runner import list_project_factory_agent_events
 from app.projects.task_store import (
     TaskStoreError,
     create_task,
@@ -1448,6 +1449,13 @@ async def project_factory_actions(request: ProjectFactoryPlanRequest) -> dict[st
         "auto_results": auto_results,
         "executed": bool(auto_results),
         "requires_confirmation": not bool(auto_results),
+    }
+
+
+@app.get("/project-factory/agent-events", dependencies=[Depends(require_sensitive_access)])
+async def project_factory_agent_events(limit: int = Query(default=30, ge=1, le=200)) -> dict[str, object]:
+    return {
+        "events": list_project_factory_agent_events(limit=limit),
     }
 
 

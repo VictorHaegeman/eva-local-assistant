@@ -782,6 +782,10 @@ EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT=true
 EVA_PROJECT_FACTORY_AUTO_OPEN_CURSOR=true
 EVA_PROJECT_FACTORY_AUTO_GITHUB=true
 EVA_PROJECT_FACTORY_AUTO_PUSH=true
+EVA_PROJECT_FACTORY_AUTO_CURSOR_AGENT=true
+EVA_PROJECT_FACTORY_AGENT_REPAIR_ONCE=true
+EVA_PROJECT_FACTORY_AGENT_AUTO_COMMIT=true
+EVA_PROJECT_FACTORY_AGENT_TIMEOUT_SECONDS=3600
 ```
 
 Avec ce mode active dans `backend/.env`, quand tu envoies `/project ...` ou que tu demandes dans le chat de creer un nouveau projet, Eva lance directement le flux Project Factory:
@@ -793,7 +797,25 @@ Avec ce mode active dans `backend/.env`, quand tu envoies `/project ...` ou que 
 - ouverture du projet dans Cursor si la CLI `cursor` est disponible;
 - commit initial local si `EVA_PROJECT_FACTORY_AUTO_COMMIT=true`;
 - creation du repo GitHub via `gh` si `EVA_PROJECT_FACTORY_AUTO_GITHUB=true` et `gh auth login` est deja configure;
-- push vers GitHub si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
+- lancement de `cursor-agent` pour coder la V1 si `EVA_PROJECT_FACTORY_AUTO_CURSOR_AGENT=true`;
+- audit local du workspace apres generation;
+- relance automatique d'un prompt de correction une fois si l'audit echoue;
+- commit local de la V1 generee si `EVA_PROJECT_FACTORY_AGENT_AUTO_COMMIT=true`;
+- push vers GitHub a la fin si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
+
+Suivi du job autonome:
+
+```text
+GET /project-factory/agent-events
+```
+
+Les logs et audits restent locaux dans:
+
+```text
+data/cursor_agent_logs/
+```
+
+Si `cursor-agent` est absent, Eva cree quand meme le workspace, GitHub et le prompt Cursor, puis indique clairement que la partie codage autonome n'a pas demarre.
 
 Ce mode ne donne pas carte blanche a tout le PC: il ne supprime rien, n'envoie pas de message, ne publie pas de contenu et n'appelle pas OpenAI. Il execute seulement le flux Project Factory borne a ton dossier projets.
 
@@ -1146,6 +1168,20 @@ Prepare un prompt Codex pour corriger le bug de login dans Barly
 
 Eva detecte le projet quand son nom est dans la demande, lit la structure du projet et renvoie un prompt pret a coller dans Cursor.
 
+Resolution intelligente des projets:
+
+```json
+{
+  "name": "Formula Dashboard",
+  "path": "C:\\Users\\victo\\Desktop\\Cursor\\formula-dashboard",
+  "description": "Dashboard autour de la Formule 1, des courses et des statistiques pilotes.",
+  "type": "code",
+  "aliases": ["F1", "Formule 1", "racing"]
+}
+```
+
+Avec les `aliases`, Eva ne bloque plus si tu dis un nom approximatif. Par exemple, si tu demandes `je veux bosser sur le projet de F1`, elle cherche dans le nom, les alias, la description et le chemin, puis repond `Je suppose que tu parles de Formula Dashboard` avant d'ouvrir le bon workspace ou de preparer le prompt Cursor.
+
 Les taches locales sont stockees dans:
 
 ```text
@@ -1156,9 +1192,9 @@ Important:
 
 - Eva ne depend pas de Codex ni de l'API OpenAI;
 - Eva peut preparer un prompt Cursor/Codex directement dans le chat;
-- Eva ne peut pas encore piloter Cursor via une API locale officielle;
-- Eva ne modifie pas les fichiers sans validation;
-- Eva ne fait pas de `git push` sans validation explicite;
+- Eva peut lancer `cursor-agent` en arriere-plan si la CLI est installee et activee;
+- Eva ne modifie pas les fichiers hors Project Factory autonome sans validation;
+- Eva ne fait pas de `git push` sauf si `EVA_ALLOW_AUTO_GIT_PUSH=true` ou `EVA_PROJECT_FACTORY_AUTO_PUSH=true`;
 - elle peut lire/analyser les projets configures et preparer plans, prompts, README drafts et PR plans.
 
 ## Installation Ollama

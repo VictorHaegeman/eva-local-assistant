@@ -4,7 +4,8 @@
       "name": "Eva",
       "path": ".",
       "description": "Assistant personnel local de Victor",
-      "type": "code"
+      "type": "code",
+      "aliases": ["assistant local", "eva local", "jarvis"]
     }
   ]
 }

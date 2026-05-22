@@ -119,6 +119,22 @@ class Settings:
     )
     eva_project_factory_auto_github: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_GITHUB", True)
     eva_project_factory_auto_push: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_PUSH", False)
+    eva_project_factory_auto_cursor_agent: bool = _env_bool(
+        "EVA_PROJECT_FACTORY_AUTO_CURSOR_AGENT",
+        True,
+    )
+    eva_project_factory_agent_repair_once: bool = _env_bool(
+        "EVA_PROJECT_FACTORY_AGENT_REPAIR_ONCE",
+        True,
+    )
+    eva_project_factory_agent_auto_commit: bool = _env_bool(
+        "EVA_PROJECT_FACTORY_AGENT_AUTO_COMMIT",
+        True,
+    )
+    eva_project_factory_agent_timeout_seconds: float = _env_float(
+        "EVA_PROJECT_FACTORY_AGENT_TIMEOUT_SECONDS",
+        3600.0,
+    )
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")
     eva_telegram_allowed_chat_id: str = os.getenv("EVA_TELEGRAM_ALLOWED_CHAT_ID", "")

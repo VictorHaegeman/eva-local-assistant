@@ -1,5 +1,8 @@
 import json
+import re
 import shutil
+import unicodedata
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +11,14 @@ from app.files.local_files import BLOCKED_NAMES, _has_blocked_part, _is_readable
 
 class ProjectStoreError(Exception):
     """Raised when Eva cannot safely inspect a configured project."""
+
+
+@dataclass(frozen=True)
+class ProjectResolution:
+    project: dict[str, Any]
+    confidence: float
+    reason: str
+    exact: bool = False
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -52,7 +63,49 @@ def _resolve_project_path(path_value: str) -> Path:
     return raw_path.resolve()
 
 
-def load_projects() -> list[dict[str, str]]:
+def _normalize_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value.lower())
+    without_accents = "".join(char for char in normalized if not unicodedata.combining(char))
+    return " ".join(without_accents.split())
+
+
+def _tokens(value: str) -> set[str]:
+    stopwords = {
+        "sur",
+        "pour",
+        "avec",
+        "dans",
+        "projet",
+        "repo",
+        "code",
+        "bosser",
+        "travaille",
+        "travailler",
+        "ouvre",
+        "ouvrir",
+        "cursor",
+        "codex",
+        "eva",
+        "veux",
+        "je",
+        "tu",
+        "le",
+        "la",
+        "les",
+        "un",
+        "une",
+        "des",
+        "de",
+        "du",
+    }
+    return {
+        token
+        for token in re.findall(r"[a-z0-9_-]{2,}", _normalize_text(value))
+        if token not in stopwords
+    }
+
+
+def load_projects() -> list[dict[str, Any]]:
     ensure_projects_file()
 
     try:
@@ -66,7 +119,7 @@ def load_projects() -> list[dict[str, str]]:
     if not isinstance(projects, list):
         raise ProjectStoreError("projects doit etre une liste.")
 
-    loaded_projects: list[dict[str, str]] = []
+    loaded_projects: list[dict[str, Any]] = []
     for project in projects:
         if not isinstance(project, dict):
             continue
@@ -75,6 +128,12 @@ def load_projects() -> list[dict[str, str]]:
         path_value = str(project.get("path", "")).strip()
         description = str(project.get("description", "")).strip()
         project_type = str(project.get("type", "code")).strip()
+        aliases_payload = project.get("aliases", [])
+        aliases = (
+            [str(alias).strip() for alias in aliases_payload if str(alias).strip()]
+            if isinstance(aliases_payload, list)
+            else []
+        )
 
         if not name or not path_value:
             continue
@@ -87,6 +146,7 @@ def load_projects() -> list[dict[str, str]]:
                     "path": str(resolved_path),
                     "description": description,
                     "type": project_type,
+                    "aliases": aliases,
                 }
             )
 
@@ -96,12 +156,120 @@ def load_projects() -> list[dict[str, str]]:
     return loaded_projects
 
 
-def get_project(project_name: str) -> dict[str, str]:
+def get_project(project_name: str) -> dict[str, Any]:
     for project in load_projects():
         if project["name"].lower() == project_name.lower():
             return project
 
+    resolution = resolve_project_reference(project_name, minimum_confidence=0.34)
+    if resolution:
+        return resolution.project
+
     raise ProjectStoreError(f"Projet introuvable: {project_name}")
+
+
+def _project_haystack(project: dict[str, Any]) -> str:
+    aliases = project.get("aliases", [])
+    alias_text = " ".join(str(alias) for alias in aliases if str(alias).strip()) if isinstance(aliases, list) else ""
+    return " ".join(
+        [
+            str(project.get("name", "")),
+            alias_text,
+            str(project.get("description", "")),
+            Path(str(project.get("path", ""))).name,
+            str(project.get("path", "")),
+            str(project.get("type", "")),
+        ]
+    )
+
+
+def resolve_project_reference(reference: str, minimum_confidence: float = 0.22) -> ProjectResolution | None:
+    projects = load_projects()
+    normalized_reference = _normalize_text(reference)
+    reference_tokens = _tokens(reference)
+
+    exact_alias_hits: list[ProjectResolution] = []
+    for project in projects:
+        names = [str(project["name"])]
+        aliases = project.get("aliases", [])
+        if isinstance(aliases, list):
+            names.extend(str(alias) for alias in aliases)
+
+        for name in names:
+            normalized_name = _normalize_text(name)
+            if normalized_name and (
+                normalized_name == normalized_reference
+                or normalized_name in normalized_reference
+            ):
+                exact_alias_hits.append(
+                    ProjectResolution(
+                        project=project,
+                        confidence=0.98,
+                        reason=f"nom ou alias detecte: {name}",
+                        exact=True,
+                    )
+                )
+                break
+
+    if exact_alias_hits:
+        return exact_alias_hits[0]
+
+    scored: list[ProjectResolution] = []
+    for project in projects:
+        haystack = _project_haystack(project)
+        haystack_normalized = _normalize_text(haystack)
+        haystack_tokens = _tokens(haystack)
+        if not haystack_tokens:
+            continue
+
+        token_hits = reference_tokens & haystack_tokens
+        score = len(token_hits) / max(len(reference_tokens), 1)
+        name_tokens = _tokens(str(project.get("name", "")))
+        alias_tokens = _tokens(" ".join(str(alias) for alias in project.get("aliases", []))) if isinstance(project.get("aliases", []), list) else set()
+        description_tokens = _tokens(str(project.get("description", "")))
+
+        if token_hits & name_tokens:
+            score += 0.25
+        if token_hits & alias_tokens:
+            score += 0.25
+        if token_hits & description_tokens:
+            score += 0.12
+
+        path_name = _normalize_text(Path(str(project.get("path", ""))).name)
+        if path_name and path_name in normalized_reference:
+            score += 0.2
+
+        if not token_hits and normalized_reference not in haystack_normalized:
+            continue
+
+        reason = (
+            f"mots communs: {', '.join(sorted(token_hits))}"
+            if token_hits
+            else "similarite avec le chemin ou la description"
+        )
+        scored.append(
+            ProjectResolution(
+                project=project,
+                confidence=min(score, 0.95),
+                reason=reason,
+                exact=False,
+            )
+        )
+
+    if not scored:
+        return None
+
+    best = sorted(scored, key=lambda item: item.confidence, reverse=True)[0]
+    if best.confidence < minimum_confidence:
+        return None
+    return best
+
+
+def resolve_project_name(reference: str, minimum_confidence: float = 0.22) -> str | None:
+    resolution = resolve_project_reference(reference, minimum_confidence=minimum_confidence)
+    if not resolution:
+        return None
+    return str(resolution.project["name"])
 
 
 def _resolve_project_file(project: dict[str, str], relative_path: str) -> Path:

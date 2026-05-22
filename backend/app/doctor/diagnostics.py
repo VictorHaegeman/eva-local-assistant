@@ -311,8 +311,11 @@ def _project_factory_check() -> dict[str, Any]:
     if auto_push and gh_path and not gh_authenticated:
         warnings.append("Push auto est active, mais `gh auth login` n'est pas encore fait.")
 
-    if settings.eva_cursor_agent_enabled and not cursor_agent_path:
-        warnings.append("cursor-agent CLI est introuvable pour l'autonomie a distance.")
+    if (
+        settings.eva_cursor_agent_enabled
+        or settings.eva_project_factory_auto_cursor_agent
+    ) and not cursor_agent_path:
+        warnings.append("cursor-agent CLI est introuvable pour le codage autonome.")
 
     if warnings:
         status = "warning"
@@ -329,6 +332,9 @@ def _project_factory_check() -> dict[str, Any]:
             "auto_commit": settings.eva_project_factory_auto_commit,
             "auto_github": auto_github,
             "auto_push": auto_push,
+            "auto_cursor_agent": settings.eva_project_factory_auto_cursor_agent,
+            "agent_repair_once": settings.eva_project_factory_agent_repair_once,
+            "agent_auto_commit": settings.eva_project_factory_agent_auto_commit,
             "cursor_cli": cursor_path or "",
             "cursor_agent_cli": cursor_agent_path or "",
             "gh_cli": gh_path or "",
