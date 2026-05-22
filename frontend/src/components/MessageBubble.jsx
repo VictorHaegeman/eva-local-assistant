@@ -4,6 +4,7 @@ export function MessageBubble({ message }) {
   const suggestedTabs = Array.isArray(message.suggestedTabs) ? message.suggestedTabs : [];
   const webPreview = message.webPreview || message.web_preview || null;
   const isMapPreview = webPreview?.type === "map" && webPreview?.embed_url;
+  const isExternalPreview = webPreview && !isMapPreview && webPreview.url;
 
   return (
     <article className={`message-row ${message.role}`}>
@@ -64,6 +65,26 @@ export function MessageBubble({ message }) {
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
+              <div className="web-preview-actions">
+                <button
+                  type="button"
+                  onClick={() => window.open(webPreview.url, "_blank", "noopener,noreferrer")}
+                >
+                  Ouvrir dans Brave
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isExternalPreview && (
+            <div className="web-preview-card external-preview-card">
+              <div className="web-preview-head">
+                <span>{webPreview.provider || "Lien"}</span>
+                <strong>{webPreview.title || webPreview.label || "Apercu externe"}</strong>
+              </div>
+              <div className="external-preview-body">
+                <span>{webPreview.label || webPreview.url}</span>
+              </div>
               <div className="web-preview-actions">
                 <button
                   type="button"

@@ -11,7 +11,14 @@ class MapPreviewError(Exception):
 
 MAP_MARKERS = (
     "carte",
+    "cart",
+    "cartz",
+    "cartez",
+    "karte",
     "map",
+    "maps",
+    "google maps",
+    "google earth",
     "plan",
     "localise",
     "localiser",
@@ -29,15 +36,29 @@ MAP_STOPWORDS = (
     "pull up",
     "dans le chat",
     "sur la carte",
+    "sur cartz",
+    "sur maps",
     "une carte",
+    "une cartz",
+    "une map",
     "la carte",
+    "la cartz",
+    "la map",
     "un plan",
     "le plan",
     "map of",
     "carte de",
     "carte d",
+    "cartz de",
+    "cartz d",
+    "map de",
+    "map d",
     "plan de",
     "plan d",
+    "google earth",
+    "google maps",
+    "en 3d",
+    "3d",
     "stp",
     "s il te plait",
 )
@@ -97,9 +118,27 @@ def _normalize(text: str) -> str:
     return " ".join(without_accents.split())
 
 
-def detect_map_query(message: str) -> str | None:
+def _wants_3d(text: str) -> bool:
+    normalized = _normalize(text)
+    return bool(re.search(r"\b3d\b", normalized)) or "google earth" in normalized
+
+
+def _extract_known_place(text: str) -> str | None:
+    normalized = _normalize(text)
+    for place in sorted(KNOWN_PLACES, key=len, reverse=True):
+        if re.search(rf"\b{re.escape(place)}\b", normalized):
+            return place
+    return None
+
+
+def detect_map_query(message: str, context: str = "") -> str | None:
     normalized = _normalize(message)
-    if not any(marker in normalized for marker in MAP_MARKERS):
+    has_map_marker = any(marker in normalized for marker in MAP_MARKERS)
+    if not has_map_marker:
+        if _wants_3d(message) and any(marker in _normalize(context) for marker in MAP_MARKERS):
+            contextual_place = _extract_known_place(context)
+            if contextual_place:
+                return contextual_place
         return None
 
     query = normalized
@@ -109,6 +148,10 @@ def detect_map_query(message: str) -> str | None:
     query = re.sub(r"\b(?:de|du|des|d|a|sur|pour|of|the|a|an)\b", " ", query)
     query = re.sub(r"[,;:!?]", " ", query)
     query = " ".join(query.split())
+
+    known_place = _extract_known_place(query)
+    if known_place:
+        return known_place
 
     if len(query) < 2:
         return None
@@ -129,6 +172,10 @@ def _map_urls(label: str, lat: float, lon: float, bbox: tuple[float, float, floa
         "url": f"https://www.openstreetmap.org/search?query={quote_plus(label)}",
         "embed_url": f"https://www.openstreetmap.org/export/embed.html?{embed_query}",
     }
+
+
+def _google_earth_url(label: str) -> str:
+    return f"https://earth.google.com/web/search/{quote_plus(label)}"
 
 
 async def _geocode_place(query: str) -> dict[str, object] | None:
@@ -186,8 +233,8 @@ async def _geocode_place(query: str) -> dict[str, object] | None:
     }
 
 
-async def build_map_preview_from_message(message: str) -> dict[str, object] | None:
-    query = detect_map_query(message)
+async def build_map_preview_from_message(message: str, context: str = "") -> dict[str, object] | None:
+    query = detect_map_query(message, context=context)
     if not query:
         return None
 
@@ -202,10 +249,28 @@ async def build_map_preview_from_message(message: str) -> dict[str, object] | No
         }
 
     label = str(place["label"])
+    if _wants_3d(message):
+        return {
+            "content": (
+                f"Vue 3D prete: {label}.\n"
+                "Google Earth Web est pret a ouvrir."
+            ),
+            "web_preview": {
+                "type": "map3d",
+                "provider": "Google Earth",
+                "title": f"Vue 3D - {label}",
+                "label": label,
+                "url": _google_earth_url(label),
+                "lat": place["lat"],
+                "lon": place["lon"],
+                "source": place["source"],
+            },
+        }
+
     return {
         "content": (
-            f"Carte interactive: {label}.\n"
-            "Je l'affiche directement dans le chat avec OpenStreetMap."
+            f"Carte affichee: {label}.\n"
+            "OpenStreetMap est integre dans le chat."
         ),
         "web_preview": {
             "type": "map",

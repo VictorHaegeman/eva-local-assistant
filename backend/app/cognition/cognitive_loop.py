@@ -15,6 +15,7 @@ from app.cognition.verifier import verify_result
 from app.integrations.beeper_assistant import build_beeper_chat_response
 from app.integrations.browser_actions import open_browser_from_message
 from app.integrations.browser_assistant import open_assisted_browser_from_message
+from app.integrations.browser import open_url
 from app.integrations.desktop_chat import execute_desktop_control_from_message
 from app.integrations.gmail_chat import build_gmail_chat_response
 from app.integrations.map_preview import build_map_preview_from_message
@@ -92,8 +93,12 @@ def _requires_trusted(route: str) -> bool:
     return route in {"browser_or_video", "cursor_work", "spotify", "desktop_control", "beeper_messages"}
 
 
-async def _map_preview(message: str) -> tuple[str, ToolResult, dict[str, Any] | None] | None:
-    preview = await build_map_preview_from_message(message)
+async def _map_preview(
+    message: str,
+    context: str = "",
+    trusted_actions: bool = False,
+) -> tuple[str, ToolResult, dict[str, Any] | None] | None:
+    preview = await build_map_preview_from_message(message, context=context)
     if not preview:
         return None
     web_preview = preview.get("web_preview")
@@ -106,16 +111,27 @@ async def _map_preview(message: str) -> tuple[str, ToolResult, dict[str, Any] | 
         )
         return str(preview.get("content", "Carte introuvable.")), result, None
 
+    evidence = [f"Carte preparee via {web_preview.get('provider', 'OpenStreetMap')}"]
+    content = str(preview["content"])
+    if web_preview.get("type") == "map3d":
+        url = str(web_preview.get("url", ""))
+        if trusted_actions and url:
+            open_url(url)
+            evidence.append(f"Ouverture navigateur envoyee vers: {url}")
+            content = f"Vue 3D prete: {web_preview.get('label')}.\nOuverture Google Earth Web envoyee a Brave."
+        elif url:
+            evidence.append(f"Lien 3D prepare: {url}")
+            content = f"Vue 3D prete: {web_preview.get('label')}.\nOuvre-la avec le bouton ci-dessous."
+    else:
+        evidence.append(f"URL embed verifiee: {web_preview.get('embed_url')}")
+
     result = _success(
         "map_preview",
-        (
-            f"Carte integree preparee via {web_preview.get('provider', 'OpenStreetMap')}",
-            f"URL embed verifiee: {web_preview.get('embed_url')}",
-        ),
+        tuple(evidence),
         data={"web_preview": web_preview},
         confidence=0.92,
     )
-    return str(preview["content"]), result, web_preview
+    return content, result, web_preview
 
 
 async def run_cognitive_loop(
@@ -131,7 +147,11 @@ async def run_cognitive_loop(
     )
     route = understanding.action_plan.route
 
-    map_result = await _map_preview(message)
+    map_result = await _map_preview(
+        message,
+        context=understanding.context_focus,
+        trusted_actions=trusted_actions,
+    )
     if map_result:
         content, tool_result, web_preview = map_result
         state.add_result(tool_result)

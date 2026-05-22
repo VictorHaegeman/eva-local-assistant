@@ -112,6 +112,8 @@ Messages riches dans le chat:
 
 - Eva peut afficher une carte OpenStreetMap directement dans la conversation quand tu demandes une carte.
 - Exemple: `ouvre une carte de Londres dans le chat`.
+- Les fautes simples comme `cartz` sont corrigees par le module carte avant le fallback LLM.
+- Si tu reponds `3d` apres une carte, Eva reprend le lieu precedent et prepare Google Earth Web.
 - Le rendu reste gratuit et sans cle API; le bouton de la carte permet aussi d'ouvrir OpenStreetMap dans Brave.
 
 Plan de travail autonomie:

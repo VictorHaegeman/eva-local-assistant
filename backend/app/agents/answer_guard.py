@@ -3,16 +3,16 @@ import re
 
 FAKE_ACTION_PATTERNS = (
     r"\bje vais (?:essayer d')?(?:ouvrir|charger|afficher|lancer)\b",
-    r"\bj'ai (?:ouvert|charge|chargé|affiche|affiché|lance|lancé)\b",
-    r"\bvoici l'adresse url que j'ai (?:chargee|chargée|ouverte)\b",
+    r"\bj'ai (?:ouvert|charge|affiche|lance)\b",
+    r"\bvoici l'adresse url que j'ai (?:chargee|ouverte)\b",
     r"\bje suis connecte au pc de victor\b",
-    r"\bje suis connecté au pc de victor\b",
+    r"\bgoogle earth est maintenant ouvert\b",
+    r"\bgoogle maps est maintenant ouvert\b",
     r"\bnavigateur par defaut\b",
-    r"\bnavigateur par défaut\b",
 )
 
 GENERIC_CLOSING_PATTERNS = (
-    r"\n*\s*(?:pouvez-vous|peux-tu|dites-moi|dis-moi|n'hesitez pas|n’hésitez pas).{0,180}(?:autre chose|quelque chose d'autre|si vous souhaitez|si tu souhaites|besoin d'aide|questions?)\s*[?.!]*\s*$",
+    r"\n*\s*(?:pouvez-vous|peux-tu|dites-moi|dis-moi|n'hesitez pas).{0,180}(?:autre chose|quelque chose d'autre|si vous souhaitez|si tu souhaites|besoin d'aide|questions?)\s*[?.!]*\s*$",
     r"\n*\s*(?:souhaitez-vous|veux-tu|voulez-vous).{0,180}(?:autre chose|que je fasse|continuer|la suite)\s*[?.!]*\s*$",
 )
 
@@ -43,6 +43,11 @@ def _likely_action_domain(user_message: str) -> str:
         return "web"
     if any(marker in normalized for marker in ("spotify", "musique", "playlist")):
         return "spotify"
+    if any(
+        marker in normalized
+        for marker in ("carte", "cartz", "map", "maps", "google earth", "google maps", "londres", "3d")
+    ):
+        return "carte"
     return "action"
 
 
@@ -74,6 +79,11 @@ def guard_ollama_answer(answer: str, user_message: str) -> str:
         return (
             "Je corrige: je n'ai pas de preuve que Spotify ait ete ouvert ou que la musique joue. "
             "Je dois utiliser l'outil Spotify local et rapporter uniquement ce qui a ete tente."
+        )
+    if domain == "carte":
+        return (
+            "Je corrige: je n'ai pas de preuve qu'une carte ait ete ouverte dans ce tour. "
+            "Je dois utiliser le module carte local, afficher OpenStreetMap dans le chat ou ouvrir Google Earth Web avec preuve."
         )
 
     return (
