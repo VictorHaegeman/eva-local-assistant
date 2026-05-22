@@ -108,6 +108,12 @@ Routes utiles:
 - `POST /project-factory/actions`: creer les actions validables workspace, clipboard, Cursor et GitHub CLI.
 - Telegram `/cursor` ou `/codex`: ouvrir un projet connu dans Cursor, copier le prompt de travail et ecrire `EVA_CURSOR_PROMPT.md`.
 
+Messages riches dans le chat:
+
+- Eva peut afficher une carte OpenStreetMap directement dans la conversation quand tu demandes une carte.
+- Exemple: `ouvre une carte de Londres dans le chat`.
+- Le rendu reste gratuit et sans cle API; le bouton de la carte permet aussi d'ouvrir OpenStreetMap dans Brave.
+
 Plan de travail autonomie:
 
 ```text

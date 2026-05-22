@@ -211,6 +211,7 @@ from app.web.web_search import WebSearchError, format_web_results, search_web
 class Message(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=20_000)
+    web_preview: dict[str, object] | None = None
 
 
 class ChatRequest(BaseModel):

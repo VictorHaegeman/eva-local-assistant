@@ -2,6 +2,8 @@ export function MessageBubble({ message }) {
   const isUser = message.role === "user";
   const briefItems = Array.isArray(message.briefItems) ? message.briefItems : [];
   const suggestedTabs = Array.isArray(message.suggestedTabs) ? message.suggestedTabs : [];
+  const webPreview = message.webPreview || message.web_preview || null;
+  const isMapPreview = webPreview?.type === "map" && webPreview?.embed_url;
 
   return (
     <article className={`message-row ${message.role}`}>
@@ -47,6 +49,29 @@ export function MessageBubble({ message }) {
                   {tab.title || tab.source || "Ouvrir"}
                 </button>
               ))}
+            </div>
+          )}
+
+          {isMapPreview && (
+            <div className="web-preview-card map-preview-card">
+              <div className="web-preview-head">
+                <span>{webPreview.provider || "Carte"}</span>
+                <strong>{webPreview.title || webPreview.label || "Carte interactive"}</strong>
+              </div>
+              <iframe
+                title={webPreview.title || "Carte interactive"}
+                src={webPreview.embed_url}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div className="web-preview-actions">
+                <button
+                  type="button"
+                  onClick={() => window.open(webPreview.url, "_blank", "noopener,noreferrer")}
+                >
+                  Ouvrir dans Brave
+                </button>
+              </div>
             </div>
           )}
         </div>

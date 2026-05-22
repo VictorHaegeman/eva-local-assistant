@@ -102,11 +102,12 @@ function createDailyBriefMessage(payload) {
   };
 }
 
-function createMessage(role, content) {
+function createMessage(role, content, extras = {}) {
   return {
     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
     role,
     content,
+    ...extras,
   };
 }
 
@@ -296,7 +297,9 @@ export default function App() {
       }
       setMessages((currentMessages) => [
         ...currentMessages,
-        createMessage("assistant", assistantMessage.content),
+        createMessage("assistant", assistantMessage.content, {
+          webPreview: assistantMessage.web_preview || assistantMessage.webPreview || null,
+        }),
       ]);
       speakEva(assistantMessage.content);
       setBackendStatus((current) => ({

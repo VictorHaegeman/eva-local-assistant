@@ -24,6 +24,7 @@ from app.integrations.gmail_chat import (
 from app.integrations.gmail_client import GmailIntegrationError
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
+from app.integrations.map_preview import MapPreviewError, build_map_preview_from_message
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
 from app.integrations.desktop_chat import DesktopChatError, execute_desktop_control_from_message
 from app.integrations.beeper_assistant import BeeperAssistantError, build_beeper_chat_response
@@ -711,6 +712,18 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
+        map_response = await build_map_preview_from_message(latest_user_message)
+        if map_response:
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": map_response["content"],
+                    "web_preview": map_response.get("web_preview"),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         browser_assist_response = open_assisted_browser_from_message(latest_user_message) if trusted_actions else None
         if browser_assist_response:
             return {
@@ -735,6 +748,7 @@ async def process_chat_messages(
     except (
         BrowserActionError,
         BrowserAssistError,
+        MapPreviewError,
         SpotifyAssistError,
         DesktopChatError,
         BeeperAssistantError,

@@ -877,6 +877,70 @@ button.nav-item:hover {
   border-color: rgba(115, 214, 255, 0.5);
 }
 
+.web-preview-card {
+  display: grid;
+  gap: 10px;
+  width: min(680px, calc(100vw - 124px));
+  margin-top: 16px;
+  padding: 10px;
+  white-space: normal;
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.09), rgba(255, 255, 255, 0.026)),
+    rgba(7, 16, 27, 0.9);
+  border: 1px solid rgba(115, 214, 255, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.26), inset 0 0 26px rgba(115, 214, 255, 0.03);
+}
+
+.web-preview-head {
+  display: grid;
+  gap: 2px;
+}
+
+.web-preview-head span {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.web-preview-head strong {
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.28;
+}
+
+.map-preview-card iframe {
+  width: 100%;
+  min-height: 330px;
+  aspect-ratio: 16 / 9;
+  background: rgba(6, 12, 20, 0.95);
+  border: 1px solid rgba(115, 214, 255, 0.18);
+  border-radius: 8px;
+}
+
+.web-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.web-preview-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  color: var(--text);
+  background:
+    linear-gradient(135deg, rgba(33, 156, 255, 0.72), rgba(115, 214, 255, 0.22)),
+    rgba(14, 37, 58, 0.92);
+  border: 1px solid rgba(115, 214, 255, 0.46);
+  border-radius: 8px;
+  font-weight: 850;
+}
+
+.web-preview-actions button:hover {
+  border-color: rgba(244, 248, 251, 0.72);
+  box-shadow: 0 0 28px rgba(33, 156, 255, 0.18);
+}
+
 .starter-row {
   display: flex;
   flex-wrap: wrap;
@@ -1541,6 +1605,22 @@ button.nav-item:hover {
 
   .brief-source-card {
     min-height: 0;
+  }
+
+  .web-preview-card {
+    width: calc(100vw - 84px);
+  }
+
+  .map-preview-card iframe {
+    min-height: 250px;
+  }
+
+  .web-preview-actions {
+    justify-content: stretch;
+  }
+
+  .web-preview-actions button {
+    width: 100%;
   }
 
   .message-row.assistant .message-bubble {
