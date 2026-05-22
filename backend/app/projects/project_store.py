@@ -89,6 +89,15 @@ def _tokens(value: str) -> set[str]:
         "veux",
         "je",
         "tu",
+        "et",
+        "en",
+        "ou",
+        "au",
+        "aux",
+        "ce",
+        "cet",
+        "cette",
+        "sur",
         "le",
         "la",
         "les",
@@ -98,11 +107,25 @@ def _tokens(value: str) -> set[str]:
         "de",
         "du",
     }
-    return {
+    normalized = _normalize_text(value)
+    split_normalized = re.sub(r"[-_/\\.]+", " ", normalized)
+    tokens = {
         token
-        for token in re.findall(r"[a-z0-9_-]{2,}", _normalize_text(value))
+        for token in re.findall(r"[a-z0-9]{2,}", split_normalized)
         if token not in stopwords
     }
+    tokens.update(
+        token
+        for token in re.findall(r"[a-z0-9][a-z0-9_-]{2,}", normalized)
+        if token not in stopwords and ("-" in token or "_" in token)
+    )
+
+    if "machine" in tokens and any(token in tokens for token in {"learning", "leurning", "ml"}):
+        tokens.update({"neural", "network", "ai", "ml"})
+    if "ia" in tokens:
+        tokens.update({"ai", "neural", "ml"})
+
+    return tokens
 
 
 def load_projects() -> list[dict[str, Any]]:
