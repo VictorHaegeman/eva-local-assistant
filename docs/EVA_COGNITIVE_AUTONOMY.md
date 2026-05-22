@@ -549,3 +549,46 @@ Ne pas migrer tout Eva d'un coup. Brancher d'abord les cas qui donnent le plus l
 5. lancer un agent projet.
 
 Ensuite seulement, etendre la boucle au chat general.
+
+## Etat D'implementation
+
+Phase 1 initiale ajoutee:
+
+```text
+backend/app/cognition/
+|-- cognitive_loop.py
+|-- state.py
+|-- tool_result.py
+|-- verifier.py
+|-- critic.py
+|-- retry_policy.py
+|-- response_builder.py
+`-- __init__.py
+```
+
+Flux branche dans `backend/app/chat_service.py`:
+
+```text
+message -> understanding/action_plan -> run_cognitive_loop -> outil verifie -> reponse
+```
+
+Cas couverts par cette premiere tranche:
+
+- carte integree dans le chat;
+- recherche web;
+- Gmail;
+- Cursor/projets;
+- Spotify;
+- desktop control;
+- Beeper;
+- navigateur.
+
+Ce n'est pas encore la boucle cognitive complete. Il manque encore:
+
+- task graph multi-etapes;
+- retry automatique plus agressif;
+- evaluation locale avec scenarios;
+- reflection automatique depuis les echecs;
+- migration de toutes les routes anciennes.
+
+Mais ce n'est plus seulement une spec: une premiere boucle operationnelle est maintenant appelee avant le fallback LLM.

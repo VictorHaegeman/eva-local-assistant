@@ -123,6 +123,15 @@ docs/EVA_COGNITIVE_AUTONOMY.md
 
 `docs/EVA_COGNITIVE_AUTONOMY.md` decrit la prochaine architecture centrale: comprendre, recuperer le contexte, planifier, agir, verifier, critiquer, reessayer et apprendre. C'est la feuille de route pour qu'Eva reflechisse avant de repondre au lieu de rester un simple LLM avec quelques outils.
 
+Phase 1 operationnelle:
+
+- dossier `backend/app/cognition/` ajoute;
+- `chat_service.py` appelle maintenant `run_cognitive_loop(...)` avant le fallback Ollama generique;
+- routes traitees par la boucle: cartes integrees, recherche web, Gmail, Cursor/projets, Spotify, desktop control, Beeper, navigateur;
+- chaque outil retourne un resultat normalise avec statut, preuves, erreur et prochaines actions;
+- le critic bloque les reponses faibles du type action pretendue sans preuve ou question finale inutile;
+- si une action locale vient d'une session non fiable, Eva donne la raison exacte et la prochaine action utile.
+
 Configuration locale utile:
 
 ```env

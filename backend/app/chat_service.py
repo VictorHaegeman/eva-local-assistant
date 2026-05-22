@@ -4,6 +4,7 @@ from app.actions.action_detector import create_pending_action_from_message
 from app.actions.action_store import ActionStoreError, action_to_dict, list_actions
 from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
+from app.cognition.cognitive_loop import run_cognitive_loop
 from app.config import settings
 from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
@@ -24,7 +25,6 @@ from app.integrations.gmail_chat import (
 from app.integrations.gmail_client import GmailIntegrationError
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
-from app.integrations.map_preview import MapPreviewError, build_map_preview_from_message
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
 from app.integrations.desktop_chat import DesktopChatError, execute_desktop_control_from_message
 from app.integrations.beeper_assistant import BeeperAssistantError, build_beeper_chat_response
@@ -257,6 +257,7 @@ async def process_chat_messages(
     safe_messages: list[dict[str, str]],
     mode: str = "chat",
     trusted_actions: bool = False,
+    channel: str = "web",
 ) -> dict[str, Any]:
     if not safe_messages or safe_messages[-1]["role"] != "user":
         raise ChatServiceError("La conversation doit se terminer par un message utilisateur.")
@@ -544,6 +545,19 @@ async def process_chat_messages(
     except (ActionStoreError, HeartbeatError, LocalFileError, ProjectStoreError, SmartBriefError) as exc:
         raise ChatServiceError(str(exc)) from exc
 
+    cognitive_result = await run_cognitive_loop(
+        latest_user_message,
+        understanding,
+        trusted_actions=trusted_actions,
+        channel=channel,
+    )
+    if cognitive_result.handled and cognitive_result.message:
+        return {
+            "message": cognitive_result.message,
+            "saved_memory": None,
+            "pending_action": None,
+        }
+
     try:
         gmail_context_message = latest_user_message
         if understanding.primary_domain == "gmail" and understanding.context_focus:
@@ -712,18 +726,6 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
-        map_response = await build_map_preview_from_message(latest_user_message)
-        if map_response:
-            return {
-                "message": {
-                    "role": "assistant",
-                    "content": map_response["content"],
-                    "web_preview": map_response.get("web_preview"),
-                },
-                "saved_memory": None,
-                "pending_action": None,
-            }
-
         browser_assist_response = open_assisted_browser_from_message(latest_user_message) if trusted_actions else None
         if browser_assist_response:
             return {
@@ -748,7 +750,6 @@ async def process_chat_messages(
     except (
         BrowserActionError,
         BrowserAssistError,
-        MapPreviewError,
         SpotifyAssistError,
         DesktopChatError,
         BeeperAssistantError,
