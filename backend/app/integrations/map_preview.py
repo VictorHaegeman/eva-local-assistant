@@ -70,7 +70,25 @@ KNOWN_PLACES = {
         "lon": -0.1278,
         "bbox": (-0.5103, 51.2868, 0.3340, 51.6919),
     },
+    "londre": {
+        "label": "Londres, Royaume-Uni",
+        "lat": 51.5074,
+        "lon": -0.1278,
+        "bbox": (-0.5103, 51.2868, 0.3340, 51.6919),
+    },
+    "londers": {
+        "label": "Londres, Royaume-Uni",
+        "lat": 51.5074,
+        "lon": -0.1278,
+        "bbox": (-0.5103, 51.2868, 0.3340, 51.6919),
+    },
     "london": {
+        "label": "London, United Kingdom",
+        "lat": 51.5074,
+        "lon": -0.1278,
+        "bbox": (-0.5103, 51.2868, 0.3340, 51.6919),
+    },
+    "londen": {
         "label": "London, United Kingdom",
         "lat": 51.5074,
         "lon": -0.1278,
