@@ -66,6 +66,7 @@ docs/JARVIS_AGENT_RESEARCH.md
 docs/HEARTBEAT.md
 docs/LINKEDIN_ASSISTANT.md
 docs/SMART_BRIEF_INBOX.md
+docs/EVA_COGNITIVE_AUTONOMY.md
 ```
 
 Elle organise Eva en grandes etapes:
@@ -111,7 +112,10 @@ Plan de travail autonomie:
 
 ```text
 docs/EVA_AUTONOMY_WORKPLAN.md
+docs/EVA_COGNITIVE_AUTONOMY.md
 ```
+
+`docs/EVA_COGNITIVE_AUTONOMY.md` decrit la prochaine architecture centrale: comprendre, recuperer le contexte, planifier, agir, verifier, critiquer, reessayer et apprendre. C'est la feuille de route pour qu'Eva reflechisse avant de repondre au lieu de rester un simple LLM avec quelques outils.
 
 Configuration locale utile:
 
