@@ -200,6 +200,33 @@ def classify_user_intent(message: str) -> UserIntent:
             summary="Transformer une idee en workspace local, fichiers projet, prompt Cursor et Git/GitHub.",
         )
 
+    project_work_context = _has_any(text, ("projet", "repo", "repository", "workspace")) and _has_any(
+        text,
+        (
+            "bosser",
+            "travaille",
+            "travailler",
+            "reprends",
+            "reprendre",
+            "continue",
+            "ouvrir",
+            "ouvre",
+            "lance",
+            "switch",
+            "bascule",
+            "retourne",
+        ),
+    )
+    if project_work_context:
+        return UserIntent(
+            name="cursor_work",
+            confidence=0.82,
+            summary=(
+                "Identifier le projet local vise, meme avec un nom approximatif, "
+                "puis ouvrir/preparer une session de travail Cursor."
+            ),
+        )
+
     if _has_any(text, ("cursor", "codex")):
         return UserIntent(
             name="cursor_work",
