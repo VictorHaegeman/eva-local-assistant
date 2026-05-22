@@ -19,6 +19,10 @@ exit /b 1
 :found_project
 for %%I in ("%PROJECT_DIR%.") do set "PROJECT_DIR=%%~fI\"
 
+if exist "%PROJECT_DIR%stop-eva.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%PROJECT_DIR%stop-eva.ps1" -Quiet >nul 2>&1
+)
+
 set "BACKEND_PY=python"
 if exist "%PROJECT_DIR%backend\.venv\Scripts\python.exe" (
   set "BACKEND_PY=%PROJECT_DIR%backend\.venv\Scripts\python.exe"
