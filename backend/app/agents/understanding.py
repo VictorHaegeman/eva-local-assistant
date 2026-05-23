@@ -61,6 +61,10 @@ class UnderstandingFrame:
     required_evidence: tuple[str, ...]
     tool_preference: str
     clarification_question: str = ""
+    reasoning_summary: str = ""
+    reasoning_confidence: float = 0.0
+    reasoning_model: str = ""
+    reasoning_routes: tuple[str, ...] = ()
 
 
 def normalize_understanding_text(text: str) -> str:
@@ -164,7 +168,23 @@ def _domain_from_message(
         return "design"
     if _has_any(normalized, ("clique", "click", "bouton", "appuie", "ecran", "pixels")):
         return "screen"
-    if _has_any(normalized, ("youtube", "video", "brave", "navigateur", "site", "onglet")):
+    if _has_any(
+        normalized,
+        (
+            "youtube",
+            "video",
+            "brave",
+            "navigateur",
+            "site",
+            "onglet",
+            "carte",
+            "cartz",
+            "map",
+            "maps",
+            "google maps",
+            "google earth",
+        ),
+    ):
         return "browser"
     if _has_any(normalized, ("cherche sur internet", "recherche internet", "va sur internet", "trouve sur internet")):
         return "web"
@@ -400,6 +420,12 @@ def format_understanding_context(frame: UnderstandingFrame) -> str:
         lines.append(frame.context_focus or "Aucun contexte precedent disponible.")
     if frame.clarification_question:
         lines.append(f"Question de clarification: {frame.clarification_question}")
+    if frame.reasoning_summary:
+        lines.append("Second regard local Ollama:")
+        lines.append(f"- Synthese: {frame.reasoning_summary}")
+        lines.append(f"- Confiance: {round(frame.reasoning_confidence * 100)}%")
+        if frame.reasoning_routes:
+            lines.append(f"- Routes considerees: {', '.join(frame.reasoning_routes)}")
     lines.append(
         "Ne recite pas ce cadre. Utilise-le pour choisir l'outil, lire les bonnes sources, "
         "eviter l'invention et dire clairement ce qui est reellement fait."
@@ -442,4 +468,8 @@ def understanding_to_dict(frame: UnderstandingFrame) -> dict[str, object]:
         "required_evidence": list(frame.required_evidence),
         "tool_preference": frame.tool_preference,
         "clarification_question": frame.clarification_question,
+        "reasoning_summary": frame.reasoning_summary,
+        "reasoning_confidence": frame.reasoning_confidence,
+        "reasoning_model": frame.reasoning_model,
+        "reasoning_routes": list(frame.reasoning_routes),
     }

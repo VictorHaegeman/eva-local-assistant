@@ -44,7 +44,12 @@ class Settings:
     app_name: str = os.getenv("APP_NAME", "Eva Local Assistant")
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     ollama_model: str = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    ollama_reasoning_model: str = os.getenv(
+        "OLLAMA_REASONING_MODEL",
+        os.getenv("OLLAMA_MODEL", "llama3.1:8b"),
+    )
     ollama_timeout_seconds: float = _env_float("OLLAMA_TIMEOUT_SECONDS", 90.0)
+    ollama_reasoning_timeout_seconds: float = _env_float("OLLAMA_REASONING_TIMEOUT_SECONDS", 24.0)
     ollama_temperature: float = _env_float("OLLAMA_TEMPERATURE", 0.7)
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     eva_api_token: str = os.getenv("EVA_API_TOKEN", "")
@@ -106,6 +111,12 @@ class Settings:
     eva_cursor_agent_enabled: bool = _env_bool("EVA_CURSOR_AGENT_ENABLED", True)
     eva_cursor_agent_background: bool = _env_bool("EVA_CURSOR_AGENT_BACKGROUND", True)
     eva_telegram_context_messages: int = _env_int("EVA_TELEGRAM_CONTEXT_MESSAGES", 16)
+    eva_reasoning_enabled: bool = _env_bool("EVA_REASONING_ENABLED", True)
+    eva_reasoning_min_confidence: float = _env_float("EVA_REASONING_MIN_CONFIDENCE", 0.55)
+    eva_reasoning_force_structured_trace: bool = _env_bool(
+        "EVA_REASONING_FORCE_STRUCTURED_TRACE",
+        True,
+    )
     eva_projects_dir: str = os.getenv("EVA_PROJECTS_DIR", r"C:\Users\victo\Desktop\Cursor")
     eva_project_factory_auto_execute: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_EXECUTE", True)
     eva_project_factory_auto_commit: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_COMMIT", True)

@@ -14,6 +14,11 @@ IntentName = Literal[
     "project_factory",
     "cursor_work",
     "local_status",
+    "browser_or_video",
+    "spotify",
+    "desktop_control",
+    "beeper_messages",
+    "web_search",
     "generic_chat",
 ]
 
@@ -154,6 +159,71 @@ def classify_user_intent(message: str) -> UserIntent:
             name="calendar_read",
             confidence=0.84,
             summary="Lire les prochains evenements Google Calendar en lecture seule.",
+        )
+
+    if _has_any(text, ("spotify", "musique", "playlist", "lance une chanson", "mets ")):
+        return UserIntent(
+            name="spotify",
+            confidence=0.86,
+            summary="Ouvrir Spotify ou lancer une recherche musicale locale selon la demande.",
+        )
+
+    if _has_any(text, ("beeper", "message beeper", "messages beeper", "mes messages")):
+        return UserIntent(
+            name="beeper_messages",
+            confidence=0.82,
+            summary="Ouvrir ou lire Beeper via le pont local/vision selon la demande.",
+        )
+
+    if _has_any(text, ("clique", "click", "appuie", "presse", "touche", "play", "pause")):
+        return UserIntent(
+            name="desktop_control",
+            confidence=0.8,
+            summary="Interagir avec l'interface locale ou envoyer une commande clavier/souris sure.",
+            caution="Les actions visuelles doivent etre verifiees par capture locale quand elles sont ambigues.",
+        )
+
+    if _has_any(
+        text,
+        (
+            "youtube",
+            "video",
+            "tuto",
+            "tutoriel",
+            "carte",
+            "cartz",
+            "map",
+            "maps",
+            "google maps",
+            "google earth",
+            "ouvre brave",
+            "ouvre le navigateur",
+            "ouvre google",
+            "ouvre un onglet",
+            "site web",
+        ),
+    ):
+        return UserIntent(
+            name="browser_or_video",
+            confidence=0.82,
+            summary="Ouvrir le bon site, une carte ou une video dans Brave apres interpretation de la demande.",
+        )
+
+    if _has_any(
+        text,
+        (
+            "cherche sur internet",
+            "recherche internet",
+            "va sur internet",
+            "trouve sur internet",
+            "cherche web",
+            "recherche web",
+        ),
+    ):
+        return UserIntent(
+            name="web_search",
+            confidence=0.84,
+            summary="Faire une recherche web gratuite puis filtrer les resultats utiles.",
         )
 
     reply_context = _has_any(

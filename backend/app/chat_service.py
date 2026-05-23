@@ -4,7 +4,8 @@ from app.actions.action_detector import create_pending_action_from_message
 from app.actions.action_store import ActionStoreError, action_to_dict, list_actions
 from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
-from app.cognition.cognitive_loop import run_cognitive_loop
+from app.cognition.cognitive_loop import build_reasoning_trace, run_cognitive_loop
+from app.cognition.structured_interpreter import refine_understanding_with_ollama
 from app.config import settings
 from app.files.file_context import detect_file_context
 from app.files.local_files import LocalFileError, roots_to_dicts
@@ -268,6 +269,12 @@ async def process_chat_messages(
     understanding = build_understanding_frame(
         latest_user_message,
         conversation_context=conversation_context,
+        trusted_actions=trusted_actions,
+    )
+    understanding = await refine_understanding_with_ollama(
+        latest_user_message,
+        conversation_context=conversation_context,
+        base_frame=understanding,
         trusted_actions=trusted_actions,
     )
     user_intent = understanding.intent
@@ -865,7 +872,13 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     return {
-        "message": {"role": "assistant", "content": answer},
+        "message": {
+            "role": "assistant",
+            "content": answer,
+            "cognitive_trace": build_reasoning_trace(understanding)
+            if settings.eva_reasoning_force_structured_trace
+            else None,
+        },
         "saved_memory": saved_memory,
         "pending_action": None,
     }

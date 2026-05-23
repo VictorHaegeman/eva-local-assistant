@@ -217,6 +217,22 @@ def _assistant_payload(
     return payload
 
 
+def build_reasoning_trace(
+    understanding: UnderstandingFrame,
+    selected_route: str | None = None,
+) -> dict[str, object]:
+    state = CognitiveState(
+        goal=goal_frame_from_understanding(understanding),
+        channel="web",
+        trusted_actions=understanding.action_plan.trusted_actions,
+    )
+    return _trace_payload(
+        understanding,
+        state,
+        selected_route or str(understanding.action_plan.route),
+    )
+
+
 async def _map_preview(
     message: str,
     context: str = "",

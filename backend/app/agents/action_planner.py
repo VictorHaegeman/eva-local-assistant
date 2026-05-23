@@ -73,6 +73,13 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
             "video",
             "tuto",
             "tutoriel",
+            "carte",
+            "cartz",
+            "map",
+            "maps",
+            "google maps",
+            "google earth",
+            "plan de",
             "ouvre brave",
             "ouvre le navigateur",
             "ouvre google",
@@ -145,15 +152,30 @@ def build_action_plan(
     trusted_actions: bool,
 ) -> ActionPlan:
     route = _route_from_message(message, intent)
+    return build_action_plan_for_route(
+        route=route,
+        goal=intent.summary,
+        confidence=intent.confidence,
+        trusted_actions=trusted_actions,
+        caution=intent.caution,
+    )
+
+
+def build_action_plan_for_route(
+    route: PlanRoute,
+    goal: str,
+    confidence: float,
+    trusted_actions: bool,
+    caution: str = "",
+) -> ActionPlan:
     policy_level = _policy_for_route(route)
     tool = _tool_for_route(route)
     can_use_tool = trusted_actions or policy_level == "read_only"
-    caution = intent.caution
 
     steps: list[ActionPlanStep] = [
         ActionPlanStep("Comprendre la demande reelle de Victor.", status="done"),
         ActionPlanStep(
-            f"Choisir la route: {route} avec confiance {round(intent.confidence * 100)}%.",
+            f"Choisir la route: {route} avec confiance {round(confidence * 100)}%.",
             status="done",
         ),
     ]
@@ -188,8 +210,8 @@ def build_action_plan(
 
     return ActionPlan(
         route=route,
-        goal=intent.summary,
-        confidence=intent.confidence,
+        goal=goal,
+        confidence=confidence,
         policy_level=policy_level,
         trusted_actions=trusted_actions,
         steps=tuple(steps),

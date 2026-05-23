@@ -1625,6 +1625,42 @@ Eva doit raisonner comme un operateur local:
 
 Cette boucle est implementee dans `backend/app/agents/action_planner.py`. Elle produit un plan interne pour chaque prompt: objectif interprete, route d'action, outil cible, niveau de securite et etapes. Eva ne doit pas le reciter a chaque reponse; il sert a eviter les reactions betes du type "je ne peux pas ouvrir d'application" alors qu'un outil local existe.
 
+## Boucle cognitive locale
+
+Eva utilise maintenant une boucle plus proche des architectures d'agents modernes, mais adaptee en local:
+
+```text
+message Victor
+-> interpretation deterministe
+-> second regard Ollama en JSON structure
+-> choix de route
+-> politique de securite
+-> outil local
+-> verification
+-> reponse courte + trace visible
+```
+
+Les inspirations techniques sont publiques: les agents modernes combinent modele + outils + garde-fous + execution + trace. OpenAI decrit les agents comme des LLMs equipes d'instructions et d'outils, avec guardrails, sessions et tracing. Les outils/function calling servent a connecter le modele a des donnees ou actions reelles. Anthropic et Google documentent le meme principe: le modele choisit une fonction/outillage, l'application execute, puis renvoie le resultat. Eva reprend ce pattern sans API OpenAI, sans cloud obligatoire et avec Ollama local.
+
+Configuration:
+
+```env
+OLLAMA_REASONING_MODEL=llama3.1:8b
+OLLAMA_REASONING_TIMEOUT_SECONDS=24
+EVA_REASONING_ENABLED=true
+EVA_REASONING_MIN_CONFIDENCE=0.55
+EVA_REASONING_FORCE_STRUCTURED_TRACE=true
+```
+
+Ce que ca change concretement:
+
+- Eva ne se contente plus du premier routeur par mots-cles;
+- Ollama fait un second passage structure pour comprendre l'objectif reel;
+- une action locale sure peut etre executee sans te redemander;
+- une action critique reste protegee: envoi, publication, suppression, `git push`, achat/paiement;
+- meme une reponse simple peut afficher une trace de decision dans le chat;
+- Eva evite de tomber dans les reponses generiques du type "je ne peux pas ouvrir d'application" quand un outil local existe.
+
 Important: les consignes sur le comportement d'Eva ne sont pas des souvenirs personnels. La memoire auto ignore les phrases de pilotage du type "je veux que Eva..." ou "Eva doit..." afin de garder une memoire propre. Les souvenirs utiles concernent Victor, ses preferences, ses projets et ses objectifs.
 
 Eva ne depend pas de ChatGPT ni de l'API OpenAI. Si un jour Victor veut utiliser ChatGPT web comme outil externe, cela devra rester une option manuelle ou une integration future explicite, pas une dependance de base.

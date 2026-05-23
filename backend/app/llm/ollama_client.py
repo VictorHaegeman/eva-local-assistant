@@ -1,4 +1,6 @@
-from typing import Literal, TypedDict
+import json
+import re
+from typing import Any, Literal, TypedDict
 
 import httpx
 
@@ -21,6 +23,24 @@ class OllamaClientError(Exception):
 class ChatMessage(TypedDict):
     role: Literal["user", "assistant"]
     content: str
+
+
+def _extract_json_object(text: str) -> dict[str, Any]:
+    stripped = text.strip()
+    try:
+        data = json.loads(stripped)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", stripped, flags=re.DOTALL)
+        if not match:
+            raise OllamaClientError("Ollama n'a pas renvoye de JSON exploitable.")
+        try:
+            data = json.loads(match.group(0))
+        except json.JSONDecodeError as exc:
+            raise OllamaClientError("Ollama a renvoye un JSON invalide.") from exc
+
+    if not isinstance(data, dict):
+        raise OllamaClientError("Ollama a renvoye un JSON inattendu.")
+    return data
 
 
 def _extract_ollama_error(response: httpx.Response) -> str:
@@ -146,6 +166,81 @@ async def ask_ollama(
         raise OllamaClientError("Ollama n'a pas renvoye de reponse exploitable.")
 
     return content
+
+
+async def ask_ollama_json(
+    system_prompt: str,
+    user_prompt: str,
+    model: str | None = None,
+    timeout_seconds: float | None = None,
+    temperature: float = 0.1,
+) -> dict[str, Any]:
+    payload = {
+        "model": model or settings.ollama_reasoning_model,
+        "stream": False,
+        "format": "json",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "options": {
+            "temperature": temperature,
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.ollama_base_url,
+            timeout=timeout_seconds or settings.ollama_reasoning_timeout_seconds,
+        ) as client:
+            response = await client.post("/api/chat", json=payload)
+            response.raise_for_status()
+    except httpx.ConnectError as exc:
+        raise OllamaClientError(
+            "Ollama n'est pas lance ou n'est pas accessible pour l'interpretation locale."
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise OllamaClientError(
+            "Le modele de raisonnement Ollama ne repond pas assez vite."
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        error_text = _extract_ollama_error(exc.response)
+        selected_model = model or settings.ollama_reasoning_model
+        if exc.response.status_code == 404 or _looks_like_missing_model(error_text):
+            raise OllamaClientError(
+                f"Le modele de raisonnement Ollama '{selected_model}' n'est pas installe. "
+                f"Lance: ollama pull {selected_model}"
+            ) from exc
+        detail = f" Detail Ollama: {error_text}" if error_text else ""
+        raise OllamaClientError(
+            f"L'API Ollama a refuse l'interpretation JSON avec HTTP {exc.response.status_code}.{detail}"
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise OllamaClientError("Impossible de contacter l'API Ollama pour le JSON.") from exc
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise OllamaClientError("Ollama JSON a renvoye une reponse non JSON.") from exc
+
+    if isinstance(data, dict) and data.get("error"):
+        error_text = str(data["error"])
+        selected_model = model or settings.ollama_reasoning_model
+        if _looks_like_missing_model(error_text):
+            raise OllamaClientError(
+                f"Le modele de raisonnement Ollama '{selected_model}' n'est pas installe. "
+                f"Lance: ollama pull {selected_model}"
+            )
+        raise OllamaClientError(f"Erreur Ollama JSON: {error_text}")
+
+    if not isinstance(data, dict):
+        raise OllamaClientError("Ollama JSON a renvoye une reponse inattendue.")
+
+    content = data.get("message", {}).get("content", "").strip()
+    if not content:
+        raise OllamaClientError("Ollama JSON n'a pas renvoye de contenu exploitable.")
+
+    return _extract_json_object(content)
 
 
 async def ask_ollama_vision(
