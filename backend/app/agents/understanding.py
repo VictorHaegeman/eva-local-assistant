@@ -3,7 +3,7 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
-from app.agents.action_planner import ActionPlan, build_action_plan
+from app.agents.action_planner import ActionPlan, PlanRoute, build_action_plan, build_action_plan_for_route
 from app.agents.intent_router import UserIntent, classify_user_intent
 
 
@@ -144,12 +144,18 @@ def _domain_from_message(
         return "terminal"
     if intent.name == "project_factory":
         return "project"
+    context_text = normalize_understanding_text(_recent_context_summary(conversation_context or []))
+    if _is_followup(normalized, conversation_context or []):
+        explicit_project = _has_any(normalized, ("cursor", "codex", "projet", "workspace")) or bool(
+            re.search(r"\brepo(?:sitory)?\b", normalized)
+        )
+        if not explicit_project and _has_any(context_text, ("gmail", "mail", "email", "inbox", "expediteur", "objet")):
+            return "gmail"
     if intent.name == "cursor_work":
         return "cursor"
     if intent.name == "local_status":
         return "status"
 
-    context_text = normalize_understanding_text(_recent_context_summary(conversation_context or []))
     if _is_followup(normalized, conversation_context or []):
         if _has_any(context_text, ("gmail", "mail", "email", "inbox", "expediteur", "objet")):
             return "gmail"
@@ -191,6 +197,44 @@ def _domain_from_message(
     if _has_any(normalized, ("memoire", "souviens", "retiens", "apprends")):
         return "memory"
     return "chat"
+
+
+def _route_for_understanding(
+    domain: PrimaryDomain,
+    outcome: ExpectedOutcome,
+    fallback_route: str,
+) -> PlanRoute:
+    if domain == "gmail":
+        if outcome == "read_then_audit":
+            return "gmail_reply_audit"
+        if outcome == "draft":
+            return "gmail_reply_draft"
+        return "gmail_read"
+    if domain == "calendar":
+        return "calendar_read"
+    if domain == "google_setup":
+        return "google_oauth_setup"
+    if domain == "screen":
+        return "screen_read"
+    if domain == "terminal":
+        return "terminal_error"
+    if domain == "project":
+        return "project_factory"
+    if domain == "cursor":
+        return "cursor_work"
+    if domain == "browser":
+        return "browser_or_video"
+    if domain == "spotify":
+        return "spotify"
+    if domain == "desktop":
+        return "desktop_control"
+    if domain == "beeper":
+        return "beeper_messages"
+    if domain == "web":
+        return "web_search"
+    if domain == "status":
+        return "local_status"
+    return fallback_route  # type: ignore[return-value]
 
 
 def _expected_outcome(normalized: str, intent: UserIntent, domain: PrimaryDomain) -> ExpectedOutcome:
@@ -376,6 +420,15 @@ def build_understanding_frame(
     action_plan = build_action_plan(message, intent, trusted_actions=trusted_actions)
     domain = _domain_from_message(normalized, intent, context)
     outcome = _expected_outcome(normalized, intent, domain)
+    route = _route_for_understanding(domain, outcome, str(action_plan.route))
+    if route != action_plan.route:
+        action_plan = build_action_plan_for_route(
+            route=route,
+            goal=_interpreted_goal(message, intent, domain, outcome),
+            confidence=max(intent.confidence, 0.82),
+            trusted_actions=trusted_actions,
+            caution=intent.caution,
+        )
     context_summary = _recent_context_summary(context)
     requires_context = _is_followup(normalized, context) or domain in {
         "gmail",

@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from app.actions.action_detector import create_pending_action_from_message
@@ -148,7 +149,9 @@ def _remove_bad_tool_refusal(answer: str, user_message: str) -> str:
 
 def _should_attach_project_context(message: str) -> bool:
     normalized = message.lower()
-    return any(marker in normalized for marker in PROJECT_CONTEXT_MARKERS)
+    if any(marker in normalized for marker in ("cursor", "codex", "projet", "code", "bug", "readme", "branche", "pr ")):
+        return True
+    return bool(re.search(r"\b(?:repo|repository)\b", normalized))
 
 
 def _should_create_project_factory_plan(message: str) -> bool:

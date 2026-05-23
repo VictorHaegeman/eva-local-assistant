@@ -35,7 +35,10 @@ def _contains_fake_action_claim(answer: str) -> bool:
 
 def _likely_action_domain(user_message: str) -> str:
     normalized = _normalize(user_message)
-    if any(marker in normalized for marker in ("projet", "cursor", "codex", "repo", "code")):
+    if any(marker in normalized for marker in ("projet", "cursor", "codex", "code")) or re.search(
+        r"\b(?:repo|repository)\b",
+        normalized,
+    ):
         return "projet"
     if any(marker in normalized for marker in ("mail", "gmail", "email")):
         return "gmail"

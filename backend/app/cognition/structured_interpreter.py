@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, replace
 from typing import Any, cast
 
@@ -282,6 +283,18 @@ def _should_accept_interpretation(
     interpretation: StructuredInterpretation,
     base_frame: UnderstandingFrame,
 ) -> bool:
+    normalized = base_frame.normalized_message
+    mail_context = bool(re.search(r"\b(?:mail|mails|email|emails|gmail)\b", normalized))
+    cursor_context = any(marker in normalized for marker in ("cursor", "codex", "projet", "workspace")) or bool(
+        re.search(r"\brepo(?:sitory)?\b", normalized)
+    )
+
+    if base_frame.primary_domain == "gmail" and interpretation.route == "cursor_work" and not cursor_context:
+        return False
+
+    if mail_context and interpretation.route == "cursor_work" and not cursor_context:
+        return False
+
     if interpretation.confidence < settings.eva_reasoning_min_confidence:
         return False
 

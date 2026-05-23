@@ -1,3 +1,4 @@
+import re
 import unicodedata
 from dataclasses import dataclass
 from typing import Literal
@@ -44,6 +45,33 @@ def _has_any(text: str, markers: tuple[str, ...]) -> bool:
     return any(marker in text for marker in markers)
 
 
+def _has_mail_word(text: str) -> bool:
+    return bool(re.search(r"\b(?:mail|mails|email|emails|e-mail|e-mails)\b", text))
+
+
+def _has_project_word(text: str) -> bool:
+    return bool(re.search(r"\b(?:projet|projets|repo|repository|workspace)\b", text))
+
+
+def _has_reply_context(text: str) -> bool:
+    return _has_any(
+        text,
+        (
+            "repond",
+            "reponse",
+            "brouillon",
+            "redige",
+            "ecris",
+            "ecrit",
+            "prepare",
+            "pret a etre envoye",
+            "pret a envoyer",
+            "a approuver",
+            "bouton repondre",
+        ),
+    )
+
+
 def classify_user_intent(message: str) -> UserIntent:
     text = normalize_intent_text(message)
 
@@ -88,7 +116,7 @@ def classify_user_intent(message: str) -> UserIntent:
             caution="La capture reste locale et peut contenir des donnees privees.",
         )
 
-    gmail_context = _has_any(
+    gmail_context = _has_mail_word(text) or _has_any(
         text,
         ("gmail", "mes mails", "mes emails", "boite mail", "dernier mail", "dernier email", "le mail", "ce mail", "au mail", "mails"),
     )
@@ -110,6 +138,13 @@ def classify_user_intent(message: str) -> UserIntent:
             name="gmail_reply_audit",
             confidence=0.9,
             summary="Lire les mails reels correspondant au sujet demande et verifier ceux sans reponse de Victor.",
+        )
+
+    if gmail_context and _has_reply_context(text):
+        return UserIntent(
+            name="gmail_reply_draft",
+            confidence=0.91,
+            summary="Lire le mail reel, ouvrir le fil Gmail si demande, puis preparer une reponse basee sur les mails envoyes de Victor.",
         )
 
     google_context = _has_any(
@@ -196,6 +231,7 @@ def classify_user_intent(message: str) -> UserIntent:
             "maps",
             "google maps",
             "google earth",
+            "brave",
             "ouvre brave",
             "ouvre le navigateur",
             "ouvre google",
@@ -226,21 +262,7 @@ def classify_user_intent(message: str) -> UserIntent:
             summary="Faire une recherche web gratuite puis filtrer les resultats utiles.",
         )
 
-    reply_context = _has_any(
-        text,
-        (
-            "repond",
-            "reponse",
-            "brouillon",
-            "redige",
-            "ecris",
-            "ecrit",
-            "pret a etre envoye",
-            "pret a envoyer",
-            "a approuver",
-            "bouton repondre",
-        ),
-    )
+    reply_context = _has_reply_context(text)
     if gmail_context:
         if reply_context:
             return UserIntent(
@@ -270,7 +292,7 @@ def classify_user_intent(message: str) -> UserIntent:
             summary="Transformer une idee en workspace local, fichiers projet, prompt Cursor et Git/GitHub.",
         )
 
-    project_work_context = _has_any(text, ("projet", "repo", "repository", "workspace")) and _has_any(
+    project_work_context = _has_project_word(text) and _has_any(
         text,
         (
             "bosser",
