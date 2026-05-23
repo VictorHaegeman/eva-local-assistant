@@ -196,6 +196,10 @@ def _google_earth_url(label: str) -> str:
     return f"https://earth.google.com/web/search/{quote_plus(label)}"
 
 
+def _google_maps_url(label: str, lat: float, lon: float) -> str:
+    return f"https://www.google.com/maps/search/?api=1&query={quote_plus(f'{lat},{lon} {label}')}"
+
+
 async def _geocode_place(query: str) -> dict[str, object] | None:
     normalized = _normalize(query)
     if normalized in KNOWN_PLACES:
@@ -267,6 +271,8 @@ async def build_map_preview_from_message(message: str, context: str = "") -> dic
         }
 
     label = str(place["label"])
+    google_maps_url = _google_maps_url(label, float(place["lat"]), float(place["lon"]))
+    google_earth_url = _google_earth_url(label)
     if _wants_3d(message):
         return {
             "content": (
@@ -278,7 +284,9 @@ async def build_map_preview_from_message(message: str, context: str = "") -> dic
                 "provider": "Google Earth",
                 "title": f"Vue 3D - {label}",
                 "label": label,
-                "url": _google_earth_url(label),
+                "url": google_earth_url,
+                "google_maps_url": google_maps_url,
+                "google_earth_url": google_earth_url,
                 "lat": place["lat"],
                 "lon": place["lon"],
                 "source": place["source"],
@@ -297,6 +305,8 @@ async def build_map_preview_from_message(message: str, context: str = "") -> dic
             "label": label,
             "url": place["url"],
             "embed_url": place["embed_url"],
+            "google_maps_url": google_maps_url,
+            "google_earth_url": google_earth_url,
             "lat": place["lat"],
             "lon": place["lon"],
             "source": place["source"],

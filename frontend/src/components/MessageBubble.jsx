@@ -1,8 +1,49 @@
+import { ExternalLink, MapPinned, Maximize2, Minimize2, Navigation, Route, Satellite } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+
+function buildMapLinks(webPreview) {
+  const label = encodeURIComponent(webPreview?.label || "carte");
+  const hasCoords = Number.isFinite(Number(webPreview?.lat)) && Number.isFinite(Number(webPreview?.lon));
+  const coords = hasCoords ? `${webPreview.lat},${webPreview.lon}` : label;
+
+  return {
+    osm: webPreview?.url || `https://www.openstreetmap.org/search?query=${label}`,
+    googleMaps:
+      webPreview?.google_maps_url ||
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}`,
+    directions:
+      webPreview?.directions_url ||
+      `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(coords)}`,
+    googleEarth:
+      webPreview?.google_earth_url ||
+      `https://earth.google.com/web/search/${label}`,
+  };
+}
+
+
 function CognitiveTrace({ trace }) {
   const stages = Array.isArray(trace?.stages) ? trace.stages : [];
   const routeStage = stages.find((stage) => Array.isArray(stage.options));
   const routeOptions = routeStage?.options || [];
   const evidence = Array.isArray(trace?.evidence) ? trace.evidence : [];
+  const [reveal, setReveal] = useState(1);
+  const maxReveal = stages.length + (routeOptions.length ? 1 : 0) + (evidence.length ? 1 : 0);
+
+  useEffect(() => {
+    setReveal(1);
+    const timer = window.setInterval(() => {
+      setReveal((current) => {
+        if (current >= maxReveal) {
+          window.clearInterval(timer);
+          return current;
+        }
+        return current + 1;
+      });
+    }, 420);
+
+    return () => window.clearInterval(timer);
+  }, [maxReveal]);
 
   if (!stages.length) return null;
 
@@ -22,7 +63,10 @@ function CognitiveTrace({ trace }) {
 
       <div className="trace-stage-grid">
         {stages.map((stage, index) => (
-          <div className={`trace-stage ${stage.status || "pending"}`} key={stage.key || stage.label}>
+          <div
+            className={`trace-stage ${stage.status || "pending"} ${index < reveal ? "visible" : "pending-visual"}`}
+            key={stage.key || stage.label}
+          >
             <span>Stage {String(index + 1).padStart(2, "0")}</span>
             <strong>{stage.label}</strong>
             <small>{stage.detail}</small>
@@ -30,7 +74,7 @@ function CognitiveTrace({ trace }) {
         ))}
       </div>
 
-      {routeOptions.length > 0 && (
+      {routeOptions.length > 0 && reveal > stages.length && (
         <div className="trace-routes">
           {routeOptions.map((option) => (
             <div className={`trace-route ${option.selected ? "selected" : ""}`} key={option.key || option.label}>
@@ -41,7 +85,7 @@ function CognitiveTrace({ trace }) {
         </div>
       )}
 
-      {evidence.length > 0 && (
+      {evidence.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) && (
         <div className="trace-evidence">
           {evidence.slice(0, 3).map((item) => (
             <span key={item}>{item}</span>
@@ -60,6 +104,8 @@ export function MessageBubble({ message }) {
   const cognitiveTrace = message.cognitiveTrace || message.cognitive_trace || null;
   const isMapPreview = webPreview?.type === "map" && webPreview?.embed_url;
   const isExternalPreview = webPreview && !isMapPreview && webPreview.url;
+  const mapLinks = useMemo(() => buildMapLinks(webPreview), [webPreview]);
+  const [mapExpanded, setMapExpanded] = useState(false);
 
   return (
     <article className={`message-row ${message.role}`}>
@@ -111,23 +157,70 @@ export function MessageBubble({ message }) {
           )}
 
           {isMapPreview && (
-            <div className="web-preview-card map-preview-card">
+            <div className={`web-preview-card map-preview-card ${mapExpanded ? "expanded" : ""}`}>
               <div className="web-preview-head">
-                <span>{webPreview.provider || "Carte"}</span>
-                <strong>{webPreview.title || webPreview.label || "Carte interactive"}</strong>
+                <span>
+                  <MapPinned size={15} aria-hidden="true" />
+                  {webPreview.provider || "Carte"}
+                </span>
+                <strong>{webPreview.label || webPreview.title || "Carte interactive"}</strong>
+              </div>
+              <div className="map-meta-row">
+                <span>Carte interactive locale</span>
+                <span>{Number(webPreview.lat).toFixed(4)}, {Number(webPreview.lon).toFixed(4)}</span>
+              </div>
+              <div className="web-preview-actions map-primary-actions">
+                <button
+                  className="primary"
+                  type="button"
+                  onClick={() => window.open(mapLinks.googleMaps, "_blank", "noopener,noreferrer")}
+                >
+                  <Navigation size={16} aria-hidden="true" />
+                  Ouvrir Google Maps
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open(mapLinks.directions, "_blank", "noopener,noreferrer")}
+                >
+                  <Route size={16} aria-hidden="true" />
+                  Itineraire
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapExpanded((current) => !current)}
+                >
+                  {mapExpanded ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
+                  {mapExpanded ? "Reduire" : "Agrandir"}
+                </button>
               </div>
               <iframe
                 title={webPreview.title || "Carte interactive"}
                 src={webPreview.embed_url}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
               />
               <div className="web-preview-actions">
                 <button
                   type="button"
-                  onClick={() => window.open(webPreview.url, "_blank", "noopener,noreferrer")}
+                  onClick={() => window.open(mapLinks.osm, "_blank", "noopener,noreferrer")}
                 >
-                  Ouvrir dans Brave
+                  <ExternalLink size={16} aria-hidden="true" />
+                  OSM complet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open(mapLinks.googleMaps, "_blank", "noopener,noreferrer")}
+                >
+                  <Navigation size={16} aria-hidden="true" />
+                  Google Maps
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open(mapLinks.googleEarth, "_blank", "noopener,noreferrer")}
+                >
+                  <Satellite size={16} aria-hidden="true" />
+                  Vue 3D
                 </button>
               </div>
             </div>
@@ -147,6 +240,7 @@ export function MessageBubble({ message }) {
                   type="button"
                   onClick={() => window.open(webPreview.url, "_blank", "noopener,noreferrer")}
                 >
+                  <ExternalLink size={16} aria-hidden="true" />
                   Ouvrir dans Brave
                 </button>
               </div>

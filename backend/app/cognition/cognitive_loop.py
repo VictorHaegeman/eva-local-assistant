@@ -109,7 +109,11 @@ def _requires_trusted(route: str) -> bool:
     return route in {"browser_or_video", "cursor_work", "spotify", "desktop_control", "beeper_messages"}
 
 
-def _route_options(selected_route: str, understanding: UnderstandingFrame) -> list[dict[str, object]]:
+def _route_options(
+    selected_route: str,
+    understanding: UnderstandingFrame,
+    selected_confidence: float,
+) -> list[dict[str, object]]:
     base_options = [selected_route]
     domain = understanding.primary_domain
 
@@ -131,7 +135,7 @@ def _route_options(selected_route: str, understanding: UnderstandingFrame) -> li
         if option not in unique_options:
             unique_options.append(option)
 
-    confidence = max(0.3, min(0.98, understanding.intent.confidence))
+    confidence = max(0.3, min(0.98, selected_confidence))
     options: list[dict[str, object]] = []
     for index, option in enumerate(unique_options[:4]):
         score = confidence - (index * 0.14)
@@ -160,7 +164,7 @@ def _trace_payload(
     selected_label = ROUTE_LABELS.get(selected_route, selected_route.replace("_", " "))
 
     return {
-        "title": "Decision pipeline",
+        "title": "Eva pipeline",
         "summary": state.goal.goal,
         "selected": selected_label,
         "confidence": round(max(0.0, min(1.0, confidence)) * 100),
@@ -168,26 +172,26 @@ def _trace_payload(
         "stages": [
             {
                 "key": "classify",
-                "label": "Classify",
+                "label": "Comprendre",
                 "status": "done",
                 "detail": f"{understanding.primary_domain} / {understanding.expected_outcome}",
             },
             {
                 "key": "route",
-                "label": "Route",
+                "label": "Choisir",
                 "status": "done",
                 "detail": selected_label,
-                "options": _route_options(selected_route, understanding),
+                "options": _route_options(selected_route, understanding, confidence),
             },
             {
                 "key": "execute",
-                "label": "Process",
+                "label": "Executer",
                 "status": "done" if latest_result and latest_result.status in {"success", "partial"} else status,
                 "detail": latest_result.tool if latest_result else understanding.tool_preference,
             },
             {
                 "key": "verify",
-                "label": "Verify",
+                "label": "Verifier",
                 "status": "done" if evidence else "blocked",
                 "detail": evidence[0] if evidence else "preuve absente",
             },
