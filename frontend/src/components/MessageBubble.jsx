@@ -1,4 +1,14 @@
-import { ExternalLink, MapPinned, Maximize2, Minimize2, Navigation, Route, Satellite } from "lucide-react";
+import {
+  Crosshair,
+  ExternalLink,
+  MapPinned,
+  Maximize2,
+  Minimize2,
+  Navigation,
+  Play,
+  Route,
+  Satellite,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 
@@ -106,6 +116,9 @@ export function MessageBubble({ message }) {
   const isExternalPreview = webPreview && !isMapPreview && webPreview.url;
   const mapLinks = useMemo(() => buildMapLinks(webPreview), [webPreview]);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const latitude = Number(webPreview?.lat);
+  const longitude = Number(webPreview?.lon);
+  const hasMapCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
 
   return (
     <article className={`message-row ${message.role}`}>
@@ -158,16 +171,15 @@ export function MessageBubble({ message }) {
 
           {isMapPreview && (
             <div className={`web-preview-card map-preview-card ${mapExpanded ? "expanded" : ""}`}>
-              <div className="web-preview-head">
-                <span>
-                  <MapPinned size={15} aria-hidden="true" />
-                  {webPreview.provider || "Carte"}
-                </span>
-                <strong>{webPreview.label || webPreview.title || "Carte interactive"}</strong>
-              </div>
-              <div className="map-meta-row">
-                <span>Carte interactive locale</span>
-                <span>{Number(webPreview.lat).toFixed(4)}, {Number(webPreview.lon).toFixed(4)}</span>
+              <div className="jarvis-map-topbar">
+                <div>
+                  <span>Eva tactical map</span>
+                  <strong>{webPreview.label || webPreview.title || "Carte interactive"}</strong>
+                </div>
+                <div className="jarvis-map-chips">
+                  <span>{webPreview.provider || "Carte"}</span>
+                  {hasMapCoords && <span>{latitude.toFixed(4)}, {longitude.toFixed(4)}</span>}
+                </div>
               </div>
               <div className="web-preview-actions map-primary-actions">
                 <button
@@ -193,13 +205,44 @@ export function MessageBubble({ message }) {
                   {mapExpanded ? "Reduire" : "Agrandir"}
                 </button>
               </div>
-              <iframe
-                title={webPreview.title || "Carte interactive"}
-                src={webPreview.embed_url}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-              />
+              <div className="jarvis-map-display">
+                <iframe
+                  title={webPreview.title || "Carte interactive"}
+                  src={webPreview.embed_url}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+                <div className="jarvis-map-corner top-left" aria-hidden="true" />
+                <div className="jarvis-map-corner top-right" aria-hidden="true" />
+                <div className="jarvis-map-corner bottom-left" aria-hidden="true" />
+                <div className="jarvis-map-corner bottom-right" aria-hidden="true" />
+                <div className="jarvis-map-readout left">
+                  <span>Target</span>
+                  <strong>{webPreview.label || "Position"}</strong>
+                  <small>{hasMapCoords ? `${latitude.toFixed(5)} / ${longitude.toFixed(5)}` : "Coordonnees indisponibles"}</small>
+                </div>
+                <button
+                  className="jarvis-map-play"
+                  type="button"
+                  onClick={() => window.open(mapLinks.googleMaps, "_blank", "noopener,noreferrer")}
+                  aria-label="Ouvrir la carte dans Google Maps"
+                >
+                  <Play size={34} aria-hidden="true" />
+                </button>
+                <div className="jarvis-map-radar" aria-hidden="true">
+                  <span />
+                  <strong>EVA</strong>
+                </div>
+                <div className="jarvis-map-status">
+                  <span>
+                    <Crosshair size={13} aria-hidden="true" />
+                    Lock
+                  </span>
+                  <span>Zoom online</span>
+                  <span>Map layer active</span>
+                </div>
+              </div>
               <div className="web-preview-actions">
                 <button
                   type="button"
