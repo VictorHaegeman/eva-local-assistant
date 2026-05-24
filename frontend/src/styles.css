@@ -463,6 +463,345 @@ button.nav-item:hover {
   box-shadow: inset 0 0 68px rgba(33, 156, 255, 0.035);
 }
 
+.jarvis-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.hud-grid-plane,
+.hud-sweep,
+.hud-noise,
+.hud-corner,
+.hud-vitals,
+.hud-radar,
+.hud-decision-strip,
+.hud-micro-nodes {
+  position: absolute;
+}
+
+.hud-grid-plane {
+  inset: 0;
+  background:
+    linear-gradient(rgba(115, 214, 255, 0.048) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(115, 214, 255, 0.048) 1px, transparent 1px),
+    linear-gradient(rgba(115, 214, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(115, 214, 255, 0.026) 1px, transparent 1px);
+  background-size: 72px 72px, 72px 72px, 18px 18px, 18px 18px;
+  mask-image:
+    linear-gradient(90deg, #000 0 24%, transparent 44%, transparent 56%, #000 76%),
+    linear-gradient(180deg, #000 0 18%, transparent 48%, #000 100%);
+  opacity: 0.72;
+  transform: perspective(900px) rotateX(58deg) translateY(8%);
+  transform-origin: center bottom;
+  animation: hudGridDrift 16s linear infinite;
+}
+
+.hud-sweep {
+  inset: -28% -20%;
+  background:
+    conic-gradient(
+      from 210deg at 50% 48%,
+      transparent 0 58deg,
+      rgba(115, 214, 255, 0.13) 67deg,
+      rgba(33, 156, 255, 0.02) 84deg,
+      transparent 106deg 360deg
+    );
+  opacity: 0.5;
+  animation: hudSweep 10s linear infinite;
+}
+
+.hud-noise {
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 3px,
+      rgba(255, 255, 255, 0.018) 4px,
+      transparent 6px
+    );
+  opacity: 0.36;
+  mix-blend-mode: screen;
+  animation: hudNoise 1.8s steps(5) infinite;
+}
+
+.hud-corner {
+  width: 118px;
+  height: 118px;
+  border-color: rgba(115, 214, 255, 0.18);
+  opacity: 0.78;
+}
+
+.hud-corner-tl {
+  left: 22px;
+  top: 92px;
+  border-left: 1px solid;
+  border-top: 1px solid;
+}
+
+.hud-corner-tr {
+  right: 22px;
+  top: 92px;
+  border-right: 1px solid;
+  border-top: 1px solid;
+}
+
+.hud-corner-bl {
+  left: 22px;
+  bottom: 96px;
+  border-left: 1px solid;
+  border-bottom: 1px solid;
+}
+
+.hud-corner-br {
+  right: 22px;
+  bottom: 96px;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+}
+
+.hud-vitals {
+  top: 92px;
+  display: grid;
+  gap: 9px;
+  width: min(210px, 18vw);
+  opacity: 0.78;
+}
+
+.hud-vitals-left {
+  left: 28px;
+}
+
+.hud-vitals-right {
+  right: 28px;
+}
+
+.hud-readout {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--muted-strong);
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.085), rgba(255, 255, 255, 0.018)),
+    rgba(4, 11, 19, 0.56);
+  border: 1px solid rgba(115, 214, 255, 0.14);
+  border-radius: 8px;
+  box-shadow: inset 0 0 22px rgba(115, 214, 255, 0.03);
+  backdrop-filter: blur(10px);
+}
+
+.hud-readout svg {
+  color: var(--accent);
+  filter: drop-shadow(0 0 10px rgba(115, 214, 255, 0.36));
+}
+
+.hud-readout span {
+  color: rgba(193, 209, 223, 0.7);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hud-readout strong {
+  min-width: 0;
+  max-width: 84px;
+  color: var(--text);
+  font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(242, 185, 107, 0.7);
+}
+
+.hud-led.ready {
+  background: var(--accent);
+  box-shadow: 0 0 16px rgba(115, 214, 255, 0.95);
+}
+
+.hud-led.offline {
+  background: var(--danger);
+  box-shadow: 0 0 16px rgba(255, 99, 120, 0.7);
+}
+
+.hud-radar {
+  right: 42px;
+  bottom: 126px;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  opacity: 0.86;
+  background:
+    radial-gradient(circle, rgba(115, 214, 255, 0.1), transparent 54%),
+    rgba(3, 9, 16, 0.28);
+}
+
+.hud-radar-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(115, 214, 255, 0.2);
+}
+
+.hud-radar .ring-a {
+  inset: 5px;
+}
+
+.hud-radar .ring-b {
+  inset: 21px;
+}
+
+.hud-radar .ring-c {
+  inset: 37px;
+}
+
+.hud-radar-sweep {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(115, 214, 255, 0.42), transparent 38deg 360deg);
+  mask-image: radial-gradient(circle, transparent 0 20%, #000 21% 100%);
+  animation: radarSweep 3.8s linear infinite;
+}
+
+.hud-radar.active .hud-radar-sweep {
+  animation-duration: 1.7s;
+}
+
+.hud-radar strong {
+  position: relative;
+  z-index: 1;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: 0 0 18px rgba(115, 214, 255, 0.72);
+}
+
+.hud-decision-strip {
+  left: 42px;
+  bottom: 126px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  width: min(330px, 28vw);
+  min-height: 74px;
+  padding: 13px 14px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.085), rgba(255, 255, 255, 0.018)),
+    rgba(4, 11, 19, 0.54);
+  border: 1px solid rgba(115, 214, 255, 0.14);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.hud-decision-strip span,
+.hud-decision-strip em {
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hud-decision-strip strong {
+  min-width: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud-decision-strip i {
+  grid-column: 1 / -1;
+  display: block;
+  height: 3px;
+  margin-top: 8px;
+  background: rgba(115, 214, 255, 0.12);
+  border-radius: 999px;
+}
+
+.hud-decision-strip i::after {
+  content: "";
+  display: block;
+  width: var(--hud-confidence);
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent), var(--amber));
+  border-radius: inherit;
+  box-shadow: 0 0 16px rgba(115, 214, 255, 0.45);
+  animation: hudConfidence 1.4s ease-out both;
+}
+
+.hud-micro-nodes {
+  inset: 0;
+}
+
+.hud-micro-nodes span {
+  position: absolute;
+  left: var(--node-x);
+  top: var(--node-y);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(115, 214, 255, 0.8);
+  box-shadow: 0 0 18px rgba(115, 214, 255, 0.72);
+  animation: hudNodePulse 4.2s ease-in-out infinite;
+  animation-delay: calc(var(--node-index) * -0.21s);
+}
+
+@keyframes hudGridDrift {
+  to {
+    background-position: 0 72px, 72px 0, 0 18px, 18px 0;
+  }
+}
+
+@keyframes hudSweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hudNoise {
+  50% {
+    opacity: 0.21;
+    transform: translateY(1px);
+  }
+}
+
+@keyframes hudConfidence {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes hudNodePulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.6);
+  }
+
+  45% {
+    opacity: 0.86;
+    transform: scale(1.6);
+  }
+}
+
 .desktop-header {
   position: relative;
   z-index: 2;
@@ -615,6 +954,15 @@ button.nav-item:hover {
   animation: eva-spin 5.5s linear infinite;
 }
 
+.ring-four {
+  inset: -4%;
+  border-left-color: rgba(242, 185, 107, 0.42);
+  border-bottom-color: rgba(115, 214, 255, 0.2);
+  border-top-color: rgba(115, 214, 255, 0.08);
+  animation: eva-spin-reverse 18s linear infinite;
+  filter: blur(0.2px);
+}
+
 .eva-orb-grid {
   position: absolute;
   inset: 18%;
@@ -626,6 +974,50 @@ button.nav-item:hover {
   mask-image: radial-gradient(circle, #000 0 54%, transparent 72%);
   opacity: 0.4;
   animation: eva-pulse 3.2s ease-in-out infinite;
+}
+
+.eva-orb-particles {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.eva-orb-particles span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(115, 214, 255, 0.9);
+  box-shadow: 0 0 16px rgba(115, 214, 255, 0.78);
+  transform:
+    rotate(calc(var(--particle-index) * 22.5deg))
+    translateX(clamp(92px, 14vw, 156px));
+  animation: evaParticle 3.8s ease-in-out infinite;
+  animation-delay: calc(var(--particle-index) * -0.18s);
+}
+
+.eva-orb-axis {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  height: 1px;
+  transform-origin: center;
+  background: linear-gradient(90deg, transparent, rgba(115, 214, 255, 0.4), transparent);
+  opacity: 0.34;
+  animation: evaAxis 7s linear infinite;
+}
+
+.axis-y {
+  transform: translate(-50%, -50%) rotate(90deg);
+  animation-duration: 9s;
+}
+
+.axis-x {
+  transform: translate(-50%, -50%) rotate(0deg);
 }
 
 .eva-orb-core {
@@ -650,6 +1042,40 @@ button.nav-item:hover {
   font-weight: 900;
   letter-spacing: 0;
   text-shadow: 0 0 22px rgba(115, 214, 255, 0.52);
+}
+
+.eva-orb-status {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  z-index: 3;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 11px;
+  color: var(--muted-strong);
+  background: rgba(4, 12, 20, 0.72);
+  border: 1px solid rgba(115, 214, 255, 0.24);
+  border-radius: 8px;
+  transform: translateX(-50%);
+  backdrop-filter: blur(10px);
+}
+
+.eva-orb-status span {
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 950;
+}
+
+.eva-orb-status strong {
+  max-width: 96px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .eva-orb-copy {
@@ -698,11 +1124,31 @@ button.nav-item:hover {
   }
 }
 
+@keyframes evaParticle {
+  0%,
+  100% {
+    opacity: 0.22;
+    filter: blur(0.5px);
+  }
+
+  50% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes evaAxis {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
 .message-row {
   display: flex;
   align-items: flex-start;
   gap: 13px;
   width: min(820px, 100%);
+  animation: messageMaterialize 0.38s ease-out both;
 }
 
 .message-row.user {
@@ -807,6 +1253,7 @@ button.nav-item:hover {
     0 24px 80px rgba(0, 0, 0, 0.34),
     0 0 52px rgba(33, 156, 255, 0.12),
     inset 0 0 54px rgba(115, 214, 255, 0.04);
+  animation: panelMaterialize 0.46s ease-out both;
 }
 
 .trace-network {
@@ -962,6 +1409,7 @@ button.nav-item:hover {
 }
 
 .trace-stage {
+  position: relative;
   display: grid;
   gap: 5px;
   min-height: 94px;
@@ -971,7 +1419,19 @@ button.nav-item:hover {
     rgba(4, 12, 22, 0.72);
   border: 1px solid rgba(115, 214, 255, 0.16);
   border-radius: 8px;
+  overflow: hidden;
   transition: opacity 220ms ease, transform 220ms ease, border-color 220ms ease;
+}
+
+.trace-stage.visible::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(115, 214, 255, 0.16), transparent);
+  opacity: 0.36;
+  transform: translateX(-120%);
+  animation: microScan 3s ease-in-out infinite;
 }
 
 .trace-stage.pending-visual {
@@ -1067,6 +1527,17 @@ button.nav-item:hover {
   box-shadow: 0 0 26px rgba(242, 185, 107, 0.16);
 }
 
+.trace-route.selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(242, 185, 107, 0.18), transparent);
+  opacity: 0.5;
+  transform: translateX(-120%);
+  animation: microScan 2.6s ease-in-out infinite;
+}
+
 .trace-route span {
   display: block;
   color: var(--muted);
@@ -1129,6 +1600,7 @@ button.nav-item:hover {
   background: rgba(5, 13, 22, 0.72);
   border: 1px solid rgba(115, 214, 255, 0.14);
   border-radius: 8px;
+  animation: panelMaterialize 0.34s ease-out both;
 }
 
 .trace-attempt.success,
@@ -1203,6 +1675,25 @@ button.nav-item:hover {
 @keyframes traceScan {
   to {
     transform: translateY(100%);
+  }
+}
+
+@keyframes microScan {
+  0%,
+  35% {
+    transform: translateX(-120%);
+  }
+
+  80%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes messageMaterialize {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
 }
 
@@ -1721,6 +2212,52 @@ button.nav-item:hover {
   box-shadow:
     0 22px 70px rgba(0, 0, 0, 0.3),
     inset 0 0 44px rgba(115, 214, 255, 0.035);
+  animation: panelMaterialize 0.42s ease-out both;
+}
+
+.thinking-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(115, 214, 255, 0.16), transparent);
+  opacity: 0.46;
+  transform: translateX(-100%);
+  animation: thinkingScan 2.6s ease-in-out infinite;
+}
+
+.thinking-paths {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.thinking-paths span {
+  position: absolute;
+  left: 74px;
+  right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(115, 214, 255, 0.44), transparent);
+  transform-origin: left center;
+  opacity: 0.58;
+  animation: thinkingPath 2.4s ease-in-out infinite;
+}
+
+.thinking-paths span:nth-child(1) {
+  top: 34%;
+  transform: rotate(2deg);
+}
+
+.thinking-paths span:nth-child(2) {
+  top: 54%;
+  transform: rotate(-4deg);
+  animation-delay: -0.5s;
+}
+
+.thinking-paths span:nth-child(3) {
+  top: 73%;
+  transform: rotate(5deg);
+  animation-delay: -1s;
 }
 
 .thinking-orbit {
@@ -1818,6 +2355,7 @@ button.nav-item:hover {
 .thinking-step.active {
   border-color: rgba(115, 214, 255, 0.44);
   box-shadow: inset 0 0 24px rgba(115, 214, 255, 0.055);
+  animation: thinkingStepPop 0.32s ease-out both;
 }
 
 .thinking-step span,
@@ -1858,6 +2396,44 @@ button.nav-item:hover {
 @keyframes evaOrbit {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes thinkingScan {
+  0%,
+  22% {
+    transform: translateX(-100%);
+  }
+
+  70%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes thinkingPath {
+  0%,
+  100% {
+    opacity: 0.18;
+    filter: blur(1px);
+  }
+
+  50% {
+    opacity: 0.72;
+    filter: blur(0);
+  }
+}
+
+@keyframes thinkingStepPop {
+  from {
+    transform: translateY(5px);
+  }
+}
+
+@keyframes panelMaterialize {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
   }
 }
 
@@ -2451,6 +3027,19 @@ button.nav-item:hover {
     inset: 10px;
   }
 
+  .hud-vitals,
+  .hud-decision-strip,
+  .hud-radar,
+  .hud-corner {
+    display: none;
+  }
+
+  .hud-grid-plane {
+    opacity: 0.42;
+    transform: none;
+    mask-image: linear-gradient(180deg, #000, transparent 74%);
+  }
+
   .mobile-header {
     position: relative;
     z-index: 2;
@@ -2686,5 +3275,16 @@ button.nav-item:hover {
   .composer button {
     width: 44px;
     height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

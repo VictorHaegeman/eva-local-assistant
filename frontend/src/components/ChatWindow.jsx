@@ -133,6 +133,12 @@ function ThinkingPipeline({ prompt }) {
 
   return (
     <div className="thinking-pipeline" aria-label="Eva reflechit">
+      <div className="thinking-scan" aria-hidden="true" />
+      <div className="thinking-paths" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
       <div className="thinking-orbit" aria-hidden="true">
         <span />
       </div>

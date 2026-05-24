@@ -13,6 +13,7 @@ import {
 import { ChatInput } from "./components/ChatInput";
 import { ChatWindow } from "./components/ChatWindow";
 import { ControlPanel } from "./components/ControlPanel";
+import { JarvisHud } from "./components/JarvisHud";
 import { Sidebar } from "./components/Sidebar";
 import "./styles.css";
 
@@ -373,6 +374,15 @@ export default function App() {
       />
 
       <section className="chat-shell" aria-label="Conversation avec Eva">
+        <JarvisHud
+          status={backendStatus}
+          doctor={doctor}
+          loading={loading}
+          activePanel={activePanel}
+          currentMode={currentMode}
+          messages={messages}
+        />
+
         <header className="desktop-header">
           <div>
             <span className="eyebrow">Eva local core</span>
