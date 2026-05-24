@@ -788,24 +788,25 @@ button.nav-item:hover {
 .cognitive-trace {
   position: relative;
   display: grid;
-  gap: 12px;
-  width: min(700px, calc(100vw - 124px));
-  margin-top: 16px;
-  padding: 14px;
+  gap: 14px;
+  width: min(760px, calc(100vw - 124px));
+  margin-top: 18px;
+  padding: 16px;
   overflow: hidden;
   white-space: normal;
   background:
-    radial-gradient(circle at 72% 38%, rgba(115, 214, 255, 0.16), transparent 18%),
-    linear-gradient(rgba(115, 214, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(115, 214, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(10, 35, 61, 0.92), rgba(7, 14, 24, 0.96));
-  background-size: auto, 24px 24px, 24px 24px, auto;
-  border: 1px solid rgba(115, 214, 255, 0.26);
+    radial-gradient(circle at 15% 18%, rgba(115, 214, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 92% 28%, rgba(33, 156, 255, 0.16), transparent 20%),
+    linear-gradient(rgba(115, 214, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(115, 214, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(145deg, rgba(6, 24, 43, 0.96), rgba(4, 10, 18, 0.98));
+  background-size: auto, auto, 25px 25px, 25px 25px, auto;
+  border: 1px solid rgba(115, 214, 255, 0.3);
   border-radius: 8px;
   box-shadow:
-    0 22px 70px rgba(0, 0, 0, 0.3),
-    0 0 42px rgba(33, 156, 255, 0.1),
-    inset 0 0 44px rgba(115, 214, 255, 0.035);
+    0 24px 80px rgba(0, 0, 0, 0.34),
+    0 0 52px rgba(33, 156, 255, 0.12),
+    inset 0 0 54px rgba(115, 214, 255, 0.04);
 }
 
 .trace-network {
@@ -814,9 +815,10 @@ button.nav-item:hover {
   pointer-events: none;
   opacity: 0.72;
   background:
-    linear-gradient(32deg, transparent 22%, rgba(115, 214, 255, 0.18) 23%, transparent 24%),
-    linear-gradient(145deg, transparent 36%, rgba(115, 214, 255, 0.16) 37%, transparent 38%),
-    linear-gradient(77deg, transparent 55%, rgba(115, 214, 255, 0.14) 56%, transparent 57%);
+    linear-gradient(32deg, transparent 22%, rgba(115, 214, 255, 0.16) 23%, transparent 24%),
+    linear-gradient(145deg, transparent 36%, rgba(115, 214, 255, 0.15) 37%, transparent 38%),
+    linear-gradient(77deg, transparent 55%, rgba(115, 214, 255, 0.13) 56%, transparent 57%),
+    radial-gradient(circle at 50% 54%, rgba(115, 214, 255, 0.08), transparent 33%);
 }
 
 .trace-network .node {
@@ -843,11 +845,24 @@ button.nav-item:hover {
   bottom: 18%;
 }
 
+.trace-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(115, 214, 255, 0.12), transparent);
+  opacity: 0.42;
+  transform: translateY(-100%);
+  animation: traceScan 4.8s linear infinite;
+}
+
 .trace-header,
+.trace-system-row,
 .trace-stage-grid,
+.trace-decision-board,
 .trace-routes,
+.trace-attempts,
 .trace-evidence,
-.cognitive-trace > p {
+.trace-summary {
   position: relative;
   z-index: 1;
 }
@@ -855,12 +870,11 @@ button.nav-item:hover {
 .trace-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 10px;
+  gap: 10px;
   align-items: center;
 }
 
 .trace-header span {
-  grid-column: 1 / -1;
   color: var(--accent);
   font-size: 0.72rem;
   font-weight: 900;
@@ -868,44 +882,93 @@ button.nav-item:hover {
 }
 
 .trace-header strong {
+  display: block;
+  margin-top: 3px;
   color: var(--text);
-  font-size: 1.05rem;
+  font-size: 1.14rem;
   line-height: 1.15;
+  text-shadow: 0 0 24px rgba(115, 214, 255, 0.16);
 }
 
 .trace-header em {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  min-height: 30px;
+  min-width: 58px;
+  min-height: 40px;
   color: var(--accent);
   background: rgba(115, 214, 255, 0.08);
-  border: 1px solid rgba(115, 214, 255, 0.24);
+  border: 1px solid rgba(115, 214, 255, 0.32);
   border-radius: 8px;
   font-style: normal;
   font-weight: 900;
+  box-shadow: inset 0 0 22px rgba(115, 214, 255, 0.05);
 }
 
-.cognitive-trace > p {
+.trace-summary {
   margin: 0;
   color: var(--muted-strong);
   font-size: 0.88rem;
   line-height: 1.42;
 }
 
-.trace-stage-grid {
+.trace-system-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trace-system-chip {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 2px 8px;
+  align-items: center;
+  min-height: 54px;
+  padding: 9px 10px;
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.085), rgba(255, 255, 255, 0.025)),
+    rgba(3, 11, 20, 0.7);
+  border: 1px solid rgba(115, 214, 255, 0.16);
+  border-radius: 8px;
+}
+
+.trace-system-chip svg {
+  grid-row: span 2;
+  color: var(--accent);
+  filter: drop-shadow(0 0 10px rgba(115, 214, 255, 0.3));
+}
+
+.trace-system-chip span {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.trace-system-chip strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
 .trace-stage {
   display: grid;
   gap: 5px;
-  min-height: 96px;
+  min-height: 94px;
   padding: 10px;
-  background: rgba(4, 12, 22, 0.68);
+  background:
+    linear-gradient(180deg, rgba(115, 214, 255, 0.04), transparent),
+    rgba(4, 12, 22, 0.72);
   border: 1px solid rgba(115, 214, 255, 0.16);
   border-radius: 8px;
   transition: opacity 220ms ease, transform 220ms ease, border-color 220ms ease;
@@ -923,6 +986,7 @@ button.nav-item:hover {
 
 .trace-stage.done {
   border-color: rgba(115, 214, 255, 0.36);
+  box-shadow: inset 0 0 18px rgba(115, 214, 255, 0.035);
 }
 
 .trace-stage.blocked,
@@ -950,19 +1014,46 @@ button.nav-item:hover {
   overflow-wrap: anywhere;
 }
 
+.trace-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.trace-section-title svg {
+  filter: drop-shadow(0 0 10px rgba(115, 214, 255, 0.3));
+}
+
+.trace-decision-board,
+.trace-attempts,
+.trace-evidence {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  background: rgba(2, 9, 17, 0.54);
+  border: 1px solid rgba(115, 214, 255, 0.12);
+  border-radius: 8px;
+}
+
 .trace-routes {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .trace-route {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-  min-height: 40px;
-  padding: 8px 10px;
+  gap: 8px 10px;
+  align-items: start;
+  min-height: 66px;
+  padding: 9px 10px 13px;
+  overflow: hidden;
   background: rgba(6, 14, 24, 0.72);
   border: 1px solid rgba(115, 214, 255, 0.14);
   border-radius: 8px;
@@ -977,27 +1068,129 @@ button.nav-item:hover {
 }
 
 .trace-route span {
-  color: var(--muted-strong);
-  font-size: 0.77rem;
-  font-weight: 800;
+  display: block;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .trace-route strong {
-  color: var(--accent);
-  font-size: 0.78rem;
+  display: block;
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.15;
 }
 
-.trace-route.selected strong {
+.trace-route em {
+  color: var(--accent);
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.trace-route.selected em {
   color: var(--amber);
 }
 
-.trace-evidence {
+.trace-route i {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(115, 214, 255, 0.12);
+}
+
+.trace-route i::after {
+  content: "";
+  display: block;
+  width: var(--score);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent));
+  box-shadow: 0 0 14px rgba(115, 214, 255, 0.42);
+}
+
+.trace-route.selected i::after {
+  background: linear-gradient(90deg, var(--amber), var(--accent));
+}
+
+.trace-attempt {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 4px 9px;
+  align-items: center;
+  min-height: 52px;
+  padding: 9px 10px;
+  background: rgba(5, 13, 22, 0.72);
+  border: 1px solid rgba(115, 214, 255, 0.14);
+  border-radius: 8px;
+}
+
+.trace-attempt.success,
+.trace-attempt.partial {
+  border-color: rgba(115, 214, 255, 0.34);
+}
+
+.trace-attempt.failed,
+.trace-attempt.blocked {
+  border-color: rgba(242, 185, 107, 0.38);
+}
+
+.trace-attempt > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+  background: rgba(115, 214, 255, 0.08);
+  border: 1px solid rgba(115, 214, 255, 0.2);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+.trace-attempt strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.84rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-attempt em {
+  color: var(--accent);
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.trace-attempt.failed em,
+.trace-attempt.blocked em {
+  color: var(--amber);
+}
+
+.trace-attempt small {
+  grid-column: 2 / -1;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.trace-evidence-list {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
 }
 
-.trace-evidence span {
+.trace-evidence-list span {
   min-height: 26px;
   padding: 5px 8px;
   color: var(--muted-strong);
@@ -1005,6 +1198,12 @@ button.nav-item:hover {
   border: 1px solid rgba(115, 214, 255, 0.14);
   border-radius: 8px;
   font-size: 0.72rem;
+}
+
+@keyframes traceScan {
+  to {
+    transform: translateY(100%);
+  }
 }
 
 .brief-source-grid {
@@ -2341,6 +2540,10 @@ button.nav-item:hover {
     padding: 12px;
   }
 
+  .trace-system-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .trace-stage-grid,
   .trace-routes {
     grid-template-columns: 1fr;
@@ -2348,6 +2551,18 @@ button.nav-item:hover {
 
   .trace-stage {
     min-height: 0;
+  }
+
+  .trace-attempt {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+
+  .trace-attempt em {
+    grid-column: 2;
+  }
+
+  .trace-attempt small {
+    grid-column: 1 / -1;
   }
 
   .map-preview-card iframe {

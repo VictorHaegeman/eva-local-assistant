@@ -1,6 +1,9 @@
 import {
+  BrainCircuit,
   Crosshair,
+  Database,
   ExternalLink,
+  GitBranch,
   MapPinned,
   Maximize2,
   Minimize2,
@@ -8,6 +11,8 @@ import {
   Play,
   Route,
   Satellite,
+  ScanSearch,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -32,13 +37,42 @@ function buildMapLinks(webPreview) {
 }
 
 
+function statusLabel(status) {
+  return {
+    success: "ok",
+    partial: "partiel",
+    failed: "echec",
+    blocked: "bloque",
+    skipped: "ignore",
+    done: "ok",
+    pending: "attente",
+  }[status] || status || "attente";
+}
+
+
+function scoreGap(routeOptions) {
+  const scores = routeOptions
+    .map((option) => Number(option.score) || 0)
+    .sort((a, b) => b - a);
+  if (scores.length < 2) return null;
+  return Math.max(0, scores[0] - scores[1]);
+}
+
+
 function CognitiveTrace({ trace }) {
   const stages = Array.isArray(trace?.stages) ? trace.stages : [];
   const routeStage = stages.find((stage) => Array.isArray(stage.options));
   const routeOptions = routeStage?.options || [];
   const evidence = Array.isArray(trace?.evidence) ? trace.evidence : [];
+  const attempts = Array.isArray(trace?.attempts) ? trace.attempts : [];
+  const memory = trace?.memory || null;
+  const gap = scoreGap(routeOptions);
   const [reveal, setReveal] = useState(1);
-  const maxReveal = stages.length + (routeOptions.length ? 1 : 0) + (evidence.length ? 1 : 0);
+  const maxReveal =
+    stages.length +
+    (routeOptions.length ? 1 : 0) +
+    (attempts.length ? 1 : 0) +
+    (evidence.length ? 1 : 0);
 
   useEffect(() => {
     setReveal(1);
@@ -64,12 +98,38 @@ function CognitiveTrace({ trace }) {
         <span className="node node-b" />
         <span className="node node-c" />
       </div>
+      <div className="trace-scanline" aria-hidden="true" />
       <div className="trace-header">
-        <span>Eva Pipeline</span>
-        <strong>{trace.selected || "Route selectionnee"}</strong>
+        <div>
+          <span>Eva Decision Core</span>
+          <strong>{trace.selected || "Route selectionnee"}</strong>
+        </div>
         <em>{trace.confidence || 0}%</em>
       </div>
-      <p>{trace.summary}</p>
+      <p className="trace-summary">{trace.summary}</p>
+
+      <div className="trace-system-row">
+        <div className="trace-system-chip">
+          <BrainCircuit size={15} aria-hidden="true" />
+          <span>Mode</span>
+          <strong>{trace.selected || "Decision"}</strong>
+        </div>
+        <div className="trace-system-chip">
+          <Database size={15} aria-hidden="true" />
+          <span>Memoire</span>
+          <strong>{memory?.count ?? 0}</strong>
+        </div>
+        <div className="trace-system-chip">
+          <GitBranch size={15} aria-hidden="true" />
+          <span>Delta</span>
+          <strong>{gap === null ? "--" : `${gap}%`}</strong>
+        </div>
+        <div className="trace-system-chip">
+          <ShieldCheck size={15} aria-hidden="true" />
+          <span>Essais</span>
+          <strong>{Math.max(1, attempts.length || 1)}</strong>
+        </div>
+      </div>
 
       <div className="trace-stage-grid">
         {stages.map((stage, index) => (
@@ -85,21 +145,54 @@ function CognitiveTrace({ trace }) {
       </div>
 
       {routeOptions.length > 0 && reveal > stages.length && (
-        <div className="trace-routes">
-          {routeOptions.map((option) => (
-            <div className={`trace-route ${option.selected ? "selected" : ""}`} key={option.key || option.label}>
-              <span>{option.label}</span>
-              <strong>{option.score}%</strong>
+        <div className="trace-decision-board">
+          <div className="trace-section-title">
+            <ScanSearch size={15} aria-hidden="true" />
+            <span>Routes candidates</span>
+          </div>
+          <div className="trace-routes">
+            {routeOptions.map((option) => (
+              <div className={`trace-route ${option.selected ? "selected" : ""}`} key={option.key || option.label}>
+                <div>
+                  <span>{option.selected ? "choisie" : "alternative"}</span>
+                  <strong>{option.label}</strong>
+                </div>
+                <em>{option.score}%</em>
+                <i style={{ "--score": `${Math.min(100, Math.max(0, Number(option.score) || 0))}%` }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {attempts.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) && (
+        <div className="trace-attempts">
+          <div className="trace-section-title">
+            <Route size={15} aria-hidden="true" />
+            <span>Boucle d'essais</span>
+          </div>
+          {attempts.slice(0, 4).map((attempt, index) => (
+            <div className={`trace-attempt ${attempt.status || "pending"}`} key={`${attempt.tool}-${index}`}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{attempt.tool}</strong>
+              <em>{statusLabel(attempt.status)}</em>
+              <small>{attempt.evidence?.[0] || attempt.error || attempt.next_actions?.[0] || "en attente de preuve"}</small>
             </div>
           ))}
         </div>
       )}
 
-      {evidence.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) && (
+      {evidence.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) + (attempts.length ? 1 : 0) && (
         <div className="trace-evidence">
-          {evidence.slice(0, 3).map((item) => (
-            <span key={item}>{item}</span>
-          ))}
+          <div className="trace-section-title">
+            <ShieldCheck size={15} aria-hidden="true" />
+            <span>Preuves locales</span>
+          </div>
+          <div className="trace-evidence-list">
+            {evidence.slice(0, 4).map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
         </div>
       )}
     </section>
