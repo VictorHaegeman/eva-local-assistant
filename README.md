@@ -156,6 +156,7 @@ Eva peut aider a produire pour DreamLense sans connecter l'API LinkedIn:
 - elle redige le post avec Ollama local;
 - elle copie le texte dans le presse-papiers Windows;
 - elle ouvre LinkedIn dans ton navigateur deja connecte;
+- elle tente de remplir automatiquement le compositeur LinkedIn avec le brouillon;
 - elle peut proposer une direction d'image ou un prompt visuel;
 - elle ne clique pas sur `Publier` automatiquement.
 
@@ -166,6 +167,16 @@ Fais un post LinkedIn pertinent pour DreamLense et ouvre LinkedIn.
 ```
 
 Le clic final reste manuel, car publier publiquement du contenu est une action critique.
+
+Configuration:
+
+```env
+EVA_LINKEDIN_ENABLED=true
+EVA_LINKEDIN_AUTO_FILL_COMPOSER=true
+EVA_LINKEDIN_AUTO_FILL_DELAY_SECONDS=5
+```
+
+Si LinkedIn n'a pas encore fini de charger ou si la fenetre ne prend pas le focus, le texte reste dans le presse-papiers comme secours. L'objectif est que l'action normale soit autonome jusqu'au brouillon visible, sans copier-coller manuel.
 
 ## Autonomie controlee
 
@@ -1631,12 +1642,14 @@ Eva utilise maintenant une boucle plus proche des architectures d'agents moderne
 
 ```text
 message Victor
+-> working memory locale: profil, souvenirs, clusters, derniers messages
 -> interpretation deterministe
 -> second regard Ollama en JSON structure
 -> choix de route
 -> politique de securite
 -> outil local
 -> verification
+-> si echec: autre route, plan B, recherche web gratuite si utile
 -> reponse courte + trace visible
 ```
 
@@ -1649,17 +1662,25 @@ OLLAMA_REASONING_MODEL=llama3.1:8b
 OLLAMA_REASONING_TIMEOUT_SECONDS=24
 EVA_REASONING_ENABLED=true
 EVA_REASONING_MIN_CONFIDENCE=0.55
+EVA_REASONING_MAX_ATTEMPTS=3
+EVA_REASONING_WEB_FALLBACK_ENABLED=true
 EVA_REASONING_FORCE_STRUCTURED_TRACE=true
 ```
 
 Ce que ca change concretement:
 
 - Eva ne se contente plus du premier routeur par mots-cles;
+- la memoire locale sert avant l'action, pas seulement pendant la reponse;
+- Eva choisit les clusters utiles avant d'appeler le modele ou un outil;
 - Ollama fait un second passage structure pour comprendre l'objectif reel;
 - une action locale sure peut etre executee sans te redemander;
+- si une piste echoue, Eva tente une autre piste avant de conclure;
+- si aucun outil local ne suffit, Eva peut lancer une recherche web gratuite et l'utiliser comme plan B;
 - une action critique reste protegee: envoi, publication, suppression, `git push`, achat/paiement;
 - meme une reponse simple peut afficher une trace de decision dans le chat;
 - Eva evite de tomber dans les reponses generiques du type "je ne peux pas ouvrir d'application" quand un outil local existe.
+
+Eva ne demande pas a ChatGPT via API et ne depend pas d'un service payant. Les boucles de rattrapage utilisent les outils locaux, Ollama et la recherche web gratuite configuree.
 
 Important: les consignes sur le comportement d'Eva ne sont pas des souvenirs personnels. La memoire auto ignore les phrases de pilotage du type "je veux que Eva..." ou "Eva doit..." afin de garder une memoire propre. Les souvenirs utiles concernent Victor, ses preferences, ses projets et ses objectifs.
 

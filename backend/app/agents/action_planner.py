@@ -20,6 +20,7 @@ PlanRoute = Literal[
     "spotify",
     "desktop_control",
     "beeper_messages",
+    "linkedin_browser_post",
     "web_search",
     "generic_chat",
 ]
@@ -62,6 +63,25 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
 
     if _has_any(text, ("beeper", "message beeper", "messages beeper", "mes messages")):
         return "beeper_messages"
+
+    if "linkedin" in text and _has_any(
+        text,
+        (
+            "post",
+            "contenu",
+            "commentaire",
+            "publie",
+            "publier",
+            "poster",
+            "ouvre",
+            "ouvrir",
+            "dreamlense",
+            "redige",
+            "ecris",
+            "idee",
+        ),
+    ):
+        return "linkedin_browser_post"
 
     if _has_any(text, ("clique", "click", "appuie", "presse", "touche", "play", "pause")):
         return "desktop_control"
@@ -117,6 +137,7 @@ def _policy_for_route(route: PlanRoute) -> ActionPolicyLevel:
         "spotify",
         "desktop_control",
         "beeper_messages",
+        "linkedin_browser_post",
         "project_factory",
     }:
         return "draft_only"
@@ -141,6 +162,7 @@ def _tool_for_route(route: PlanRoute) -> str:
         "spotify": "spotify_assistant",
         "desktop_control": "desktop_automation",
         "beeper_messages": "beeper_assistant",
+        "linkedin_browser_post": "linkedin_assistant",
         "web_search": "web_search",
         "generic_chat": "ollama_chat",
     }[route]

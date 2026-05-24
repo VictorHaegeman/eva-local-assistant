@@ -25,6 +25,7 @@ from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.agents.understanding import build_understanding_frame, understanding_to_dict
+from app.cognition.context import attach_cognitive_context, build_cognitive_context
 from app.cognition.structured_interpreter import refine_understanding_with_ollama
 from app.agents.operator_journal import (
     OperatorJournalError,
@@ -1730,6 +1731,12 @@ async def understand(request: UnderstandRequest, http_request: Request) -> dict[
         conversation_context=safe_context,
         trusted_actions=trusted_actions,
     )
+    cognitive_context = build_cognitive_context(
+        request.message.strip(),
+        conversation_context=safe_context,
+        frame=frame,
+    )
+    frame = attach_cognitive_context(frame, cognitive_context)
     frame = await refine_understanding_with_ollama(
         request.message.strip(),
         conversation_context=safe_context,

@@ -88,6 +88,8 @@ class Settings:
     eva_beeper_open_delay_seconds: float = _env_float("EVA_BEEPER_OPEN_DELAY_SECONDS", 2.5)
     eva_beeper_auto_paste_draft: bool = _env_bool("EVA_BEEPER_AUTO_PASTE_DRAFT", False)
     eva_linkedin_enabled: bool = _env_bool("EVA_LINKEDIN_ENABLED", True)
+    eva_linkedin_auto_fill_composer: bool = _env_bool("EVA_LINKEDIN_AUTO_FILL_COMPOSER", True)
+    eva_linkedin_auto_fill_delay_seconds: float = _env_float("EVA_LINKEDIN_AUTO_FILL_DELAY_SECONDS", 5.0)
     eva_screen_enabled: bool = _env_bool("EVA_SCREEN_ENABLED", True)
     eva_screen_vision_model: str = os.getenv("EVA_SCREEN_VISION_MODEL", "llava:7b")
     eva_screen_max_captures: int = _env_int("EVA_SCREEN_MAX_CAPTURES", 20)
@@ -113,6 +115,8 @@ class Settings:
     eva_telegram_context_messages: int = _env_int("EVA_TELEGRAM_CONTEXT_MESSAGES", 16)
     eva_reasoning_enabled: bool = _env_bool("EVA_REASONING_ENABLED", True)
     eva_reasoning_min_confidence: float = _env_float("EVA_REASONING_MIN_CONFIDENCE", 0.55)
+    eva_reasoning_max_attempts: int = _env_int("EVA_REASONING_MAX_ATTEMPTS", 3)
+    eva_reasoning_web_fallback_enabled: bool = _env_bool("EVA_REASONING_WEB_FALLBACK_ENABLED", True)
     eva_reasoning_force_structured_trace: bool = _env_bool(
         "EVA_REASONING_FORCE_STRUCTURED_TRACE",
         True,

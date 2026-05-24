@@ -33,6 +33,7 @@ ALLOWED_ROUTES: tuple[str, ...] = (
     "spotify",
     "desktop_control",
     "beeper_messages",
+    "linkedin_browser_post",
     "web_search",
     "generic_chat",
 )
@@ -88,6 +89,7 @@ ROUTE_DEFAULTS: dict[str, tuple[str, str]] = {
     "spotify": ("spotify", "open"),
     "desktop_control": ("desktop", "execute_local"),
     "beeper_messages": ("beeper", "read_then_summarize"),
+    "linkedin_browser_post": ("linkedin", "draft"),
     "web_search": ("web", "search"),
     "generic_chat": ("chat", "answer"),
 }
@@ -104,6 +106,7 @@ DOMAIN_ROUTE_FALLBACK: dict[str, str] = {
     "spotify": "spotify",
     "desktop": "desktop_control",
     "beeper": "beeper_messages",
+    "linkedin": "linkedin_browser_post",
     "web": "web_search",
     "status": "local_status",
     "chat": "generic_chat",
@@ -212,6 +215,10 @@ def _build_interpreter_prompt(
         f"- objectif={base_frame.interpreted_goal}\n"
         f"- confiance={base_frame.intent.confidence}\n"
         f"- session_fiable={trusted_actions}\n\n"
+        "Working memory active:\n"
+        f"- summary={base_frame.cognitive_memory_summary or 'aucune'}\n"
+        f"- clusters={', '.join(base_frame.cognitive_memory_clusters) if base_frame.cognitive_memory_clusters else 'aucun'}\n"
+        f"- souvenirs={base_frame.cognitive_memory_count}\n\n"
         "Routes autorisees:\n"
         f"{', '.join(ALLOWED_ROUTES)}\n\n"
         "Domaines autorises:\n"
@@ -295,13 +302,35 @@ def _should_accept_interpretation(
     if mail_context and interpretation.route == "cursor_work" and not cursor_context:
         return False
 
+    base_route = str(base_frame.action_plan.route)
+    action_domain = base_frame.primary_domain in {
+        "gmail",
+        "calendar",
+        "screen",
+        "terminal",
+        "project",
+        "cursor",
+        "browser",
+        "spotify",
+        "desktop",
+        "beeper",
+        "linkedin",
+        "web",
+    }
+
+    if base_route != "generic_chat" and interpretation.route == "generic_chat" and base_frame.intent.confidence >= 0.7:
+        return False
+
+    if action_domain and interpretation.domain == "chat" and base_frame.intent.confidence >= 0.7:
+        return False
+
     if interpretation.confidence < settings.eva_reasoning_min_confidence:
         return False
 
-    if base_frame.action_plan.route == "generic_chat" and interpretation.route != "generic_chat":
+    if base_route == "generic_chat" and interpretation.route != "generic_chat":
         return True
 
-    if interpretation.route != base_frame.action_plan.route and interpretation.confidence >= base_frame.intent.confidence:
+    if interpretation.route != base_route and interpretation.confidence >= base_frame.intent.confidence:
         return True
 
     if interpretation.domain != base_frame.primary_domain and interpretation.confidence >= 0.7:

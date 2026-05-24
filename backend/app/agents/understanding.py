@@ -65,6 +65,9 @@ class UnderstandingFrame:
     reasoning_confidence: float = 0.0
     reasoning_model: str = ""
     reasoning_routes: tuple[str, ...] = ()
+    cognitive_memory_summary: str = ""
+    cognitive_memory_clusters: tuple[str, ...] = ()
+    cognitive_memory_count: int = 0
 
 
 def normalize_understanding_text(text: str) -> str:
@@ -230,6 +233,8 @@ def _route_for_understanding(
         return "desktop_control"
     if domain == "beeper":
         return "beeper_messages"
+    if domain == "linkedin":
+        return "linkedin_browser_post"
     if domain == "web":
         return "web_search"
     if domain == "status":
@@ -269,6 +274,26 @@ def _expected_outcome(normalized: str, intent: UserIntent, domain: PrimaryDomain
     if domain == "gmail" and _has_any(normalized, ("ouvre", "ouvrir", "affiche")):
         return "read_then_open"
     if domain == "beeper" and _has_any(normalized, reply_markers):
+        return "draft"
+    if intent.name == "linkedin_browser_post":
+        return "draft"
+    if domain == "linkedin" and _has_any(
+        normalized,
+        (
+            "post",
+            "contenu",
+            "commentaire",
+            "publie",
+            "publier",
+            "poster",
+            "ouvre",
+            "ouvrir",
+            "dreamlense",
+            "redige",
+            "ecris",
+            "idee",
+        ),
+    ):
         return "draft"
 
     if domain in {"spotify", "browser", "screen", "desktop"}:
@@ -324,6 +349,8 @@ def _required_evidence(domain: PrimaryDomain, outcome: ExpectedOutcome) -> tuple
         return ("URL ou intention web interpretee", "Brave ouvert si action fiable")
     if domain == "spotify":
         return ("requete musique interpretee", "Spotify ou recherche web ouverte")
+    if domain == "linkedin":
+        return ("post LinkedIn prepare", "LinkedIn ouvert ou brouillon colle sans publication")
     if domain == "web":
         return ("resultats web cites dans le contexte",)
     return ("objectif interprete",)
@@ -370,6 +397,8 @@ def _interpreted_goal(
         return "Ouvrir le bon site dans Brave uniquement apres avoir compris le besoin web."
     if domain == "spotify":
         return "Ouvrir Spotify ou la bonne recherche musicale selon la demande."
+    if domain == "linkedin":
+        return "Preparer le contenu LinkedIn, ouvrir LinkedIn et remplir le brouillon sans publier."
     if domain == "project":
         return "Transformer l'idee en plan projet executable avec workspace, prompt Cursor et Git."
     if domain == "cursor":
@@ -479,6 +508,11 @@ def format_understanding_context(frame: UnderstandingFrame) -> str:
         lines.append(f"- Confiance: {round(frame.reasoning_confidence * 100)}%")
         if frame.reasoning_routes:
             lines.append(f"- Routes considerees: {', '.join(frame.reasoning_routes)}")
+    if frame.cognitive_memory_summary:
+        lines.append("Working memory active:")
+        lines.append(f"- {frame.cognitive_memory_summary}")
+        if frame.cognitive_memory_clusters:
+            lines.append(f"- Clusters: {', '.join(frame.cognitive_memory_clusters)}")
     lines.append(
         "Ne recite pas ce cadre. Utilise-le pour choisir l'outil, lire les bonnes sources, "
         "eviter l'invention et dire clairement ce qui est reellement fait."
@@ -525,4 +559,7 @@ def understanding_to_dict(frame: UnderstandingFrame) -> dict[str, object]:
         "reasoning_confidence": frame.reasoning_confidence,
         "reasoning_model": frame.reasoning_model,
         "reasoning_routes": list(frame.reasoning_routes),
+        "cognitive_memory_summary": frame.cognitive_memory_summary,
+        "cognitive_memory_clusters": list(frame.cognitive_memory_clusters),
+        "cognitive_memory_count": frame.cognitive_memory_count,
     }

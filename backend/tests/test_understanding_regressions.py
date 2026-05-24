@@ -49,8 +49,16 @@ def test_reponse_does_not_match_repo() -> None:
     assert frame.action_plan.route != "cursor_work"
 
 
+def test_linkedin_post_routes_to_linkedin_operator() -> None:
+    frame = _frame("Fais un post LinkedIn pertinent pour DreamLense et ouvre LinkedIn.")
+    assert frame.primary_domain == "linkedin"
+    assert frame.expected_outcome == "draft"
+    assert frame.action_plan.route == "linkedin_browser_post"
+
+
 if __name__ == "__main__":
     test_dreamlense_mail_draft_routes_to_gmail()
     test_gmail_followup_does_not_become_cursor()
     test_reponse_does_not_match_repo()
+    test_linkedin_post_routes_to_linkedin_operator()
     print("understanding regressions OK")

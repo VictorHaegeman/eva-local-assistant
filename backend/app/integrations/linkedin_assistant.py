@@ -308,9 +308,10 @@ async def prepare_linkedin_browser_post(message: str) -> str:
         raise LinkedInAssistantError(str(executed_action.get("result") or "Impossible d'ouvrir LinkedIn."))
 
     lines = [
-        "J'ai prepare le post LinkedIn et ouvert LinkedIn dans ton navigateur.",
-        "Le texte est dans le presse-papiers. Rien n'a ete publie automatiquement.",
-        "Colle le texte, ajoute une image si utile, relis, puis clique toi-meme sur Publier.",
+        "J'ai prepare le post LinkedIn, ouvert LinkedIn et lance le remplissage automatique du compositeur.",
+        "Si LinkedIn etait deja connecte et que la fenetre etait prete, le brouillon est colle dans la zone de post.",
+        "Rien n'a ete publie automatiquement: Eva s'arrete avant le clic public final.",
+        "Le texte reste aussi dans le presse-papiers comme secours si LinkedIn n'a pas pris le focus.",
         "",
         "Post prepare:",
         package["post_text"],

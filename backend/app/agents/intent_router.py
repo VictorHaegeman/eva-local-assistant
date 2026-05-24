@@ -19,6 +19,7 @@ IntentName = Literal[
     "spotify",
     "desktop_control",
     "beeper_messages",
+    "linkedin_browser_post",
     "web_search",
     "generic_chat",
 ]
@@ -208,6 +209,32 @@ def classify_user_intent(message: str) -> UserIntent:
             name="beeper_messages",
             confidence=0.82,
             summary="Ouvrir ou lire Beeper via le pont local/vision selon la demande.",
+        )
+
+    if "linkedin" in text and _has_any(
+        text,
+        (
+            "post",
+            "contenu",
+            "commentaire",
+            "publie",
+            "publier",
+            "poster",
+            "ouvre",
+            "ouvrir",
+            "dreamlense",
+            "redige",
+            "ecris",
+            "idee",
+        ),
+    ):
+        return UserIntent(
+            name="linkedin_browser_post",
+            confidence=0.86,
+            summary=(
+                "Preparer un contenu LinkedIn pertinent, ouvrir LinkedIn et remplir le brouillon "
+                "sans publication automatique."
+            ),
         )
 
     if _has_any(text, ("clique", "click", "appuie", "presse", "touche", "play", "pause")):

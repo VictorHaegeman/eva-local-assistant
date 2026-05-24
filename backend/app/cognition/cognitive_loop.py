@@ -12,12 +12,14 @@ from app.cognition.state import (
 )
 from app.cognition.tool_result import ToolResult, tool_result_to_dict
 from app.cognition.verifier import verify_result
+from app.config import settings
 from app.integrations.beeper_assistant import build_beeper_chat_response
 from app.integrations.browser_actions import open_browser_from_message
 from app.integrations.browser_assistant import open_assisted_browser_from_message
 from app.integrations.browser import open_url
 from app.integrations.desktop_chat import execute_desktop_control_from_message
 from app.integrations.gmail_chat import build_gmail_chat_response
+from app.integrations.linkedin_assistant import build_linkedin_chat_response
 from app.integrations.map_preview import build_map_preview_from_message
 from app.integrations.spotify_assistant import open_spotify_from_message
 from app.projects.project_chat import (
@@ -48,6 +50,15 @@ class CognitiveLoopResult:
         }
 
 
+@dataclass(frozen=True)
+class RouteExecution:
+    content: str
+    result: ToolResult
+    selected_route: str
+    requires_action: bool = True
+    web_preview: dict[str, Any] | None = None
+
+
 ACTION_ROUTES = {
     "browser_or_video",
     "cursor_work",
@@ -57,6 +68,7 @@ ACTION_ROUTES = {
     "spotify",
     "desktop_control",
     "beeper_messages",
+    "linkedin_browser_post",
     "web_search",
 }
 
@@ -73,6 +85,7 @@ ROUTE_LABELS = {
     "spotify": "Spotify",
     "desktop_control": "Controle PC",
     "beeper_messages": "Beeper",
+    "linkedin_browser_post": "LinkedIn",
     "generic_chat": "Reponse directe",
 }
 
@@ -85,6 +98,21 @@ def _blocked(tool: str, reason: str, next_actions: tuple[str, ...] = ()) -> Tool
         error=reason,
         next_actions=next_actions,
         confidence=0.95,
+    )
+
+
+def _failed(
+    tool: str,
+    error: str,
+    next_actions: tuple[str, ...] = (),
+    confidence: float = 0.35,
+) -> ToolResult:
+    return ToolResult(
+        tool=tool,
+        status="failed",
+        error=error,
+        next_actions=next_actions,
+        confidence=confidence,
     )
 
 
@@ -106,7 +134,63 @@ def _success(
 
 
 def _requires_trusted(route: str) -> bool:
-    return route in {"browser_or_video", "cursor_work", "spotify", "desktop_control", "beeper_messages"}
+    return route in {
+        "browser_or_video",
+        "cursor_work",
+        "spotify",
+        "desktop_control",
+        "beeper_messages",
+        "linkedin_browser_post",
+    }
+
+
+def _tool_for_route(route: str, understanding: UnderstandingFrame) -> str:
+    return {
+        "browser_or_video": "browser_assistant",
+        "cursor_work": "cursor_bridge",
+        "gmail_read": "gmail_client",
+        "gmail_reply_audit": "gmail_client",
+        "gmail_reply_draft": "gmail_client",
+        "spotify": "spotify_assistant",
+        "desktop_control": "desktop_automation",
+        "beeper_messages": "beeper_assistant",
+        "linkedin_browser_post": "linkedin_assistant",
+        "web_search": "web_search",
+        "screen_read": "screen_reader",
+    }.get(route, understanding.tool_preference)
+
+
+def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
+    domain = understanding.primary_domain
+    routes: list[str] = [route]
+
+    if domain == "gmail":
+        routes.extend(["gmail_read", "gmail_reply_draft"])
+    elif domain in {"cursor", "project"}:
+        routes.extend(["cursor_work", "web_search"])
+    elif domain == "browser":
+        routes.extend(["browser_or_video", "web_search"])
+    elif domain == "spotify":
+        routes.extend(["spotify", "browser_or_video", "web_search"])
+    elif domain in {"desktop", "screen"}:
+        routes.extend(["desktop_control", "screen_read", "web_search"])
+    elif domain == "beeper":
+        routes.extend(["beeper_messages", "screen_read"])
+    elif domain == "linkedin":
+        routes.extend(["linkedin_browser_post", "browser_or_video", "web_search"])
+    elif domain == "web":
+        routes.extend(["web_search", "browser_or_video"])
+
+    if settings.eva_reasoning_web_fallback_enabled and "web_search" not in routes:
+        routes.append("web_search")
+
+    unique_routes: list[str] = []
+    for candidate in routes:
+        if candidate not in unique_routes:
+            unique_routes.append(candidate)
+
+    max_attempts = max(1, min(settings.eva_reasoning_max_attempts, 6))
+    return unique_routes[:max_attempts]
 
 
 def _route_options(
@@ -125,6 +209,8 @@ def _route_options(
         base_options.extend(["cursor_work", "web_search", "generic_chat"])
     elif domain == "browser":
         base_options.extend(["browser_or_video", "web_search", "generic_chat"])
+    elif domain == "linkedin":
+        base_options.extend(["linkedin_browser_post", "web_search", "generic_chat"])
     elif selected_route == "web_search":
         base_options.extend(["browser_or_video", "generic_chat"])
     else:
@@ -163,13 +249,19 @@ def _trace_payload(
     confidence = latest_result.confidence if latest_result else understanding.intent.confidence
     selected_label = ROUTE_LABELS.get(selected_route, selected_route.replace("_", " "))
 
-    return {
-        "title": "Eva pipeline",
-        "summary": state.goal.goal,
-        "selected": selected_label,
-        "confidence": round(max(0.0, min(1.0, confidence)) * 100),
-        "status": status,
-        "stages": [
+    stages: list[dict[str, object]] = []
+    if understanding.cognitive_memory_summary:
+        stages.append(
+            {
+                "key": "recall",
+                "label": "Memoire",
+                "status": "done",
+                "detail": understanding.cognitive_memory_summary,
+            }
+        )
+
+    stages.extend(
+        [
             {
                 "key": "classify",
                 "label": "Comprendre",
@@ -195,8 +287,41 @@ def _trace_payload(
                 "status": "done" if evidence else "blocked",
                 "detail": evidence[0] if evidence else "preuve absente",
             },
-        ],
+        ]
+    )
+    if len(state.tool_results) > 1:
+        stages.append(
+            {
+                "key": "retry",
+                "label": "Reessayer",
+                "status": "done" if latest_result and latest_result.ok else "partial",
+                "detail": f"{len(state.tool_results)} pistes tentees",
+            }
+        )
+
+    return {
+        "title": "Eva pipeline",
+        "summary": state.goal.goal,
+        "selected": selected_label,
+        "confidence": round(max(0.0, min(1.0, confidence)) * 100),
+        "status": status,
+        "stages": stages,
         "evidence": evidence,
+        "attempts": [
+            {
+                "tool": result.tool,
+                "status": result.status,
+                "evidence": list(result.evidence[:2]),
+                "error": result.error,
+                "next_actions": list(result.next_actions[:3]),
+            }
+            for result in state.tool_results
+        ],
+        "memory": {
+            "summary": understanding.cognitive_memory_summary,
+            "clusters": list(understanding.cognitive_memory_clusters),
+            "count": understanding.cognitive_memory_count,
+        },
     }
 
 
@@ -274,6 +399,162 @@ async def _map_preview(
     return content, result, web_preview
 
 
+async def _execute_route_once(
+    message: str,
+    understanding: UnderstandingFrame,
+    route: str,
+    trusted_actions: bool,
+) -> RouteExecution | None:
+    use_domain_fallback = route == str(understanding.action_plan.route)
+
+    if _requires_trusted(route) and not trusted_actions:
+        result = _blocked(
+            _tool_for_route(route, understanding),
+            "Cette action locale demande une session fiable: PC local ou Telegram autorise.",
+            ("refaire la demande depuis le PC local", "ou utiliser ton Telegram autorise"),
+        )
+        return RouteExecution(
+            content=build_blocked_response(result),
+            result=result,
+            selected_route=route,
+        )
+
+    if route in {"gmail_read", "gmail_reply_audit", "gmail_reply_draft"} or (
+        use_domain_fallback and understanding.primary_domain == "gmail"
+    ):
+        content = await build_gmail_chat_response(message, force_list=route == "gmail_read")
+        if not content:
+            return RouteExecution(
+                content="",
+                result=_failed(
+                    "gmail_client",
+                    "Le module Gmail n'a pas produit de resultat exploitable.",
+                    fallback_for_result(ToolResult(tool="gmail_client", status="failed")),
+                ),
+                selected_route=route,
+            )
+        result = _success(
+            "gmail_client",
+            ("Gmail API interrogee pour cette demande.", "Reponse construite depuis le module Gmail local."),
+            confidence=0.82,
+        )
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "cursor_work" or (use_domain_fallback and understanding.primary_domain == "cursor"):
+        content = (
+            build_cursor_work_session_response(message)
+            if trusted_actions
+            else build_chat_cursor_prompt_response(message)
+        )
+        result = _success(
+            "cursor_bridge",
+            ("Projet resolu ou prompt Cursor prepare via le module projet.",),
+            confidence=0.84,
+        )
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "spotify" or (use_domain_fallback and understanding.primary_domain == "spotify"):
+        content = open_spotify_from_message(message)
+        if not content:
+            return RouteExecution(
+                content="",
+                result=_failed("spotify_assistant", "Spotify n'a pas produit de resultat exploitable."),
+                selected_route=route,
+            )
+        result = _success("spotify_assistant", ("Commande Spotify envoyee au PC local.",), confidence=0.82)
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "desktop_control" or (use_domain_fallback and understanding.primary_domain == "desktop"):
+        content = execute_desktop_control_from_message(message)
+        if not content:
+            return RouteExecution(
+                content="",
+                result=_failed("desktop_automation", "Aucune action PC fiable n'a ete detectee."),
+                selected_route=route,
+            )
+        result = _success("desktop_automation", ("Commande clavier/souris envoyee au PC local.",), confidence=0.78)
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "beeper_messages" or (use_domain_fallback and understanding.primary_domain == "beeper"):
+        content = await build_beeper_chat_response(message)
+        if not content:
+            return RouteExecution(
+                content="",
+                result=_failed("beeper_assistant", "Beeper n'a pas donne de resultat exploitable."),
+                selected_route=route,
+            )
+        result = _success("beeper_assistant", ("Beeper ouvert/lu via le pont local disponible.",), confidence=0.72)
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "linkedin_browser_post" or (use_domain_fallback and understanding.primary_domain == "linkedin"):
+        content = await build_linkedin_chat_response(message)
+        if not content:
+            return RouteExecution(
+                content="",
+                result=_failed("linkedin_assistant", "LinkedIn assistant n'a pas produit de brouillon exploitable."),
+                selected_route=route,
+            )
+        result = _success(
+            "linkedin_assistant",
+            ("Post LinkedIn prepare sans publication.", "Ouverture/remplissage navigateur tente."),
+            confidence=0.78,
+        )
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "screen_read" or (use_domain_fallback and understanding.primary_domain == "screen"):
+        visual_result = await analyze_visual_action(message, execute=True)
+        content = format_visual_action_response(visual_result)
+        result = _success("screen_reader", ("Capture ecran analysee avant action visuelle.",), confidence=0.76)
+        return RouteExecution(content=content, result=result, selected_route="screen_read")
+
+    if route == "browser_or_video" or (use_domain_fallback and understanding.primary_domain == "browser"):
+        content = open_assisted_browser_from_message(message) or open_browser_from_message(message)
+        if not content:
+            return RouteExecution(
+                content="",
+                result=_failed(
+                    "browser_assistant",
+                    "Aucune destination navigateur fiable n'a ete detectee.",
+                    fallback_for_result(ToolResult(tool="browser_assistant", status="failed")),
+                ),
+                selected_route=route,
+            )
+        result = _success(
+            "browser_assistant",
+            ("Brave/navigateur local appele avec une URL interpretee.",),
+            confidence=0.8,
+        )
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "web_search" or (use_domain_fallback and understanding.primary_domain == "web"):
+        query = detect_web_search_query(message) or message
+        web_results = await search_web(query)
+        content = format_web_results(query, web_results)
+        result = _success("web_search", ("Recherche web effectuee avec resultats formates.",), confidence=0.8)
+        return RouteExecution(
+            content=content,
+            result=result,
+            selected_route="web_search",
+            requires_action=False,
+        )
+
+    return None
+
+
+def _failure_summary(state: CognitiveState) -> str:
+    lines = ["Je n'ai pas encore un resultat fiable, donc je ne vais pas inventer."]
+    if state.tool_results:
+        lines.append("")
+        lines.append("Pistes tentees:")
+        for result in state.tool_results:
+            status = result.status
+            detail = result.error or (result.evidence[0] if result.evidence else "aucune preuve")
+            lines.append(f"- {result.tool}: {status} - {detail}")
+    lines.append("")
+    lines.append("Prochaine piste logique: reformuler la recherche web ou passer par un outil local plus specifique.")
+    return "\n".join(lines)
+
+
 async def run_cognitive_loop(
     message: str,
     understanding: UnderstandingFrame,
@@ -307,172 +588,82 @@ async def run_cognitive_loop(
             critic=critic_report_to_dict(critic),
         )
 
-    if route not in ACTION_ROUTES and understanding.primary_domain not in {"browser", "cursor", "gmail", "spotify", "desktop", "beeper", "web"}:
+    supported_domains = {"browser", "cursor", "gmail", "spotify", "desktop", "beeper", "web", "linkedin", "screen"}
+    if route not in ACTION_ROUTES and understanding.primary_domain not in supported_domains:
         return CognitiveLoopResult(handled=False, state=state)
 
-    if _requires_trusted(route) and not trusted_actions:
-        result = _blocked(
-            understanding.tool_preference,
-            "Cette action locale demande une session fiable: PC local ou Telegram autorise.",
-            ("refaire la demande depuis le PC local", "ou utiliser ton Telegram autorise"),
-        )
-        state.add_result(result)
-        state.handled = True
-        return CognitiveLoopResult(
-            handled=True,
-            message=_assistant_payload(
-                build_blocked_response(result),
+    last_route = route
+    last_critic = None
+    for candidate_route in _route_sequence(str(route), understanding):
+        last_route = candidate_route
+        try:
+            execution = await _execute_route_once(
+                message,
                 understanding,
-                state,
-                route,
-            ),
-            state=state,
-        )
-
-    try:
-        if route in {"gmail_read", "gmail_reply_audit", "gmail_reply_draft"} or understanding.primary_domain == "gmail":
-            content = await build_gmail_chat_response(message, force_list=route == "gmail_read")
-            if not content:
-                return CognitiveLoopResult(handled=False, state=state)
-            result = _success(
-                "gmail_client",
-                ("Gmail API interrogee pour cette demande.", "Reponse construite depuis le module Gmail local."),
-                confidence=0.82,
+                candidate_route,
+                trusted_actions=trusted_actions,
+            )
+        except Exception as exc:  # noqa: BLE001 - every tool failure becomes a retryable result.
+            failed = ToolResult(tool=_tool_for_route(candidate_route, understanding), status="failed", error=str(exc))
+            result = _failed(
+                failed.tool,
+                str(exc),
+                fallback_for_result(failed),
             )
             state.add_result(result)
-            state.handled = True
-            critic = criticize_response(content, state.tool_results, requires_action=True)
-            if not critic.passed:
-                content = build_critic_response(critic)
-            return CognitiveLoopResult(
-                handled=True,
-                message=_assistant_payload(content, understanding, state, route),
-                state=state,
-                critic=critic_report_to_dict(critic),
-            )
+            continue
 
-        if route == "cursor_work" or understanding.primary_domain == "cursor":
-            content = (
-                build_cursor_work_session_response(message)
-                if trusted_actions
-                else build_chat_cursor_prompt_response(message)
-            )
-            result = _success(
-                "cursor_bridge",
-                ("Projet resolu ou prompt Cursor prepare via le module projet.",),
-                confidence=0.84,
-            )
-            state.add_result(result)
-            state.handled = True
-            critic = criticize_response(content, state.tool_results, requires_action=True)
-            if not critic.passed:
-                result = ToolResult(
-                    tool="cursor_bridge",
-                    status="partial",
-                    evidence=result.evidence,
-                    next_actions=fallback_for_result(result),
-                    confidence=0.68,
+        if not execution:
+            state.add_result(
+                _failed(
+                    _tool_for_route(candidate_route, understanding),
+                    "Route non executable par les outils locaux actuels.",
+                    ("essayer une autre route cognitive",),
+                    confidence=0.25,
                 )
-                state.add_result(result)
+            )
+            continue
+
+        state.add_result(execution.result)
+        if not execution.content or not execution.result.ok:
+            continue
+
+        state.handled = True
+        critic = criticize_response(
+            execution.content,
+            state.tool_results,
+            requires_action=execution.requires_action,
+        )
+        last_critic = critic
+        if critic.passed:
             return CognitiveLoopResult(
                 handled=True,
-                message=_assistant_payload(content, understanding, state, route),
+                message=_assistant_payload(
+                    execution.content,
+                    understanding,
+                    state,
+                    execution.selected_route,
+                    web_preview=execution.web_preview,
+                ),
                 state=state,
                 critic=critic_report_to_dict(critic),
             )
 
-        if route == "spotify" or understanding.primary_domain == "spotify":
-            content = open_spotify_from_message(message)
-            if not content:
-                return CognitiveLoopResult(handled=False, state=state)
-            result = _success("spotify_assistant", ("Commande Spotify envoyee au PC local.",), confidence=0.82)
-            state.add_result(result)
-            state.handled = True
+        if not critic.retryable:
             return CognitiveLoopResult(
                 handled=True,
-                message=_assistant_payload(content, understanding, state, route),
+                message=_assistant_payload(build_critic_response(critic), understanding, state, execution.selected_route),
                 state=state,
+                critic=critic_report_to_dict(critic),
             )
 
-        if route == "desktop_control" or understanding.primary_domain == "desktop":
-            content = execute_desktop_control_from_message(message)
-            if not content:
-                return CognitiveLoopResult(handled=False, state=state)
-            result = _success("desktop_automation", ("Commande clavier/souris envoyee au PC local.",), confidence=0.78)
-            state.add_result(result)
-            state.handled = True
-            return CognitiveLoopResult(
-                handled=True,
-                message=_assistant_payload(content, understanding, state, route),
-                state=state,
-            )
-
-        if route == "beeper_messages" or understanding.primary_domain == "beeper":
-            content = await build_beeper_chat_response(message)
-            if not content:
-                return CognitiveLoopResult(handled=False, state=state)
-            result = _success("beeper_assistant", ("Beeper ouvert/lu via le pont local disponible.",), confidence=0.72)
-            state.add_result(result)
-            state.handled = True
-            return CognitiveLoopResult(
-                handled=True,
-                message=_assistant_payload(content, understanding, state, route),
-                state=state,
-            )
-
-        if understanding.primary_domain == "screen":
-            visual_result = await analyze_visual_action(message, execute=True)
-            content = format_visual_action_response(visual_result)
-            result = _success("screen_reader", ("Capture ecran analysee avant action visuelle.",), confidence=0.76)
-            state.add_result(result)
-            state.handled = True
-            return CognitiveLoopResult(
-                handled=True,
-                message=_assistant_payload(content, understanding, state, "screen_read"),
-                state=state,
-            )
-
-        if route == "browser_or_video" or understanding.primary_domain == "browser":
-            content = open_assisted_browser_from_message(message) or open_browser_from_message(message)
-            if not content:
-                return CognitiveLoopResult(handled=False, state=state)
-            result = _success("browser_assistant", ("Brave/navigateur local appele avec une URL interpretee.",), confidence=0.8)
-            state.add_result(result)
-            state.handled = True
-            return CognitiveLoopResult(
-                handled=True,
-                message=_assistant_payload(content, understanding, state, route),
-                state=state,
-            )
-
-        if route == "web_search" or understanding.primary_domain == "web":
-            query = detect_web_search_query(message) or message
-            web_results = await search_web(query)
-            content = format_web_results(query, web_results)
-            result = _success("web_search", ("Recherche web effectuee avec resultats formates.",), confidence=0.8)
-            state.add_result(result)
-            state.handled = True
-            return CognitiveLoopResult(
-                handled=True,
-                message=_assistant_payload(content, understanding, state, route),
-                state=state,
-            )
-    except Exception as exc:  # noqa: BLE001 - normalize tool failures for the loop.
-        result = ToolResult(
-            tool=understanding.tool_preference,
-            status="failed",
-            error=str(exc),
-            next_actions=fallback_for_result(
-                ToolResult(tool=understanding.tool_preference, status="failed", error=str(exc))
-            ),
-            confidence=0.35,
-        )
-        state.add_result(result)
+    if state.tool_results:
         state.handled = True
         return CognitiveLoopResult(
             handled=True,
-            message=_assistant_payload(build_blocked_response(result), understanding, state, route),
+            message=_assistant_payload(_failure_summary(state), understanding, state, last_route),
             state=state,
+            critic=critic_report_to_dict(last_critic) if last_critic else None,
         )
 
     return CognitiveLoopResult(handled=False, state=state)

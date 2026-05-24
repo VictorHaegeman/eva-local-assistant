@@ -6,6 +6,7 @@ from app.actions.action_store import ActionStoreError, action_to_dict, list_acti
 from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.cognition.cognitive_loop import build_reasoning_trace, run_cognitive_loop
+from app.cognition.context import attach_cognitive_context, build_cognitive_context, format_cognitive_context
 from app.cognition.structured_interpreter import refine_understanding_with_ollama
 from app.config import settings
 from app.files.file_context import detect_file_context
@@ -274,6 +275,12 @@ async def process_chat_messages(
         conversation_context=conversation_context,
         trusted_actions=trusted_actions,
     )
+    cognitive_context = build_cognitive_context(
+        latest_user_message,
+        conversation_context=conversation_context,
+        frame=understanding,
+    )
+    understanding = attach_cognitive_context(understanding, cognitive_context)
     understanding = await refine_understanding_with_ollama(
         latest_user_message,
         conversation_context=conversation_context,
@@ -284,6 +291,7 @@ async def process_chat_messages(
     action_plan = understanding.action_plan
     intent_context = format_intent_context(user_intent)
     context_blocks: list[str] = [
+        format_cognitive_context(cognitive_context),
         format_understanding_context(understanding),
         format_action_plan_context(action_plan),
     ]

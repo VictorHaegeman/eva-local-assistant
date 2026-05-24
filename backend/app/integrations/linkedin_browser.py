@@ -1,8 +1,10 @@
 import subprocess
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
 from app.actions.action_store import EvaAction
+from app.config import settings
 from app.integrations.browser import open_url
 
 
@@ -33,6 +35,33 @@ def _open_url(url: str) -> None:
     open_url(url)
 
 
+def _send_keys(keys: str) -> None:
+    command = (
+        "$ws = New-Object -ComObject WScript.Shell; "
+        f"$ws.SendKeys('{keys}')"
+    )
+    completed = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", command],
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+    if completed.returncode != 0:
+        raise LinkedInBrowserError(
+            completed.stderr or "Impossible d'envoyer les touches au navigateur."
+        )
+
+
+def _auto_fill_composer() -> bool:
+    if not settings.eva_linkedin_auto_fill_composer:
+        return False
+
+    delay = max(settings.eva_linkedin_auto_fill_delay_seconds, 1.0)
+    time.sleep(delay)
+    _send_keys("^v")
+    return True
+
+
 def execute_linkedin_browser_prepare_post(action: EvaAction) -> str:
     post_text = str(action.payload.get("post_text", "")).strip()
     target_url = str(action.payload.get("target_url", "")).strip() or DEFAULT_LINKEDIN_COMPOSE_URL
@@ -44,12 +73,21 @@ def execute_linkedin_browser_prepare_post(action: EvaAction) -> str:
 
     _set_clipboard(post_text)
     _open_url(target_url)
+    auto_filled = _auto_fill_composer()
 
     lines = [
-        "Post LinkedIn prepare dans le presse-papiers.",
+        (
+            "Post LinkedIn colle automatiquement dans le compositeur."
+            if auto_filled
+            else "Post LinkedIn prepare dans le presse-papiers."
+        ),
         f"LinkedIn ouvert: {target_url}",
         "Rien n'a ete publie automatiquement.",
-        "Colle le texte dans LinkedIn, relis, ajoute l'image si utile, puis clique Publier toi-meme.",
+        (
+            "Relis, ajoute l'image si utile, puis publie seulement quand c'est valide."
+            if auto_filled
+            else "Colle le texte dans LinkedIn, relis, ajoute l'image si utile, puis publie seulement quand c'est valide."
+        ),
     ]
 
     if image_path:
