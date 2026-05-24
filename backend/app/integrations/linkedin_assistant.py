@@ -340,6 +340,11 @@ def _format_linkedin_signal(message: dict[str, Any], index: int) -> str:
 
 
 def _clean_linkedin_text(value: str) -> str:
+    if any(marker in value for marker in ("Ã", "â", "Â")):
+        try:
+            value = value.encode("latin1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
     clean = html.unescape(value)
     clean = re.sub(r"[\u034f\u061c\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]+", " ", clean)
     clean = re.sub(r"\s+", " ", clean)

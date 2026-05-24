@@ -21,6 +21,17 @@ UNPROVEN_ACTION_CLAIMS = (
     "je vais maintenant ouvrir",
 )
 
+FUTURE_ONLY_ACTION_CLAIMS = (
+    "je vais essayer",
+    "je vais tenter",
+    "je vais naviguer",
+    "je vais ouvrir",
+    "je te previens si",
+    "je vous previens si",
+    "je vous tiendrai au courant",
+    "je te tiendrai au courant",
+)
+
 
 @dataclass(frozen=True)
 class CriticReport:
@@ -45,6 +56,15 @@ def criticize_response(
             reason="Reponse trop passive avec question generique.",
             fix="Remplacer par l'action suivante logique ou un statut factuel.",
             retryable=False,
+        )
+
+    if requires_action and any(marker in normalized for marker in FUTURE_ONLY_ACTION_CLAIMS):
+        return CriticReport(
+            passed=False,
+            severity="high",
+            reason="Reponse au futur: Eva annonce une intention au lieu de donner un resultat verifie.",
+            fix="Relancer une autre route ou retourner un blocage factuel avec preuves.",
+            retryable=True,
         )
 
     has_tool_evidence = verified_any(tool_results)

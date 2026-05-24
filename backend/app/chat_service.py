@@ -30,7 +30,11 @@ from app.integrations.browser_assistant import BrowserAssistError, open_assisted
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
 from app.integrations.desktop_chat import DesktopChatError, execute_desktop_control_from_message
-from app.integrations.beeper_assistant import BeeperAssistantError, build_beeper_chat_response
+from app.integrations.beeper_assistant import (
+    BeeperAssistantError,
+    beeper_response_has_useful_content,
+    build_beeper_chat_response,
+)
 from app.integrations.stitch_design import (
     StitchDesignError,
     build_stitch_prompt,
@@ -723,7 +727,7 @@ async def process_chat_messages(
             }
 
         beeper_response = await build_beeper_chat_response(latest_user_message) if trusted_actions else None
-        if beeper_response:
+        if beeper_response and beeper_response_has_useful_content(beeper_response):
             return {
                 "message": {
                     "role": "assistant",

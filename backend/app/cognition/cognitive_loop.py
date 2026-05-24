@@ -13,7 +13,7 @@ from app.cognition.state import (
 from app.cognition.tool_result import ToolResult, tool_result_to_dict
 from app.cognition.verifier import verify_result
 from app.config import settings
-from app.integrations.beeper_assistant import build_beeper_chat_response
+from app.integrations.beeper_assistant import beeper_response_has_useful_content, build_beeper_chat_response
 from app.integrations.browser_actions import open_browser_from_message
 from app.integrations.browser_assistant import open_assisted_browser_from_message
 from app.integrations.browser import open_url
@@ -491,6 +491,17 @@ async def _execute_route_once(
             return RouteExecution(
                 content="",
                 result=_failed("beeper_assistant", "Beeper n'a pas donne de resultat exploitable."),
+                selected_route=route,
+            )
+        if not beeper_response_has_useful_content(content):
+            return RouteExecution(
+                content=content,
+                result=_failed(
+                    "beeper_assistant",
+                    "Beeper n'est pas visible ou la lecture pixels n'a pas donne de contenu utile.",
+                    ("relire l'ecran courant", "ouvrir Beeper puis recommencer", "essayer une route web si la demande ne concerne pas Beeper"),
+                    confidence=0.32,
+                ),
                 selected_route=route,
             )
         result = _success("beeper_assistant", ("Beeper ouvert/lu via le pont local disponible.",), confidence=0.72)

@@ -34,6 +34,8 @@ Objectif:
 
 Contraintes:
 - Ne repete pas de token, mot de passe ou code prive si tu en vois un.
+- Commence toujours par une ligne exacte: "Beeper visible: oui" ou "Beeper visible: non".
+- Si Beeper n'est pas visible, explique ce qui est visible puis arrete. N'invente pas de messages.
 - Si le message n'est pas visible, dis clairement qu'il faut ouvrir la conversation.
 - Ne clique pas et n'envoie rien: tu analyses seulement l'ecran.
 """.strip()
@@ -140,6 +142,10 @@ async def read_beeper_screen(instruction: str = "") -> dict[str, object]:
     return {
         "open": open_result,
         "screen": screen_result,
+        "visible": beeper_analysis_confirms_visible(
+            str(screen_result.get("analysis", "")),
+            open_result,
+        ),
     }
 
 
@@ -173,9 +179,21 @@ async def build_beeper_chat_response(message: str) -> str | None:
     open_result = payload["open"]
     screen = payload["screen"]
     analysis = str(screen.get("analysis", "")).strip()
+    visible = bool(payload.get("visible"))
+
+    if not visible:
+        return (
+            "Source: Beeper desktop/web + lecture pixels locale.\n"
+            "Beeper visible: non\n"
+            f"Ouverture: {open_result.get('message', '')}\n\n"
+            "Je n'ai pas obtenu de lecture Beeper fiable, donc je ne vais pas marquer l'action comme terminee.\n"
+            "Capture analysee:\n"
+            f"{analysis or 'Aucune analyse exploitable renvoyee par le modele vision.'}"
+        )
 
     lines = [
         "Source: Beeper desktop/web + lecture pixels locale.",
+        "Beeper visible: oui",
         f"Ouverture: {open_result.get('message', '')}",
         "",
         "Debrief visible:",
@@ -232,3 +250,51 @@ async def build_beeper_chat_response(message: str) -> str | None:
         lines.extend(["", "Brouillon:", draft])
 
     return "\n".join(lines)
+
+
+def _normalize_text(value: str) -> str:
+    import unicodedata
+
+    without_accents = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value.lower())
+        if not unicodedata.combining(char)
+    )
+    return " ".join(without_accents.split())
+
+
+def beeper_analysis_confirms_visible(analysis: str, open_result: dict[str, object] | None = None) -> bool:
+    normalized = _normalize_text(analysis)
+    if "beeper visible: oui" in normalized:
+        return True
+    if "beeper visible: non" in normalized:
+        return False
+
+    open_message = _normalize_text(str((open_result or {}).get("message", "")))
+    if "fenetre non activee" in open_message and "beeper" not in normalized:
+        return False
+
+    false_markers = (
+        "beeper n'est pas visible",
+        "beeper nest pas visible",
+        "aucune fenetre beeper",
+        "pas beeper",
+    )
+    if any(marker in normalized for marker in false_markers):
+        return False
+
+    return "beeper" in normalized and any(
+        marker in normalized
+        for marker in ("conversation", "message", "inbox", "chat", "visible")
+    )
+
+
+def beeper_response_has_useful_content(content: str) -> bool:
+    normalized = _normalize_text(content)
+    if "beeper visible: non" in normalized:
+        return False
+    if "aucune analyse exploitable" in normalized:
+        return False
+    if "je n'ai pas obtenu de lecture beeper fiable" in normalized:
+        return False
+    return "beeper visible: oui" in normalized or "debrief visible:" in normalized
