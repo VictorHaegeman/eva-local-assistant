@@ -1,14 +1,5 @@
-import { Activity, BrainCircuit, Cpu, Database, RadioTower, ShieldCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-
-
-function formatClock(date) {
-  return new Intl.DateTimeFormat("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-}
+import { Activity, BrainCircuit, Cpu, ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
 
 
 function latestCognitiveTrace(messages = []) {
@@ -51,21 +42,15 @@ export function JarvisHud({
   status,
   doctor,
   loading,
-  activePanel,
   currentMode,
   messages = [],
 }) {
-  const [now, setNow] = useState(() => new Date());
   const trace = useMemo(() => latestCognitiveTrace(messages), [messages]);
   const tone = statusTone(status);
   const modeLabel = currentMode?.label || "Chat";
-  const traceStatus = trace?.status || (loading ? "processing" : "standby");
+  const hasDecision = loading || Boolean(trace);
+  const traceStatus = trace?.status || (loading ? "processing" : "");
   const traceConfidence = Number(trace?.confidence) || (loading ? 64 : 0);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   return (
     <div className="jarvis-hud" aria-hidden="true">
@@ -86,32 +71,14 @@ export function JarvisHud({
           <i className={`hud-led ${tone}`} />
         </div>
         <div className="hud-readout">
-          <Cpu size={15} />
-          <span>Model</span>
-          <strong>{status?.model || "Ollama"}</strong>
-        </div>
-        <div className="hud-readout">
-          <ShieldCheck size={15} />
-          <span>Doctor</span>
-          <strong>{doctor?.status || "scan"}</strong>
-        </div>
-      </div>
-
-      <div className="hud-vitals hud-vitals-right">
-        <div className="hud-readout">
           <BrainCircuit size={15} />
           <span>Mode</span>
           <strong>{modeLabel}</strong>
         </div>
         <div className="hud-readout">
-          <Database size={15} />
-          <span>Panel</span>
-          <strong>{activePanel}</strong>
-        </div>
-        <div className="hud-readout">
-          <RadioTower size={15} />
-          <span>Local</span>
-          <strong>{formatClock(now)}</strong>
+          <Cpu size={15} />
+          <span>Model</span>
+          <strong>{status?.model || "Ollama"}</strong>
         </div>
       </div>
 
@@ -123,12 +90,22 @@ export function JarvisHud({
         <strong>Eva</strong>
       </div>
 
-      <div className="hud-decision-strip">
-        <span>Decision stream</span>
-        <strong>{trace?.selected || (loading ? "Analyse en cours" : "Standby")}</strong>
-        <em>{traceStatus}</em>
-        <i style={{ "--hud-confidence": `${Math.min(100, Math.max(0, traceConfidence))}%` }} />
-      </div>
+      {hasDecision && (
+        <div className="hud-decision-strip">
+          <span>Decision stream</span>
+          <strong>{trace?.selected || "Analyse en cours"}</strong>
+          <em>{traceStatus}</em>
+          <i style={{ "--hud-confidence": `${Math.min(100, Math.max(0, traceConfidence))}%` }} />
+        </div>
+      )}
+
+      {doctor?.status && doctor.status !== "ok" && (
+        <div className="hud-doctor-alert">
+          <ShieldCheck size={14} />
+          <span>Doctor</span>
+          <strong>{doctor.status}</strong>
+        </div>
+      )}
 
       <div className="hud-micro-nodes">
         {microNodes.map(([x, y], index) => (

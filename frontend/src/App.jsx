@@ -378,7 +378,6 @@ export default function App() {
           status={backendStatus}
           doctor={doctor}
           loading={loading}
-          activePanel={activePanel}
           currentMode={currentMode}
           messages={messages}
         />

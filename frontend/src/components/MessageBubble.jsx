@@ -67,7 +67,9 @@ function CognitiveTrace({ trace }) {
   const attempts = Array.isArray(trace?.attempts) ? trace.attempts : [];
   const memory = trace?.memory || null;
   const gap = scoreGap(routeOptions);
+  const startExpanded = trace?.status === "failed" || trace?.status === "blocked";
   const [reveal, setReveal] = useState(1);
+  const [expanded, setExpanded] = useState(startExpanded);
   const maxReveal =
     stages.length +
     (routeOptions.length ? 1 : 0) +
@@ -76,6 +78,7 @@ function CognitiveTrace({ trace }) {
 
   useEffect(() => {
     setReveal(1);
+    setExpanded(startExpanded);
     const timer = window.setInterval(() => {
       setReveal((current) => {
         if (current >= maxReveal) {
@@ -87,9 +90,12 @@ function CognitiveTrace({ trace }) {
     }, 420);
 
     return () => window.clearInterval(timer);
-  }, [maxReveal]);
+  }, [maxReveal, startExpanded, trace?.selected, trace?.status]);
 
   if (!stages.length) return null;
+
+  const hasFailedAttempt = attempts.some((attempt) => ["failed", "blocked"].includes(attempt.status));
+  const visibleRouteOptions = routeOptions.slice(0, 2);
 
   return (
     <section className="cognitive-trace" aria-label="Decision Eva">
@@ -108,92 +114,137 @@ function CognitiveTrace({ trace }) {
       </div>
       <p className="trace-summary">{trace.summary}</p>
 
-      <div className="trace-system-row">
-        <div className="trace-system-chip">
-          <BrainCircuit size={15} aria-hidden="true" />
-          <span>Mode</span>
+      <div className="trace-compact-grid">
+        <div className="trace-compact-card primary">
+          <span>Choix</span>
           <strong>{trace.selected || "Decision"}</strong>
+          <small>{statusLabel(trace.status) || "analyse"}</small>
         </div>
-        <div className="trace-system-chip">
-          <Database size={15} aria-hidden="true" />
-          <span>Memoire</span>
-          <strong>{memory?.count ?? 0}</strong>
-        </div>
-        <div className="trace-system-chip">
-          <GitBranch size={15} aria-hidden="true" />
-          <span>Delta</span>
-          <strong>{gap === null ? "--" : `${gap}%`}</strong>
-        </div>
-        <div className="trace-system-chip">
-          <ShieldCheck size={15} aria-hidden="true" />
-          <span>Essais</span>
-          <strong>{Math.max(1, attempts.length || 1)}</strong>
-        </div>
-      </div>
-
-      <div className="trace-stage-grid">
-        {stages.map((stage, index) => (
+        {visibleRouteOptions.map((option) => (
           <div
-            className={`trace-stage ${stage.status || "pending"} ${index < reveal ? "visible" : "pending-visual"}`}
-            key={stage.key || stage.label}
+            className={`trace-compact-card ${option.selected ? "selected" : ""}`}
+            key={option.key || option.label}
           >
-            <span>Stage {String(index + 1).padStart(2, "0")}</span>
-            <strong>{stage.label}</strong>
-            <small>{stage.detail}</small>
+            <span>{option.selected ? "retenu" : "option"}</span>
+            <strong>{option.label}</strong>
+            <small>{option.score}%</small>
           </div>
         ))}
+        <button
+          type="button"
+          className="trace-toggle"
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? "Masquer details" : "Voir details"}
+        </button>
       </div>
 
-      {routeOptions.length > 0 && reveal > stages.length && (
-        <div className="trace-decision-board">
-          <div className="trace-section-title">
-            <ScanSearch size={15} aria-hidden="true" />
-            <span>Routes candidates</span>
-          </div>
-          <div className="trace-routes">
-            {routeOptions.map((option) => (
-              <div className={`trace-route ${option.selected ? "selected" : ""}`} key={option.key || option.label}>
-                <div>
-                  <span>{option.selected ? "choisie" : "alternative"}</span>
-                  <strong>{option.label}</strong>
-                </div>
-                <em>{option.score}%</em>
-                <i style={{ "--score": `${Math.min(100, Math.max(0, Number(option.score) || 0))}%` }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {attempts.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) && (
-        <div className="trace-attempts">
-          <div className="trace-section-title">
-            <Route size={15} aria-hidden="true" />
-            <span>Boucle d'essais</span>
-          </div>
-          {attempts.slice(0, 4).map((attempt, index) => (
-            <div className={`trace-attempt ${attempt.status || "pending"}`} key={`${attempt.tool}-${index}`}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{attempt.tool}</strong>
-              <em>{statusLabel(attempt.status)}</em>
-              <small>{attempt.evidence?.[0] || attempt.error || attempt.next_actions?.[0] || "en attente de preuve"}</small>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {evidence.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) + (attempts.length ? 1 : 0) && (
-        <div className="trace-evidence">
-          <div className="trace-section-title">
-            <ShieldCheck size={15} aria-hidden="true" />
-            <span>Preuves locales</span>
-          </div>
+      {!expanded && evidence.length > 0 && (
+        <div className="trace-evidence compact">
           <div className="trace-evidence-list">
-            {evidence.slice(0, 4).map((item) => (
+            {evidence.slice(0, 2).map((item) => (
               <span key={item}>{item}</span>
             ))}
           </div>
         </div>
+      )}
+
+      {!expanded && hasFailedAttempt && (
+        <div className="trace-warning-line">
+          Eva n'a pas valide cette action comme terminee: elle doit reessayer ou expliquer le blocage.
+        </div>
+      )}
+
+      {expanded && (
+        <>
+          <div className="trace-system-row">
+            <div className="trace-system-chip">
+              <BrainCircuit size={15} aria-hidden="true" />
+              <span>Mode</span>
+              <strong>{trace.selected || "Decision"}</strong>
+            </div>
+            <div className="trace-system-chip">
+              <Database size={15} aria-hidden="true" />
+              <span>Memoire</span>
+              <strong>{memory?.count ?? 0}</strong>
+            </div>
+            <div className="trace-system-chip">
+              <GitBranch size={15} aria-hidden="true" />
+              <span>Delta</span>
+              <strong>{gap === null ? "--" : `${gap}%`}</strong>
+            </div>
+            <div className="trace-system-chip">
+              <ShieldCheck size={15} aria-hidden="true" />
+              <span>Essais</span>
+              <strong>{Math.max(1, attempts.length || 1)}</strong>
+            </div>
+          </div>
+
+          <div className="trace-stage-grid">
+            {stages.map((stage, index) => (
+              <div
+                className={`trace-stage ${stage.status || "pending"} ${index < reveal ? "visible" : "pending-visual"}`}
+                key={stage.key || stage.label}
+              >
+                <span>Stage {String(index + 1).padStart(2, "0")}</span>
+                <strong>{stage.label}</strong>
+                <small>{stage.detail}</small>
+              </div>
+            ))}
+          </div>
+
+          {routeOptions.length > 0 && reveal > stages.length && (
+            <div className="trace-decision-board">
+              <div className="trace-section-title">
+                <ScanSearch size={15} aria-hidden="true" />
+                <span>Routes candidates</span>
+              </div>
+              <div className="trace-routes">
+                {routeOptions.map((option) => (
+                  <div className={`trace-route ${option.selected ? "selected" : ""}`} key={option.key || option.label}>
+                    <div>
+                      <span>{option.selected ? "choisie" : "alternative"}</span>
+                      <strong>{option.label}</strong>
+                    </div>
+                    <em>{option.score}%</em>
+                    <i style={{ "--score": `${Math.min(100, Math.max(0, Number(option.score) || 0))}%` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {attempts.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) && (
+            <div className="trace-attempts">
+              <div className="trace-section-title">
+                <Route size={15} aria-hidden="true" />
+                <span>Boucle d'essais</span>
+              </div>
+              {attempts.slice(0, 4).map((attempt, index) => (
+                <div className={`trace-attempt ${attempt.status || "pending"}`} key={`${attempt.tool}-${index}`}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <strong>{attempt.tool}</strong>
+                  <em>{statusLabel(attempt.status)}</em>
+                  <small>{attempt.evidence?.[0] || attempt.error || attempt.next_actions?.[0] || "en attente de preuve"}</small>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {evidence.length > 0 && reveal > stages.length + (routeOptions.length ? 1 : 0) + (attempts.length ? 1 : 0) && (
+            <div className="trace-evidence">
+              <div className="trace-section-title">
+                <ShieldCheck size={15} aria-hidden="true" />
+                <span>Preuves locales</span>
+              </div>
+              <div className="trace-evidence-list">
+                {evidence.slice(0, 4).map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

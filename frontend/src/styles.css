@@ -478,6 +478,7 @@ button.nav-item:hover {
 .hud-vitals,
 .hud-radar,
 .hud-decision-strip,
+.hud-doctor-alert,
 .hud-micro-nodes {
   position: absolute;
 }
@@ -509,7 +510,7 @@ button.nav-item:hover {
       rgba(33, 156, 255, 0.02) 84deg,
       transparent 106deg 360deg
     );
-  opacity: 0.5;
+  opacity: 0.32;
   animation: hudSweep 10s linear infinite;
 }
 
@@ -523,7 +524,7 @@ button.nav-item:hover {
       rgba(255, 255, 255, 0.018) 4px,
       transparent 6px
     );
-  opacity: 0.36;
+  opacity: 0.18;
   mix-blend-mode: screen;
   animation: hudNoise 1.8s steps(5) infinite;
 }
@@ -644,10 +645,14 @@ button.nav-item:hover {
   width: 112px;
   height: 112px;
   border-radius: 50%;
-  opacity: 0.86;
+  opacity: 0.62;
   background:
     radial-gradient(circle, rgba(115, 214, 255, 0.1), transparent 54%),
     rgba(3, 9, 16, 0.28);
+}
+
+.hud-radar.active {
+  opacity: 0.86;
 }
 
 .hud-radar-ring {
@@ -747,6 +752,41 @@ button.nav-item:hover {
   animation: hudConfidence 1.4s ease-out both;
 }
 
+.hud-doctor-alert {
+  right: 42px;
+  top: 92px;
+  display: inline-grid;
+  grid-template-columns: 16px auto auto;
+  gap: 7px;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--amber);
+  background:
+    linear-gradient(135deg, rgba(242, 185, 107, 0.08), rgba(255, 255, 255, 0.016)),
+    rgba(25, 18, 8, 0.56);
+  border: 1px solid rgba(242, 185, 107, 0.28);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.hud-doctor-alert span {
+  color: rgba(244, 248, 251, 0.72);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hud-doctor-alert strong {
+  max-width: 82px;
+  color: var(--amber);
+  font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .hud-micro-nodes {
   inset: 0;
 }
@@ -758,9 +798,9 @@ button.nav-item:hover {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: rgba(115, 214, 255, 0.8);
-  box-shadow: 0 0 18px rgba(115, 214, 255, 0.72);
-  animation: hudNodePulse 4.2s ease-in-out infinite;
+  background: rgba(115, 214, 255, 0.54);
+  box-shadow: 0 0 14px rgba(115, 214, 255, 0.42);
+  animation: hudNodePulse 6.2s ease-in-out infinite;
   animation-delay: calc(var(--node-index) * -0.21s);
 }
 
@@ -792,13 +832,13 @@ button.nav-item:hover {
 @keyframes hudNodePulse {
   0%,
   100% {
-    opacity: 0.15;
+    opacity: 0.08;
     transform: scale(0.6);
   }
 
   45% {
-    opacity: 0.86;
-    transform: scale(1.6);
+    opacity: 0.46;
+    transform: scale(1.35);
   }
 }
 
@@ -1309,7 +1349,9 @@ button.nav-item:hover {
 .trace-routes,
 .trace-attempts,
 .trace-evidence,
-.trace-summary {
+.trace-summary,
+.trace-compact-grid,
+.trace-warning-line {
   position: relative;
   z-index: 1;
 }
@@ -1357,6 +1399,103 @@ button.nav-item:hover {
   color: var(--muted-strong);
   font-size: 0.88rem;
   line-height: 1.42;
+}
+
+.trace-compact-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.trace-compact-card,
+.trace-toggle {
+  min-width: 0;
+  min-height: 58px;
+  padding: 9px 10px;
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.07), rgba(255, 255, 255, 0.018)),
+    rgba(3, 11, 20, 0.68);
+  border: 1px solid rgba(115, 214, 255, 0.15);
+  border-radius: 8px;
+  box-shadow: inset 0 0 22px rgba(115, 214, 255, 0.025);
+}
+
+.trace-compact-card {
+  display: grid;
+  gap: 3px;
+  align-content: center;
+}
+
+.trace-compact-card.primary {
+  border-color: rgba(115, 214, 255, 0.34);
+  background:
+    radial-gradient(circle at 16% 52%, rgba(115, 214, 255, 0.14), transparent 34%),
+    rgba(3, 11, 20, 0.72);
+}
+
+.trace-compact-card.selected {
+  border-color: rgba(242, 185, 107, 0.55);
+  background:
+    radial-gradient(circle at 18% 52%, rgba(242, 185, 107, 0.16), transparent 34%),
+    rgba(10, 14, 21, 0.76);
+}
+
+.trace-compact-card span,
+.trace-compact-card small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.trace-compact-card strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.18;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-compact-card.selected small {
+  color: var(--amber);
+}
+
+.trace-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background:
+    linear-gradient(135deg, rgba(33, 156, 255, 0.16), rgba(115, 214, 255, 0.04)),
+    rgba(4, 12, 21, 0.72);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.trace-toggle:hover {
+  color: var(--text);
+  border-color: rgba(115, 214, 255, 0.44);
+  box-shadow: inset 0 0 24px rgba(115, 214, 255, 0.045), 0 0 22px rgba(33, 156, 255, 0.1);
+}
+
+.trace-evidence.compact {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.trace-warning-line {
+  padding: 9px 10px;
+  color: #ffe4bd;
+  background: rgba(242, 185, 107, 0.08);
+  border: 1px solid rgba(242, 185, 107, 0.28);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .trace-system-row {
@@ -3030,6 +3169,7 @@ button.nav-item:hover {
   .hud-vitals,
   .hud-decision-strip,
   .hud-radar,
+  .hud-doctor-alert,
   .hud-corner {
     display: none;
   }
@@ -3131,6 +3271,10 @@ button.nav-item:hover {
 
   .trace-system-row {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .trace-compact-grid {
+    grid-template-columns: 1fr;
   }
 
   .trace-stage-grid,
