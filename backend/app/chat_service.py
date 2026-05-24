@@ -47,6 +47,7 @@ from app.integrations.google_setup_chat import (
 from app.integrations.linkedin_assistant import (
     LinkedInAssistantError,
     build_linkedin_chat_response,
+    wants_linkedin_activity,
     wants_linkedin_browser_post,
 )
 from app.llm.ollama_client import OllamaClientError, ask_ollama
@@ -790,12 +791,14 @@ async def process_chat_messages(
         raise ChatServiceError(str(exc)) from exc
 
     try:
-        if not trusted_actions and wants_linkedin_browser_post(latest_user_message):
+        if not trusted_actions and (
+            wants_linkedin_browser_post(latest_user_message) or wants_linkedin_activity(latest_user_message)
+        ):
             return {
                 "message": {
                     "role": "assistant",
                     "content": (
-                        "Ouvrir LinkedIn et preparer le navigateur est une action locale. "
+                        "LinkedIn contient des donnees de compte. "
                         "Je peux le faire depuis le PC local ou Telegram autorise."
                     ),
                 },

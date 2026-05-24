@@ -150,6 +150,8 @@ def _domain_from_message(
         return "terminal"
     if intent.name == "project_factory":
         return "project"
+    if intent.name in {"linkedin_activity", "linkedin_browser_post"}:
+        return "linkedin"
     context_text = normalize_understanding_text(_recent_context_summary(conversation_context or []))
     if _is_followup(normalized, conversation_context or []):
         explicit_project = _has_any(normalized, ("cursor", "codex", "projet", "workspace")) or bool(
@@ -172,7 +174,7 @@ def _domain_from_message(
 
     if _has_any(normalized, ("spotify", "musique", "playlist", "chanson")):
         return "spotify"
-    if _has_any(normalized, ("beeper", "whatsapp", "telegram", "message beeper", "mes messages")):
+    if _has_any(normalized, ("beeper", "whatsapp", "telegram", "message beeper", "mes messages")) and "linkedin" not in normalized:
         return "beeper"
     if _has_any(normalized, ("linkedin", "post linkedin", "commentaire linkedin")):
         return "linkedin"
@@ -239,6 +241,8 @@ def _route_for_understanding(
     if domain == "beeper":
         return "beeper_messages"
     if domain == "linkedin":
+        if fallback_route == "linkedin_activity" or outcome in {"read", "read_then_summarize", "read_then_open"}:
+            return "linkedin_activity"
         return "linkedin_browser_post"
     if domain == "web":
         return "web_search"
@@ -264,6 +268,8 @@ def _expected_outcome(normalized: str, intent: UserIntent, domain: PrimaryDomain
         return "create_workspace"
     if intent.name == "cursor_work":
         return "prepare_prompt"
+    if intent.name == "linkedin_activity":
+        return "read_then_summarize"
 
     reply_markers = (
         "reponds",
@@ -282,6 +288,28 @@ def _expected_outcome(normalized: str, intent: UserIntent, domain: PrimaryDomain
         return "draft"
     if intent.name == "linkedin_browser_post":
         return "draft"
+    if domain == "linkedin" and _has_any(
+        normalized,
+        (
+            "activite",
+            "activites",
+            "notification",
+            "notifications",
+            "message",
+            "messages",
+            "compte",
+            "abonnes",
+            "abonne",
+            "followers",
+            "connexion",
+            "connexions",
+            "invitations",
+            "likes",
+            "statistiques",
+            "stats",
+        ),
+    ):
+        return "read_then_summarize"
     if domain == "linkedin" and _has_any(
         normalized,
         (
@@ -330,6 +358,8 @@ def _safety_level(domain: PrimaryDomain, outcome: ExpectedOutcome, normalized: s
         ),
     ):
         return "critical"
+    if domain == "linkedin" and outcome in {"answer", "read", "read_then_summarize", "read_then_open"}:
+        return "read_only"
     if outcome == "draft" or domain in {"gmail", "beeper", "linkedin", "cursor", "design"}:
         return "external_draft"
     if outcome in {"open", "execute_local", "create_workspace", "prepare_prompt"}:
@@ -357,6 +387,8 @@ def _required_evidence(domain: PrimaryDomain, outcome: ExpectedOutcome) -> tuple
     if domain == "spotify":
         return ("requete musique interpretee", "Spotify ou recherche web ouverte")
     if domain == "linkedin":
+        if outcome in {"read", "read_then_summarize", "read_then_open"}:
+            return ("notifications LinkedIn lues via Gmail si disponible", "aucune publication preparee")
         return ("post LinkedIn prepare", "LinkedIn ouvert ou brouillon colle sans publication")
     if domain == "web":
         return ("resultats web cites dans le contexte",)
@@ -405,6 +437,8 @@ def _interpreted_goal(
     if domain == "spotify":
         return "Ouvrir Spotify ou la bonne recherche musicale selon la demande."
     if domain == "linkedin":
+        if outcome in {"read", "read_then_summarize", "read_then_open"}:
+            return "Lire les signaux LinkedIn disponibles sans preparer ni publier de post."
         return "Preparer le contenu LinkedIn, ouvrir LinkedIn et remplir le brouillon sans publier."
     if domain == "project":
         return "Transformer l'idee en plan projet executable avec workspace, prompt Cursor et Git."

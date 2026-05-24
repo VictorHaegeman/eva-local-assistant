@@ -1,4 +1,6 @@
+import html
 import json
+import re
 import shutil
 import unicodedata
 from pathlib import Path
@@ -236,15 +238,63 @@ def _normalize(value: str) -> str:
 
 def wants_linkedin_draft(message: str) -> bool:
     normalized = _normalize(message)
+    if wants_linkedin_activity(message):
+        return False
     return "linkedin" in normalized and any(
         marker in normalized
         for marker in ("post", "idee", "idees", "contenu", "commentaire", "reponse", "redige")
     )
 
 
+def wants_linkedin_activity(message: str) -> bool:
+    normalized = _normalize(message)
+    if "linkedin" not in normalized:
+        return False
+
+    activity_markers = (
+        "activite",
+        "activites",
+        "notification",
+        "notifications",
+        "message",
+        "messages",
+        "compte",
+        "abonnes",
+        "abonne",
+        "followers",
+        "connexion",
+        "connexions",
+        "invitation",
+        "invitations",
+        "commentaires",
+        "likes",
+        "statistiques",
+        "stats",
+        "nouveaux",
+        "nouvelles",
+    )
+    creation_markers = (
+        "post",
+        "publie",
+        "publier",
+        "poster",
+        "poste",
+        "redige",
+        "ecris",
+        "contenu",
+        "idee de post",
+        "commentaire linkedin",
+    )
+    return any(marker in normalized for marker in activity_markers) and not any(
+        marker in normalized for marker in creation_markers
+    )
+
+
 def wants_linkedin_browser_post(message: str) -> bool:
     normalized = _normalize(message)
     if "linkedin" not in normalized:
+        return False
+    if wants_linkedin_activity(message):
         return False
 
     browser_markers = (
@@ -259,7 +309,6 @@ def wants_linkedin_browser_post(message: str) -> bool:
         "creer un post",
         "ouvre",
         "navigateur",
-        "compte",
         "dreamlense",
     )
     passive_markers = ("idee", "idees", "brouillon", "commentaire", "reponse")
@@ -273,6 +322,73 @@ def wants_linkedin_browser_post(message: str) -> bool:
         return True
 
     return False
+
+
+def _format_linkedin_signal(message: dict[str, Any], index: int) -> str:
+    subject = _clean_linkedin_text(str(message.get("subject") or "(sans objet)"))
+    sender = _clean_linkedin_text(str(message.get("from") or ""))
+    date = _clean_linkedin_text(str(message.get("date") or ""))
+    snippet = _clean_linkedin_text(str(message.get("snippet") or message.get("body") or ""))[:500]
+    lines = [f"{index}. {subject}"]
+    if sender:
+        lines.append(f"   De: {sender}")
+    if date:
+        lines.append(f"   Date: {date}")
+    if snippet:
+        lines.append(f"   Signal: {snippet}")
+    return "\n".join(lines)
+
+
+def _clean_linkedin_text(value: str) -> str:
+    clean = html.unescape(value)
+    clean = re.sub(r"[\u034f\u061c\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]+", " ", clean)
+    clean = re.sub(r"\s+", " ", clean)
+    return clean.strip()
+
+
+async def build_linkedin_activity_response(message: str) -> str | None:
+    if not wants_linkedin_activity(message):
+        return None
+
+    from app.integrations.inbox_smart import collect_inbox_signals
+
+    signals = collect_inbox_signals(max_inbox=2, max_linkedin=8, include_bodies=False)
+    if not signals.get("available"):
+        return (
+            "Source: Gmail/LinkedIn notifications locales.\n"
+            f"{signals.get('summary', 'Gmail indisponible.')}\n\n"
+            "Je n'ai pas invente d'activite LinkedIn. Pour lire tes signaux LinkedIn sans API LinkedIn, "
+            "Eva utilise d'abord les notifications LinkedIn recues dans Gmail."
+        )
+
+    notifications = signals.get("linkedin_notifications", [])
+    if not notifications:
+        return (
+            "Source: Gmail API, notifications LinkedIn reelles.\n"
+            "Aucun signal LinkedIn recent trouve dans les notifications Gmail lues.\n\n"
+            "Je n'ai pas prepare de post et je n'ai rien publie. "
+            "Pour une lecture plus directe du compte LinkedIn, il faudra un mode navigateur/vision dedie."
+        )
+
+    lines = [
+        "Source: Gmail API, notifications LinkedIn reelles.",
+        f"{len(notifications)} signal(s) LinkedIn recent(s) detecte(s).",
+        "",
+        "Activite LinkedIn disponible:",
+    ]
+    lines.extend(
+        _format_linkedin_signal(notification, index)
+        for index, notification in enumerate(notifications[:8], start=1)
+    )
+    lines.extend(
+        [
+            "",
+            "Lecture rapide:",
+            "Je n'ai pas prepare de post LinkedIn pour cette demande. "
+            "J'ai uniquement lu les signaux disponibles et je peux ensuite ouvrir LinkedIn si tu veux consulter un element precis.",
+        ]
+    )
+    return "\n".join(lines)
 
 
 async def prepare_linkedin_browser_post(message: str) -> str:
@@ -335,6 +451,10 @@ async def prepare_linkedin_browser_post(message: str) -> str:
 
 
 async def build_linkedin_chat_response(message: str) -> str | None:
+    activity = await build_linkedin_activity_response(message)
+    if activity:
+        return activity
+
     if wants_linkedin_browser_post(message):
         return await prepare_linkedin_browser_post(message)
 

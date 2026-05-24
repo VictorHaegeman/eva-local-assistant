@@ -1,3 +1,4 @@
+import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
@@ -20,6 +21,7 @@ PlanRoute = Literal[
     "spotify",
     "desktop_control",
     "beeper_messages",
+    "linkedin_activity",
     "linkedin_browser_post",
     "web_search",
     "generic_chat",
@@ -48,7 +50,12 @@ class ActionPlan:
 
 
 def _normalise(text: str) -> str:
-    return " ".join(text.lower().split())
+    without_accents = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", text.lower())
+        if not unicodedata.combining(char)
+    )
+    return " ".join(without_accents.split())
 
 
 def _has_any(text: str, markers: tuple[str, ...]) -> bool:
@@ -61,8 +68,34 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
     if _has_any(text, ("spotify", "musique", "playlist", "lance une chanson", "mets ")):
         return "spotify"
 
-    if _has_any(text, ("beeper", "message beeper", "messages beeper", "mes messages")):
+    if _has_any(text, ("beeper", "message beeper", "messages beeper", "mes messages")) and "linkedin" not in text:
         return "beeper_messages"
+
+    if "linkedin" in text and _has_any(
+        text,
+        (
+            "activite",
+            "activites",
+            "notification",
+            "notifications",
+            "message",
+            "messages",
+            "compte",
+            "abonnes",
+            "abonne",
+            "followers",
+            "connexion",
+            "connexions",
+            "invitations",
+            "commentaires",
+            "likes",
+            "statistiques",
+            "stats",
+            "nouveaux",
+            "nouvelles",
+        ),
+    ):
+        return "linkedin_activity"
 
     if "linkedin" in text and _has_any(
         text,
@@ -128,7 +161,15 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
 
 
 def _policy_for_route(route: PlanRoute) -> ActionPolicyLevel:
-    if route in {"generic_chat", "local_status", "calendar_read", "gmail_read", "gmail_reply_audit", "web_search"}:
+    if route in {
+        "generic_chat",
+        "local_status",
+        "calendar_read",
+        "gmail_read",
+        "gmail_reply_audit",
+        "linkedin_activity",
+        "web_search",
+    }:
         return "read_only"
     if route in {
         "gmail_reply_draft",
@@ -162,6 +203,7 @@ def _tool_for_route(route: PlanRoute) -> str:
         "spotify": "spotify_assistant",
         "desktop_control": "desktop_automation",
         "beeper_messages": "beeper_assistant",
+        "linkedin_activity": "linkedin_activity",
         "linkedin_browser_post": "linkedin_assistant",
         "web_search": "web_search",
         "generic_chat": "ollama_chat",

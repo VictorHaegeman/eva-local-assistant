@@ -34,6 +34,7 @@ ALLOWED_ROUTES: tuple[str, ...] = (
     "spotify",
     "desktop_control",
     "beeper_messages",
+    "linkedin_activity",
     "linkedin_browser_post",
     "web_search",
     "generic_chat",
@@ -90,6 +91,7 @@ ROUTE_DEFAULTS: dict[str, tuple[str, str]] = {
     "spotify": ("spotify", "open"),
     "desktop_control": ("desktop", "execute_local"),
     "beeper_messages": ("beeper", "read_then_summarize"),
+    "linkedin_activity": ("linkedin", "read_then_summarize"),
     "linkedin_browser_post": ("linkedin", "draft"),
     "web_search": ("web", "search"),
     "generic_chat": ("chat", "answer"),
@@ -174,6 +176,8 @@ def _normalize_route(raw_route: str, domain: str, base_route: str) -> str:
         return "browser_or_video"
     if route in ALLOWED_ROUTES:
         return route
+    if domain == "linkedin" and base_route == "linkedin_activity":
+        return "linkedin_activity"
     return DOMAIN_ROUTE_FALLBACK.get(domain, base_route if base_route in ALLOWED_ROUTES else "generic_chat")
 
 
@@ -308,6 +312,13 @@ def _should_accept_interpretation(
         return False
 
     if mail_context and interpretation.route == "cursor_work" and not cursor_context:
+        return False
+
+    if (
+        base_frame.action_plan.route == "linkedin_activity"
+        and interpretation.route == "linkedin_browser_post"
+        and base_frame.expected_outcome in {"read", "read_then_summarize", "read_then_open"}
+    ):
         return False
 
     base_route = str(base_frame.action_plan.route)

@@ -19,7 +19,7 @@ from app.integrations.browser_assistant import open_assisted_browser_from_messag
 from app.integrations.browser import open_url
 from app.integrations.desktop_chat import execute_desktop_control_from_message
 from app.integrations.gmail_chat import build_gmail_chat_response
-from app.integrations.linkedin_assistant import build_linkedin_chat_response
+from app.integrations.linkedin_assistant import build_linkedin_activity_response, build_linkedin_chat_response
 from app.integrations.map_preview import build_map_preview_from_message
 from app.integrations.spotify_assistant import open_spotify_from_message
 from app.projects.project_chat import (
@@ -68,6 +68,7 @@ ACTION_ROUTES = {
     "spotify",
     "desktop_control",
     "beeper_messages",
+    "linkedin_activity",
     "linkedin_browser_post",
     "web_search",
 }
@@ -85,6 +86,7 @@ ROUTE_LABELS = {
     "spotify": "Spotify",
     "desktop_control": "Controle PC",
     "beeper_messages": "Beeper",
+    "linkedin_activity": "Activite LinkedIn",
     "linkedin_browser_post": "LinkedIn",
     "generic_chat": "Reponse directe",
 }
@@ -140,6 +142,7 @@ def _requires_trusted(route: str) -> bool:
         "spotify",
         "desktop_control",
         "beeper_messages",
+        "linkedin_activity",
         "linkedin_browser_post",
     }
 
@@ -154,6 +157,7 @@ def _tool_for_route(route: str, understanding: UnderstandingFrame) -> str:
         "spotify": "spotify_assistant",
         "desktop_control": "desktop_automation",
         "beeper_messages": "beeper_assistant",
+        "linkedin_activity": "linkedin_activity",
         "linkedin_browser_post": "linkedin_assistant",
         "web_search": "web_search",
         "screen_read": "screen_reader",
@@ -177,7 +181,10 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
     elif domain == "beeper":
         routes.extend(["beeper_messages", "screen_read"])
     elif domain == "linkedin":
-        routes.extend(["linkedin_browser_post", "browser_or_video", "web_search"])
+        if route == "linkedin_activity":
+            routes.extend(["linkedin_activity", "web_search", "browser_or_video"])
+        else:
+            routes.extend(["linkedin_browser_post", "browser_or_video", "web_search"])
     elif domain == "web":
         routes.extend(["web_search", "browser_or_video"])
 
@@ -210,7 +217,10 @@ def _route_options(
     elif domain == "browser":
         base_options.extend(["browser_or_video", "web_search", "generic_chat"])
     elif domain == "linkedin":
-        base_options.extend(["linkedin_browser_post", "web_search", "generic_chat"])
+        if selected_route == "linkedin_activity":
+            base_options.extend(["web_search", "browser_or_video", "generic_chat"])
+        else:
+            base_options.extend(["linkedin_browser_post", "web_search", "generic_chat"])
     elif selected_route == "web_search":
         base_options.extend(["browser_or_video", "generic_chat"])
     else:
@@ -484,6 +494,25 @@ async def _execute_route_once(
                 selected_route=route,
             )
         result = _success("beeper_assistant", ("Beeper ouvert/lu via le pont local disponible.",), confidence=0.72)
+        return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "linkedin_activity" or (
+        use_domain_fallback
+        and understanding.primary_domain == "linkedin"
+        and understanding.expected_outcome in {"read", "read_then_summarize", "read_then_open"}
+    ):
+        content = await build_linkedin_activity_response(message)
+        if not content:
+            return RouteExecution(
+                content="",
+                result=_failed("linkedin_activity", "Aucun signal LinkedIn exploitable n'a ete trouve."),
+                selected_route=route,
+            )
+        result = _success(
+            "linkedin_activity",
+            ("Signaux LinkedIn lus sans publication.", "Aucun brouillon de post prepare."),
+            confidence=0.82,
+        )
         return RouteExecution(content=content, result=result, selected_route=route)
 
     if route == "linkedin_browser_post" or (use_domain_fallback and understanding.primary_domain == "linkedin"):
