@@ -225,6 +225,19 @@ def _format_quick_status(message: str) -> str | None:
     if "brief" in normalized and any(marker in normalized for marker in ("matin", "smart", "veille", "aujourd")):
         return "__GENERATE_SMART_BRIEF__"
 
+    news_markers = (
+        "news",
+        "actu",
+        "actus",
+        "actualite",
+        "actualites",
+        "quoi de neuf",
+        "dernieres infos",
+        "dernieres nouvelles",
+    )
+    if any(marker in normalized for marker in news_markers):
+        return "__GENERATE_SMART_BRIEF__"
+
     if "dossiers autorises" in normalized or "fichiers" in normalized and "autorises" in normalized:
         roots = roots_to_dicts()
         lines = ["Dossiers autorises:"]

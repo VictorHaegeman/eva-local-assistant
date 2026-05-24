@@ -96,6 +96,20 @@ WEB_SEARCH_MARKERS = (
     "derniere info",
 )
 
+NEWS_SEARCH_MARKERS = (
+    "news",
+    "actu",
+    "actus",
+    "actualite",
+    "actualites",
+    "nouvelles",
+    "quoi de neuf",
+    "dernieres nouvelles",
+    "dernieres actus",
+    "dernieres infos",
+    "ce qui se passe",
+)
+
 
 def _clean_text(value: str) -> str:
     return " ".join(unescape(value).split())
@@ -131,6 +145,9 @@ def detect_web_search_query(message: str) -> str | None:
 
     if lowered.startswith(("google ", "web ")):
         return normalized.split(" ", 1)[1].strip()
+
+    if any(marker in lowered for marker in NEWS_SEARCH_MARKERS):
+        return "actualites importantes aujourd'hui IA business tech finance France"
 
     return None
 

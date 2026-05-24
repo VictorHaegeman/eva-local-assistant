@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from typing import Any, cast
 
 from app.agents.action_planner import PlanRoute, build_action_plan_for_route
+from app.agents.intent_router import has_news_context
 from app.agents.understanding import (
     ExpectedOutcome,
     PrimaryDomain,
@@ -295,6 +296,13 @@ def _should_accept_interpretation(
     cursor_context = any(marker in normalized for marker in ("cursor", "codex", "projet", "workspace")) or bool(
         re.search(r"\brepo(?:sitory)?\b", normalized)
     )
+    news_context = has_news_context(normalized)
+
+    if news_context and interpretation.route not in {"web_search", "generic_chat"}:
+        return False
+
+    if news_context and interpretation.domain not in {"web", "chat"}:
+        return False
 
     if base_frame.primary_domain == "gmail" and interpretation.route == "cursor_work" and not cursor_context:
         return False

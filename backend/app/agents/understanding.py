@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from app.agents.action_planner import ActionPlan, PlanRoute, build_action_plan, build_action_plan_for_route
-from app.agents.intent_router import UserIntent, classify_user_intent
+from app.agents.intent_router import UserIntent, classify_user_intent, has_news_context
 
 
 PrimaryDomain = Literal[
@@ -104,6 +104,9 @@ def _is_followup(normalized: str, conversation_context: list[dict[str, str]]) ->
     if not conversation_context:
         return False
 
+    if has_news_context(normalized):
+        return False
+
     words = re.findall(r"[a-z0-9_]+", normalized)
     if len(words) <= 6:
         return True
@@ -196,6 +199,8 @@ def _domain_from_message(
     ):
         return "browser"
     if _has_any(normalized, ("cherche sur internet", "recherche internet", "va sur internet", "trouve sur internet")):
+        return "web"
+    if has_news_context(normalized):
         return "web"
     if _has_any(normalized, ("memoire", "souviens", "retiens", "apprends")):
         return "memory"
@@ -301,6 +306,8 @@ def _expected_outcome(normalized: str, intent: UserIntent, domain: PrimaryDomain
     if domain in {"beeper", "linkedin"} and _has_any(normalized, ("repond", "redige", "ecris", "brouillon")):
         return "draft"
     if domain == "web":
+        return "search"
+    if has_news_context(normalized):
         return "search"
     if _has_any(normalized, ("resume", "resumes", "debrief", "analyse", "lis")):
         return "read_then_summarize"

@@ -73,8 +73,37 @@ def _has_reply_context(text: str) -> bool:
     )
 
 
+NEWS_MARKERS = (
+    "news",
+    "actu",
+    "actus",
+    "actualite",
+    "actualites",
+    "nouvelles",
+    "quoi de neuf",
+    "dernieres nouvelles",
+    "dernieres actus",
+    "dernieres infos",
+    "ce qui se passe",
+)
+
+
+def has_news_context(text: str) -> bool:
+    return _has_any(text, NEWS_MARKERS)
+
+
 def classify_user_intent(message: str) -> UserIntent:
     text = normalize_intent_text(message)
+
+    if has_news_context(text):
+        return UserIntent(
+            name="web_search",
+            confidence=0.88,
+            summary=(
+                "Donner des nouvelles recentes: chercher l'actualite utile et ne pas reutiliser "
+                "le contexte d'une action precedente."
+            ),
+        )
 
     if _has_any(
         text,
