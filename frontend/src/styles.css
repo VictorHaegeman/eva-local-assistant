@@ -483,6 +483,21 @@ button.nav-item:hover {
   position: absolute;
 }
 
+.panel-mode .hud-vitals,
+.panel-mode .hud-radar,
+.panel-mode .hud-decision-strip,
+.panel-mode .hud-doctor-alert {
+  display: none;
+}
+
+.panel-mode .hud-grid-plane {
+  opacity: 0.46;
+}
+
+.panel-mode .hud-sweep {
+  opacity: 0.46;
+}
+
 .hud-grid-plane {
   inset: 0;
   background:
@@ -2902,7 +2917,7 @@ button.nav-item:hover {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 34px clamp(18px, 5vw, 72px) 28px;
+  padding: 34px clamp(18px, 5vw, 72px) 44px;
   scrollbar-color: rgba(115, 214, 255, 0.28) transparent;
 }
 
@@ -2918,7 +2933,7 @@ button.nav-item:hover {
 .control-panel {
   display: grid;
   gap: 18px;
-  width: min(980px, 100%);
+  width: min(1120px, 100%);
   margin: 0 auto;
 }
 

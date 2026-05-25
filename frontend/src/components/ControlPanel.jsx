@@ -37,6 +37,7 @@ import {
   getSkills,
   getTools,
   generateSmartBrief,
+  hydrateObsidianMemory,
   connectGmail,
   openObsidianMemory,
   createGmailReplyDraft,
@@ -352,6 +353,22 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleHydrateObsidian() {
+    setRunningJob("obsidian_hydrate");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await hydrateObsidianMemory();
+      await loadPanel();
+      setJobResult(`${result.markdown_files || 0} notes Obsidian pretes pour Eva.`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleGenerateSmartBrief() {
     setRunningJob("smart_brief");
     setJobResult("");
@@ -448,10 +465,19 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           </div>
           <p>{obsidian.path || "Vault local non configure."}</p>
           <Field label="Fichiers Markdown" value={obsidian.markdown_files || 0} />
+          <Field label="Cerveau Eva" value={obsidian.brain_hydrated ? "rempli" : "a remplir"} />
           <div className="panel-actions">
             <button
               type="button"
               className="panel-action-button primary"
+              onClick={handleHydrateObsidian}
+              disabled={Boolean(runningJob)}
+            >
+              {runningJob === "obsidian_hydrate" ? "Remplissage..." : "Remplir le cerveau"}
+            </button>
+            <button
+              type="button"
+              className="panel-action-button"
               onClick={handleOpenObsidian}
               disabled={Boolean(runningJob)}
             >

@@ -139,6 +139,7 @@ from app.memory.chat_history_store import (
 from app.memory.obsidian_store import (
     ObsidianMemoryError,
     ensure_obsidian_vault,
+    hydrate_obsidian_vault,
     mirror_memory_to_obsidian,
     open_obsidian_vault,
     obsidian_status,
@@ -807,6 +808,14 @@ async def memory_obsidian_sync() -> dict[str, object]:
         loaded_memories = list_memories(limit=200)
         return sync_memories_to_obsidian(loaded_memories)
     except (MemoryStoreError, ObsidianMemoryError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/memory/obsidian/hydrate", dependencies=[Depends(require_sensitive_access)])
+async def memory_obsidian_hydrate() -> dict[str, object]:
+    try:
+        return hydrate_obsidian_vault()
+    except ObsidianMemoryError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 

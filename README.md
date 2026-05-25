@@ -1802,20 +1802,37 @@ Endpoints utiles:
 
 ```text
 GET /memory/obsidian/status
+POST /memory/obsidian/hydrate
 POST /memory/obsidian/sync
 POST /memory/obsidian/open
 ```
 
 Eva ne devient pas plus intelligente par entrainement du modele local. Elle apprend au sens assistant personnel: elle conserve des informations non sensibles, les reinjecte dans le contexte Ollama, et les miroir dans Obsidian pour que Victor puisse les relire, corriger ou enrichir.
 
+`/memory/obsidian/hydrate` remplit le coffre avec une base exploitable:
+
+- preferences creatives;
+- preferences de travail;
+- ADN de creation;
+- pages projets;
+- angles DreamLense;
+- idees LinkedIn;
+- templates projet, Cursor, email, LinkedIn, brief et frontend.
+
+Eva injecte un resume de ces notes Obsidian dans le prompt Ollama quand la demande concerne creation, design, mails, posts, projets ou decisions. Le vault reste local et peut etre edite a la main dans Obsidian.
+
 Le coffre cree par Eva contient:
 
 - `00 - Eva/INDEX.md`: navigation du second cerveau;
 - `10 - Profile/Victor.md`: profil local genere depuis `data/eva_profile.json`;
+- `11 - Preferences/`: gouts creatifs et preferences de travail;
+- `12 - Creation/`: ADN de creation Eva/Victor;
 - `20 - Memories/`: souvenirs classes par categorie;
 - `30 - Projects/Projects.md`: index des projets connus;
 - `40 - Daily/`: journal quotidien des souvenirs;
 - `50 - Operating Rules/`: regles de comportement d'Eva.
+- `60 - Content/`: angles DreamLense et idees LinkedIn;
+- `70 - Templates/`: templates pour projet, Cursor, email, posts, briefs et frontend.
 
 Depuis le panneau Memoire, le bouton `Ouvrir le coffre` lance Obsidian via le protocole local `obsidian://` si Obsidian est installe sur Windows.
 

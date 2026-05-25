@@ -373,7 +373,10 @@ export default function App() {
         onReset={handleReset}
       />
 
-      <section className="chat-shell" aria-label="Conversation avec Eva">
+      <section
+        className={`chat-shell ${activePanel === "chat" ? "chat-mode" : "panel-mode"}`}
+        aria-label="Conversation avec Eva"
+      >
         <JarvisHud
           status={backendStatus}
           doctor={doctor}
@@ -422,12 +425,14 @@ export default function App() {
           />
         )}
 
-        <ChatInput
-          onSend={handleSend}
-          disabled={loading}
-          voiceReplies={voiceReplies}
-          onVoiceRepliesChange={setVoiceReplies}
-        />
+        {activePanel === "chat" && (
+          <ChatInput
+            onSend={handleSend}
+            disabled={loading}
+            voiceReplies={voiceReplies}
+            onVoiceRepliesChange={setVoiceReplies}
+          />
+        )}
       </section>
     </main>
   );

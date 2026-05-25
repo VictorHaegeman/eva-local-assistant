@@ -23,14 +23,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_FOLDERS = (
     "00 - Eva",
     "10 - Profile",
+    "11 - Preferences",
+    "12 - Creation",
     "20 - Memories",
     "30 - Projects",
     "40 - Daily",
     "50 - Operating Rules",
+    "60 - Content",
+    "70 - Templates",
     "90 - Inbox",
 )
 
 VAULT_INDEX_FILE = "00 - Eva/INDEX"
+MANAGED_MARKER = "<!-- eva:managed -->"
 
 
 def _vault_path() -> Path:
@@ -143,7 +148,25 @@ def _write_if_missing(path: Path, content: str) -> None:
 
 def _write_generated(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    path.write_text(f"{MANAGED_MARKER}\n{content}", encoding="utf-8")
+
+
+def _clean_display_text(value: object) -> str:
+    text = str(value or "")
+    replacements = {
+        "\u00c3\u00a0": "a",
+        "\u00c3\u00a2": "a",
+        "\u00c3\u00a9": "e",
+        "\u00c3\u00a8": "e",
+        "\u00c3\u00aa": "e",
+        "\u00c3\u00a7": "c",
+        "\u00c3\u00b4": "o",
+        "\u00e2\u20ac\u201c": "-",
+        "\u2013": "-",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    return text
 
 
 def _profile_markdown() -> str:
@@ -165,9 +188,9 @@ def _profile_markdown() -> str:
     if isinstance(identity, dict):
         lines.append("## Identite")
         if identity.get("user_name"):
-            lines.append(f"- Nom: {identity['user_name']}")
+            lines.append(f"- Nom: {_clean_display_text(identity['user_name'])}")
         if identity.get("email"):
-            lines.append(f"- Email: {identity['email']}")
+            lines.append(f"- Email: {_clean_display_text(identity['email'])}")
         lines.append("")
 
     if isinstance(projects, list) and projects:
@@ -176,21 +199,34 @@ def _profile_markdown() -> str:
             if not isinstance(project, dict):
                 continue
             name = project.get("name", "Projet")
-            lines.append(f"### {name}")
+            clean_name = _clean_display_text(name)
+            lines.append(f"### [[30 - Projects/{clean_name}|{clean_name}]]")
             for key in ("description", "website", "role"):
                 if project.get(key):
-                    lines.append(f"- {key}: {project[key]}")
+                    lines.append(f"- {key}: {_clean_display_text(project[key])}")
             lines.append("")
 
     if isinstance(writing, dict) and writing:
         lines.append("## Preferences de redaction")
         if writing.get("style"):
-            lines.append(f"- Style: {writing['style']}")
+            lines.append(f"- Style: {_clean_display_text(writing['style'])}")
         if writing.get("email_signature"):
             lines.append("")
             lines.append("```text")
-            lines.append(str(writing["email_signature"]))
+            lines.append(_clean_display_text(writing["email_signature"]))
             lines.append("```")
+
+    lines.extend(
+        [
+            "",
+            "## Liens utiles",
+            "",
+            "- [[11 - Preferences/Creative Taste|Gouts creatifs]]",
+            "- [[11 - Preferences/Working Preferences|Preferences de travail]]",
+            "- [[12 - Creation/Creation DNA|ADN creation]]",
+            "- [[60 - Content/LinkedIn Ideas|Idees LinkedIn]]",
+        ]
+    )
 
     return "\n".join(lines).strip() + "\n"
 
@@ -208,17 +244,228 @@ def _projects_markdown() -> str:
         "",
     ]
     for project in projects:
-        lines.append(f"## {project['name']}")
+        name = _clean_display_text(project["name"])
+        lines.append(f"## [[30 - Projects/{name}|{name}]]")
         lines.append(f"- Chemin: `{project['path']}`")
         if project.get("description"):
-            lines.append(f"- Description: {project['description']}")
+            lines.append(f"- Description: {_clean_display_text(project['description'])}")
         if project.get("type"):
-            lines.append(f"- Type: {project['type']}")
+            lines.append(f"- Type: {_clean_display_text(project['type'])}")
         aliases = project.get("aliases", [])
         if aliases:
             lines.append(f"- Alias: {', '.join(str(alias) for alias in aliases)}")
         lines.append("")
     return "\n".join(lines).strip() + "\n"
+
+
+def _project_detail_markdown(project: dict[str, Any]) -> str:
+    name = _clean_display_text(project.get("name", "Projet"))
+    description = _clean_display_text(project.get("description", ""))
+    path = _clean_display_text(project.get("path", ""))
+    aliases = project.get("aliases", [])
+    aliases_text = ", ".join(_clean_display_text(alias) for alias in aliases) if aliases else ""
+    lines = [
+        f"# {name}",
+        "",
+        f"- Type: {_clean_display_text(project.get('type', 'code'))}",
+        f"- Chemin: `{path}`" if path else "- Chemin: a completer",
+        f"- Description: {description}" if description else "- Description: a completer",
+    ]
+    if aliases_text:
+        lines.append(f"- Alias: {aliases_text}")
+    lines.extend(
+        [
+            "",
+            "## Role pour Eva",
+            "",
+            "- Comprendre le contexte du projet avant de proposer du code.",
+            "- Lire la structure locale si le dossier est autorise.",
+            "- Preparer des prompts Cursor/Codex contextualises quand elle ne peut pas coder directement.",
+            "",
+            "## Prochaines actions possibles",
+            "",
+            "- [[70 - Templates/Project Brief|Creer ou mettre a jour un brief projet]]",
+            "- [[70 - Templates/Cursor Prompt|Preparer un prompt Cursor]]",
+            "- [[50 - Operating Rules/Eva Operating Rules|Respecter les regles Eva]]",
+        ]
+    )
+    return "\n".join(lines).strip() + "\n"
+
+
+def _creative_taste_markdown() -> str:
+    return "\n".join(
+        [
+            "# Creative Taste",
+            "",
+            "## Direction artistique que Victor aime",
+            "",
+            "- Interfaces premium, sombres, sobres, nettes.",
+            "- Inspiration Jarvis / Iron Man: HUD, cartes techniques, cercles, radar, lignes lumineuses.",
+            "- Bleu/cyan plutot que vert.",
+            "- Sensation ChatGPT moderne pour le confort de chat, mais avec une couche visuelle Jarvis.",
+            "- Animations utiles: progression, routes, hesitations, verification, pas de decoration gratuite.",
+            "- Design qui montre ce qu'Eva comprend et ce qu'elle fait, sans jeter un bloc de texte brut.",
+            "",
+            "## A eviter",
+            "",
+            "- Blabla generique.",
+            "- Interfaces trop plates ou mal alignees.",
+            "- Gros textes non structures.",
+            "- Boutons ou panneaux qui ne servent a rien.",
+            "- Reponses qui demandent trop de confirmations pour des actions simples.",
+            "",
+            "## Liens",
+            "",
+            "- [[12 - Creation/Creation DNA]]",
+            "- [[60 - Content/DreamLense Content Angles]]",
+            "- [[70 - Templates/Frontend Brief]]",
+        ]
+    ).strip() + "\n"
+
+
+def _working_preferences_markdown() -> str:
+    return "\n".join(
+        [
+            "# Working Preferences",
+            "",
+            "## Style de collaboration",
+            "",
+            "- Victor veut qu'Eva comprenne l'intention avant de repondre.",
+            "- Eva doit agir quand l'action est sure et locale, puis verifier.",
+            "- Eva doit proposer un plan B si la premiere route echoue.",
+            "- Eva ne doit pas demander une confirmation inutile pour une recherche, une ouverture d'app, un brief ou une lecture autorisee.",
+            "- Eva doit etre concrete: resultat, preuve locale, prochaine action.",
+            "",
+            "## Ce qui frustre Victor",
+            "",
+            "- Repondre comme une IA sans outils alors qu'un outil local existe.",
+            "- Inventer des mails, des donnees ou des pages ouvertes.",
+            "- Ouvrir le mauvais mail ou le mauvais lien.",
+            "- Dire qu'il manque un projet alors qu'un alias evident existe.",
+            "- Demander 'voulez-vous autre chose' au lieu de continuer intelligemment.",
+            "",
+            "## Utilisation par Eva",
+            "",
+            "Quand Eva cree un mail, un post, un projet ou une interface, elle doit consulter cette note avec [[11 - Preferences/Creative Taste]] et [[50 - Operating Rules/Eva Operating Rules]].",
+        ]
+    ).strip() + "\n"
+
+
+def _creation_dna_markdown() -> str:
+    return "\n".join(
+        [
+            "# Creation DNA",
+            "",
+            "## Theme central",
+            "",
+            "Eva est le deuxieme cerveau operationnel de Victor: local, gratuit, connecte a ses outils, capable d'apprendre et d'agir.",
+            "",
+            "## Axes importants",
+            "",
+            "- Local-first avec Ollama.",
+            "- Gratuit a l'usage: pas d'API OpenAI obligatoire, pas de cloud payant.",
+            "- Memoire longue duree via SQLite + Obsidian.",
+            "- Telegram comme bouche distante.",
+            "- Hands desktop: ouvrir apps, navigateur, Spotify, Cursor, Obsidian.",
+            "- Gmail/Calendar utiles, sans invention de donnees.",
+            "- Project Factory: transformer une idee en workspace, repo, prompt, audit.",
+            "",
+            "## Quand Eva cree quelque chose",
+            "",
+            "- Toujours relier la creation aux gouts de Victor.",
+            "- Produire un premier resultat utilisable, pas seulement une explication.",
+            "- Garder une trace dans Obsidian si c'est une idee, une preference ou une lecon durable.",
+        ]
+    ).strip() + "\n"
+
+
+def _dreamlense_markdown() -> str:
+    return "\n".join(
+        [
+            "# DreamLense",
+            "",
+            "- Type: SAS specialisee dans les portraits professionnels generes par IA.",
+            "- Site: https://dreamlense-ai.com",
+            "- Role Victor: Directeur General.",
+            "",
+            "## Positionnement",
+            "",
+            "DreamLense aide les dirigeants, entrepreneurs, equipes commerciales et profils professionnels a obtenir des portraits premium sans shooting classique.",
+            "",
+            "## Angles utiles",
+            "",
+            "- Image de marque professionnelle.",
+            "- Gain de temps.",
+            "- Cohesion visuelle d'equipe.",
+            "- Presence LinkedIn plus credible.",
+            "- Portraits IA premium pour dirigeants et entrepreneurs.",
+            "",
+            "## Ton",
+            "",
+            "Clair, direct, premium, cordial. Eviter le jargon IA inutile.",
+            "",
+            "## Liens",
+            "",
+            "- [[60 - Content/DreamLense Content Angles]]",
+            "- [[60 - Content/LinkedIn Ideas]]",
+            "- [[70 - Templates/LinkedIn Post]]",
+        ]
+    ).strip() + "\n"
+
+
+def _content_angles_markdown() -> str:
+    return "\n".join(
+        [
+            "# DreamLense Content Angles",
+            "",
+            "## Posts LinkedIn possibles",
+            "",
+            "- Avant/apres: pourquoi une photo LinkedIn change la perception.",
+            "- Portrait dirigeant: gagner en credibilite sans shooting complet.",
+            "- Equipes commerciales: uniformiser les portraits pour inspirer confiance.",
+            "- IA utile: pas remplacer l'humain, accelerer une presentation professionnelle.",
+            "- Coulisses: comment obtenir un rendu premium avec peu de friction.",
+            "",
+            "## Hooks",
+            "",
+            "- Votre photo LinkedIn parle avant vous.",
+            "- Un portrait professionnel n'est pas un detail de branding.",
+            "- La premiere impression de votre equipe se joue souvent avant le premier appel.",
+            "",
+            "## CTA doux",
+            "",
+            "- Decouvrir DreamLense.",
+            "- Tester un portrait professionnel IA.",
+            "- Harmoniser les portraits de votre equipe.",
+        ]
+    ).strip() + "\n"
+
+
+def _linkedin_ideas_markdown() -> str:
+    return "\n".join(
+        [
+            "# LinkedIn Ideas",
+            "",
+            "## Idees recurrentes",
+            "",
+            "- Post educatif sur l'importance du portrait professionnel.",
+            "- Post business sur la confiance dans un cycle de vente.",
+            "- Post fondateur sur la construction de DreamLense.",
+            "- Post comparaison: shooting classique vs portrait IA premium.",
+            "- Post conseil: 5 erreurs de photo LinkedIn.",
+            "",
+            "## Regles",
+            "",
+            "- Pas de promesse exageree.",
+            "- Montrer le benefice business avant la technologie.",
+            "- Garder un ton premium, clair, utile.",
+            "- Toujours verifier avant publication.",
+        ]
+    ).strip() + "\n"
+
+
+def _template_markdown(title: str, body: str) -> str:
+    return f"# {title}\n\n{body.strip()}\n"
 
 
 def ensure_obsidian_vault() -> Path:
@@ -254,8 +501,12 @@ def ensure_obsidian_vault() -> Path:
                     "collapse-color-groups": False,
                     "colorGroups": [
                         {"query": "path:\"10 - Profile\"", "color": {"a": 1, "rgb": 5634047}},
+                        {"query": "path:\"11 - Preferences\"", "color": {"a": 1, "rgb": 65535}},
+                        {"query": "path:\"12 - Creation\"", "color": {"a": 1, "rgb": 2228223}},
                         {"query": "path:\"20 - Memories\"", "color": {"a": 1, "rgb": 65484}},
                         {"query": "path:\"30 - Projects\"", "color": {"a": 1, "rgb": 16755200}},
+                        {"query": "path:\"60 - Content\"", "color": {"a": 1, "rgb": 16737792}},
+                        {"query": "path:\"70 - Templates\"", "color": {"a": 1, "rgb": 8947967}},
                     ],
                     "collapse-display": False,
                     "showArrow": False,
@@ -309,8 +560,13 @@ def ensure_obsidian_vault() -> Path:
                     "## Navigation",
                     "",
                     "- [[10 - Profile/Victor|Profil Victor]]",
+                    "- [[11 - Preferences/Creative Taste|Gouts creatifs]]",
+                    "- [[11 - Preferences/Working Preferences|Preferences de travail]]",
+                    "- [[12 - Creation/Creation DNA|ADN creation]]",
                     "- [[20 - Memories/general|Souvenirs generaux]]",
                     "- [[30 - Projects/Projects|Projets]]",
+                    "- [[60 - Content/LinkedIn Ideas|Idees LinkedIn]]",
+                    "- [[70 - Templates/Project Brief|Templates]]",
                     "- [[50 - Operating Rules/Eva Operating Rules|Regles operatoires Eva]]",
                     "- [[40 - Daily|Journal quotidien]]",
                     "- Ouvre le graphe Obsidian avec `Ctrl+G` si la vue ne s'affiche pas deja.",
@@ -319,13 +575,181 @@ def ensure_obsidian_vault() -> Path:
                     "",
                     "Ce coffre est le deuxieme cerveau lisible d'Eva: SQLite reste la source rapide, Obsidian sert a relire, corriger et enrichir les souvenirs.",
                     "",
+                    "Eva lit un resume de ce vault dans son prompt local pour creer des mails, posts, projets, interfaces et plans plus alignes avec Victor.",
+                    "",
                     "Les fichiers du coffre restent locaux et ignores par Git.",
                     "",
                 ]
             ),
         )
         _write_generated(vault / "10 - Profile" / "Victor.md", _profile_markdown())
+        _write_generated(vault / "11 - Preferences" / "Creative Taste.md", _creative_taste_markdown())
+        _write_generated(vault / "11 - Preferences" / "Working Preferences.md", _working_preferences_markdown())
+        _write_generated(vault / "12 - Creation" / "Creation DNA.md", _creation_dna_markdown())
         _write_generated(vault / "30 - Projects" / "Projects.md", _projects_markdown())
+        try:
+            for project in load_projects():
+                project_name = _safe_filename(_clean_display_text(project.get("name", "project")), fallback="project")
+                display_name = _clean_display_text(project.get("name", project_name))
+                _write_generated(
+                    vault / "30 - Projects" / f"{display_name}.md",
+                    _project_detail_markdown(project),
+                )
+        except ProjectStoreError:
+            pass
+        _write_generated(vault / "30 - Projects" / "DreamLense.md", _dreamlense_markdown())
+        _write_generated(vault / "60 - Content" / "DreamLense Content Angles.md", _content_angles_markdown())
+        _write_generated(vault / "60 - Content" / "LinkedIn Ideas.md", _linkedin_ideas_markdown())
+        _write_generated(
+            vault / "70 - Templates" / "Project Brief.md",
+            _template_markdown(
+                "Project Brief",
+                """
+## Contexte
+
+- Idee:
+- Utilisateur cible:
+- Probleme:
+- Resultat attendu:
+
+## V1
+
+- Fonctionnalites indispensables:
+- Stack pressentie:
+- Fichiers a creer:
+- Donnees locales:
+
+## Definition of done
+
+- L'app se lance.
+- Le README explique l'installation.
+- Les risques/secrets sont documentes.
+- Eva peut auditer le resultat.
+""",
+            ),
+        )
+        _write_generated(
+            vault / "70 - Templates" / "Cursor Prompt.md",
+            _template_markdown(
+                "Cursor Prompt",
+                """
+Tu travailles dans le projet: {{project_name}}.
+
+Objectif:
+{{objective}}
+
+Contraintes:
+- respecter l'architecture existante;
+- garder le code simple et maintenable;
+- ne pas ajouter de service payant obligatoire;
+- verifier avec les tests ou un build;
+- resumer les fichiers modifies.
+
+Contexte Victor:
+- style direct, utile, premium;
+- interfaces sombres, Jarvis-like, bleu/cyan;
+- autonomie locale et preuves d'action.
+""",
+            ),
+        )
+        _write_generated(
+            vault / "70 - Templates" / "Email Reply.md",
+            _template_markdown(
+                "Email Reply",
+                """
+## Regles
+
+- Lire le mail reel avant de rediger.
+- Detecter la langue du mail.
+- Repondre dans la meme langue.
+- Utiliser la signature de Victor si pertinent.
+- Ne pas inventer de fait, prix, rendez-vous ou engagement.
+- Si c'est sensible ou ambigu: brouillon uniquement.
+
+## Structure
+
+Bonjour,
+
+{{reponse_claire}}
+
+{{signature}}
+""",
+            ),
+        )
+        _write_generated(
+            vault / "70 - Templates" / "LinkedIn Post.md",
+            _template_markdown(
+                "LinkedIn Post",
+                """
+## Forme
+
+Hook court.
+
+Probleme concret.
+
+Observation / point de vue.
+
+Solution ou conseil.
+
+CTA doux.
+
+## Style
+
+- clair;
+- premium;
+- pas de jargon IA inutile;
+- utile pour dirigeants, entrepreneurs ou equipes commerciales.
+""",
+            ),
+        )
+        _write_generated(
+            vault / "70 - Templates" / "Morning Brief.md",
+            _template_markdown(
+                "Morning Brief",
+                """
+## Sortie attendue
+
+1. 3 choses a savoir.
+2. 1 opportunite business.
+3. 1 risque ou tendance a surveiller.
+4. 1 idee LinkedIn.
+5. 1 action proposee.
+
+## Filtres Victor
+
+- IA;
+- business;
+- finance;
+- DreamLense;
+- productivite;
+- signaux LinkedIn/Gmail utiles.
+""",
+            ),
+        )
+        _write_generated(
+            vault / "70 - Templates" / "Frontend Brief.md",
+            _template_markdown(
+                "Frontend Brief",
+                """
+## Direction
+
+Interface sombre, premium, Jarvis-like, avec bleu/cyan.
+
+## Exigences
+
+- Information structuree, pas de gros texte brut.
+- Animations utiles pour montrer comprehension, routes et verification.
+- Input toujours visible.
+- Sidebar lisible.
+- Responsive mobile.
+- Pas d'elements visuels gratuits si cela nuit a l'usage.
+""",
+            ),
+        )
+        _write_if_missing(
+            vault / "90 - Inbox" / "Ideas Inbox.md",
+            "# Ideas Inbox\n\nAjoute ici les idees brutes que Victor veut transformer en projet, post ou tache.\n",
+        )
         _write_if_missing(
             vault / "50 - Operating Rules" / "Eva Operating Rules.md",
             "\n".join(
@@ -360,6 +784,109 @@ def obsidian_open_uri() -> str:
 def obsidian_path_open_uri() -> str:
     index_path = _vault_path().resolve() / "00 - Eva" / "INDEX.md"
     return f"obsidian://open?path={quote(str(index_path))}"
+
+
+def _read_note_excerpt(path: Path, max_chars: int = 1000) -> str:
+    if not path.exists() or not path.is_file():
+        return ""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    text = text.replace(MANAGED_MARKER, "").strip()
+    if len(text) > max_chars:
+        return text[:max_chars].rstrip() + "\n..."
+    return text
+
+
+def _query_has_any(query: str, markers: tuple[str, ...]) -> bool:
+    normalized = query.lower()
+    return any(marker in normalized for marker in markers)
+
+
+def build_obsidian_prompt_context(query: str, max_chars: int = 6500) -> str:
+    if not settings.eva_obsidian_memory_enabled:
+        return "Contexte Obsidian: desactive."
+
+    vault = ensure_obsidian_vault()
+    note_paths = [
+        vault / "10 - Profile" / "Victor.md",
+        vault / "11 - Preferences" / "Creative Taste.md",
+        vault / "11 - Preferences" / "Working Preferences.md",
+        vault / "12 - Creation" / "Creation DNA.md",
+        vault / "50 - Operating Rules" / "Eva Operating Rules.md",
+    ]
+
+    if _query_has_any(query, ("dreamlense", "linkedin", "post", "contenu", "prospect")):
+        note_paths.extend(
+            [
+                vault / "30 - Projects" / "DreamLense.md",
+                vault / "60 - Content" / "DreamLense Content Angles.md",
+                vault / "60 - Content" / "LinkedIn Ideas.md",
+                vault / "70 - Templates" / "LinkedIn Post.md",
+            ]
+        )
+
+    if _query_has_any(query, ("projet", "repo", "github", "cursor", "codex", "code", "f1")):
+        note_paths.extend(
+            [
+                vault / "30 - Projects" / "Projects.md",
+                vault / "70 - Templates" / "Project Brief.md",
+                vault / "70 - Templates" / "Cursor Prompt.md",
+            ]
+        )
+
+    if _query_has_any(query, ("mail", "email", "gmail", "reponse", "relance")):
+        note_paths.append(vault / "70 - Templates" / "Email Reply.md")
+
+    if _query_has_any(query, ("brief", "news", "actu", "veille", "rss")):
+        note_paths.append(vault / "70 - Templates" / "Morning Brief.md")
+
+    if _query_has_any(query, ("frontend", "design", "interface", "ui", "site", "app")):
+        note_paths.append(vault / "70 - Templates" / "Frontend Brief.md")
+
+    seen: set[Path] = set()
+    sections = [
+        "Contexte Obsidian local de Victor.",
+        "Ces notes sont locales et editables dans Obsidian. Utilise-les pour mieux creer, rediger et decider. N'invente pas au-dela des notes.",
+    ]
+    for note_path in note_paths:
+        resolved = note_path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        excerpt = _read_note_excerpt(note_path)
+        if not excerpt:
+            continue
+        relative = note_path.relative_to(vault).as_posix()
+        block = f"\n---\nNote: {relative}\n{excerpt}"
+        if sum(len(section) for section in sections) + len(block) > max_chars:
+            break
+        sections.append(block)
+
+    return "\n".join(sections)
+
+
+def hydrate_obsidian_vault() -> dict[str, Any]:
+    vault = ensure_obsidian_vault()
+    markdown_files = list(vault.rglob("*.md")) if vault.exists() else []
+    return {
+        "hydrated": True,
+        "path": str(vault),
+        "markdown_files": len(markdown_files),
+        "key_notes": [
+            "11 - Preferences/Creative Taste.md",
+            "11 - Preferences/Working Preferences.md",
+            "12 - Creation/Creation DNA.md",
+            "60 - Content/DreamLense Content Angles.md",
+            "60 - Content/LinkedIn Ideas.md",
+            "70 - Templates/Project Brief.md",
+            "70 - Templates/Cursor Prompt.md",
+            "70 - Templates/Email Reply.md",
+            "70 - Templates/LinkedIn Post.md",
+            "70 - Templates/Frontend Brief.md",
+        ],
+    }
 
 
 def _open_obsidian_graph_view() -> None:
@@ -410,6 +937,8 @@ def obsidian_status() -> dict[str, Any]:
         "path": str(vault),
         "exists": vault.exists(),
         "markdown_files": len(markdown_files),
+        "brain_hydrated": (vault / "12 - Creation" / "Creation DNA.md").exists()
+        and (vault / "11 - Preferences" / "Creative Taste.md").exists(),
         "open_uri": obsidian_open_uri(),
         "path_open_uri": obsidian_path_open_uri(),
         "vault_name": _obsidian_vault_name(vault),
@@ -433,9 +962,20 @@ def open_obsidian_vault(open_graph: bool = True) -> dict[str, Any]:
     vault = ensure_obsidian_vault()
     registration = _register_obsidian_vault(vault)
     uri = obsidian_open_uri()
+    open_method = "uri"
     try:
         if os.name == "nt":
-            os.startfile(uri)  # type: ignore[attr-defined]
+            obsidian_exe = _obsidian_exe_path()
+            if obsidian_exe:
+                subprocess.Popen(
+                    [str(obsidian_exe), str(vault.resolve())],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                )
+                open_method = "exe_path"
+            else:
+                os.startfile(uri)  # type: ignore[attr-defined]
         elif os.environ.get("XDG_CURRENT_DESKTOP"):
             subprocess.Popen(["xdg-open", uri])
         else:
@@ -452,6 +992,7 @@ def open_obsidian_vault(open_graph: bool = True) -> dict[str, Any]:
         "opened": True,
         "path": str(vault),
         "open_uri": uri,
+        "open_method": open_method,
         "registration": registration,
         "graph_requested": open_graph,
     }

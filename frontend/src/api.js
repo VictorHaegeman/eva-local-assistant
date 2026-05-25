@@ -119,6 +119,13 @@ export async function syncObsidianMemory() {
 }
 
 
+export async function hydrateObsidianMemory() {
+  return request("/memory/obsidian/hydrate", {
+    method: "POST",
+  });
+}
+
+
 export async function openObsidianMemory() {
   return request("/memory/obsidian/open", {
     method: "POST",

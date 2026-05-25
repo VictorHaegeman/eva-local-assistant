@@ -11,6 +11,7 @@ from app.memory.memory_store import (
     build_memory_prompt_context,
 )
 from app.memory.memory_router import build_relevant_memory_prompt_context
+from app.memory.obsidian_store import ObsidianMemoryError, build_obsidian_prompt_context
 from app.memory.profile_store import ProfileStoreError, build_profile_prompt_context
 from app.prompts.system_prompt import EVA_SYSTEM_PROMPT
 from app.skills.registry import build_skills_prompt_context
@@ -86,11 +87,12 @@ async def ask_ollama(
             f"{build_profile_prompt_context()}\n\n"
             f"{build_memory_prompt_context()}\n\n"
             f"{build_relevant_memory_prompt_context(latest_user_message)}\n\n"
+            f"{build_obsidian_prompt_context(latest_user_message)}\n\n"
             f"{build_skills_prompt_context(latest_user_message)}"
         )
         if extra_context:
             system_prompt = f"{system_prompt}\n\nContexte supplementaire:\n{extra_context}"
-    except (ProfileStoreError, MemoryStoreError) as exc:
+    except (ProfileStoreError, MemoryStoreError, ObsidianMemoryError) as exc:
         raise OllamaClientError(str(exc)) from exc
 
     payload = {
