@@ -334,3 +334,1345 @@
 [2026-05-18T14:11:20.859Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
 [2026-05-18T14:11:21.666Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
 [2026-05-18T14:11:21.891Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-18T14:20:34.803Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-18T14:20:34.927Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-18T14:20:35.452Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-18T14:20:35.664Z] INFO  [PostCommitHook] Enqueued: type=commit hash=6b9deca3
+[2026-05-18T14:20:35.665Z] INFO  [QueueWorker] Launching background worker
+[2026-05-18T14:20:35.675Z] INFO  [QueueWorker] Background worker spawned (PID: 7000)
+[2026-05-18T14:20:35.760Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-18T14:20:35.762Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-18T14:20:35.958Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-18T14:20:35.961Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=6b9deca3
+[2026-05-18T14:20:36.052Z] INFO  [GitOps] Commit 6b9deca3: connexion mail et calendrier
+[2026-05-18T14:20:36.052Z] INFO  [QueueWorker] Commit: 6b9deca3 - connexion mail et calendrier (91ms)
+[2026-05-18T14:20:36.054Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-18T14:20:36.062Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-18T14:20:36.063Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-18T14:20:36.371Z] INFO  [QueueWorker] Git diff: 8 files changed, +920 -12 (309ms)
+[2026-05-18T14:20:36.372Z] INFO  [Summarizer] Generating summary for commit 6b9deca3
+[2026-05-18T14:20:36.372Z] INFO  [Summarizer] Context: transcript=0, files=8, lines=920+12
+[2026-05-18T14:20:36.372Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=6b9deca3: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-18T14:20:36.373Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-18T14:20:36.374Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-18T14:20:36.649Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-18T14:20:36.768Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-18T14:20:37.691Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-18T14:20:37.955Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T11:15:08.542Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T11:15:08.750Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T11:15:09.469Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T11:15:09.780Z] INFO  [PostCommitHook] Enqueued: type=commit hash=6cef8d20
+[2026-05-19T11:15:09.781Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T11:15:09.791Z] INFO  [QueueWorker] Background worker spawned (PID: 40296)
+[2026-05-19T11:15:09.918Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T11:15:09.923Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T11:15:10.260Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T11:15:10.266Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=6cef8d20
+[2026-05-19T11:15:10.431Z] INFO  [GitOps] Commit 6cef8d20: Make Gmail actions operator-first
+[2026-05-19T11:15:10.432Z] INFO  [QueueWorker] Commit: 6cef8d20 - Make Gmail actions operator-first (161ms)
+[2026-05-19T11:15:10.435Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T11:15:10.501Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T11:15:10.502Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T11:15:10.935Z] INFO  [QueueWorker] Git diff: 2 files changed, +100 -2 (433ms)
+[2026-05-19T11:15:10.935Z] INFO  [Summarizer] Generating summary for commit 6cef8d20
+[2026-05-19T11:15:10.935Z] INFO  [Summarizer] Context: transcript=0, files=2, lines=100+2
+[2026-05-19T11:15:10.936Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=6cef8d20: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T11:15:10.938Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T11:15:10.941Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T11:15:11.275Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T11:15:11.422Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T11:15:12.629Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T11:15:12.933Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T11:25:10.761Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T11:25:10.932Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T11:25:11.761Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T11:25:12.058Z] INFO  [PostCommitHook] Enqueued: type=commit hash=4a4f5cee
+[2026-05-19T11:25:12.059Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T11:25:12.071Z] INFO  [QueueWorker] Background worker spawned (PID: 39064)
+[2026-05-19T11:25:12.209Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T11:25:12.213Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T11:25:12.524Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T11:25:12.529Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=4a4f5cee
+[2026-05-19T11:25:12.682Z] INFO  [GitOps] Commit 4a4f5cee: Add browser open commands for Telegram chat
+[2026-05-19T11:25:12.683Z] INFO  [QueueWorker] Commit: 4a4f5cee - Add browser open commands for Telegram chat (152ms)
+[2026-05-19T11:25:12.685Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T11:25:12.702Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T11:25:12.703Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T11:25:13.211Z] INFO  [QueueWorker] Git diff: 4 files changed, +118 -1 (508ms)
+[2026-05-19T11:25:13.211Z] INFO  [Summarizer] Generating summary for commit 4a4f5cee
+[2026-05-19T11:25:13.211Z] INFO  [Summarizer] Context: transcript=0, files=4, lines=118+1
+[2026-05-19T11:25:13.212Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=4a4f5cee: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T11:25:13.214Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T11:25:13.215Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T11:25:13.579Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T11:25:13.726Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T11:25:14.976Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T11:25:15.268Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T11:46:03.097Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T11:46:03.296Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T11:46:04.133Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T11:46:04.424Z] INFO  [PostCommitHook] Enqueued: type=commit hash=0dc6ff0d
+[2026-05-19T11:46:04.425Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T11:46:04.435Z] INFO  [QueueWorker] Background worker spawned (PID: 42712)
+[2026-05-19T11:46:04.563Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T11:46:04.568Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T11:46:04.857Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T11:46:04.863Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=0dc6ff0d
+[2026-05-19T11:46:05.017Z] INFO  [GitOps] Commit 0dc6ff0d: Add continuous screen vision and robust Telegram open
+[2026-05-19T11:46:05.018Z] INFO  [QueueWorker] Commit: 0dc6ff0d - Add continuous screen vision and robust Telegram open (152ms)
+[2026-05-19T11:46:05.021Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T11:46:05.049Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T11:46:05.050Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T11:46:05.531Z] INFO  [QueueWorker] Git diff: 10 files changed, +211 -4 (481ms)
+[2026-05-19T11:46:05.532Z] INFO  [Summarizer] Generating summary for commit 0dc6ff0d
+[2026-05-19T11:46:05.532Z] INFO  [Summarizer] Context: transcript=0, files=10, lines=211+4
+[2026-05-19T11:46:05.532Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=0dc6ff0d: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T11:46:05.534Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T11:46:05.536Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T11:46:05.890Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T11:46:06.040Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T11:46:07.177Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T11:46:07.465Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T15:55:02.466Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T15:55:02.601Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T15:55:03.299Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T15:55:03.529Z] INFO  [PostCommitHook] Enqueued: type=commit hash=df378e6f
+[2026-05-19T15:55:03.529Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T15:55:03.540Z] INFO  [QueueWorker] Background worker spawned (PID: 33020)
+[2026-05-19T15:55:03.643Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T15:55:03.649Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T15:55:03.959Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T15:55:03.966Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=df378e6f
+[2026-05-19T15:55:04.115Z] INFO  [GitOps] Commit df378e6f: Enable Eva operator autonomy
+[2026-05-19T15:55:04.116Z] INFO  [QueueWorker] Commit: df378e6f - Enable Eva operator autonomy (144ms)
+[2026-05-19T15:55:04.119Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T15:55:04.171Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T15:55:04.172Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T15:55:04.672Z] INFO  [QueueWorker] Git diff: 12 files changed, +300 -64 (499ms)
+[2026-05-19T15:55:04.673Z] INFO  [Summarizer] Generating summary for commit df378e6f
+[2026-05-19T15:55:04.673Z] INFO  [Summarizer] Context: transcript=0, files=12, lines=300+64
+[2026-05-19T15:55:04.674Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=df378e6f: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T15:55:04.677Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T15:55:04.679Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T15:55:05.027Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T15:55:05.130Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T15:55:06.008Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T15:55:06.197Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T16:30:48.448Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T16:30:48.561Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T16:30:49.028Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T16:30:49.207Z] INFO  [PostCommitHook] Enqueued: type=commit hash=f0b7ec4f
+[2026-05-19T16:30:49.207Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T16:30:49.216Z] INFO  [QueueWorker] Background worker spawned (PID: 30992)
+[2026-05-19T16:30:49.277Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T16:30:49.280Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T16:30:49.505Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T16:30:49.512Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=f0b7ec4f
+[2026-05-19T16:30:49.636Z] INFO  [GitOps] Commit f0b7ec4f: Enable Gmail draft creation
+[2026-05-19T16:30:49.636Z] INFO  [QueueWorker] Commit: f0b7ec4f - Enable Gmail draft creation (122ms)
+[2026-05-19T16:30:49.639Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T16:30:49.649Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T16:30:49.649Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T16:30:50.014Z] INFO  [QueueWorker] Git diff: 12 files changed, +375 -60 (364ms)
+[2026-05-19T16:30:50.014Z] INFO  [Summarizer] Generating summary for commit f0b7ec4f
+[2026-05-19T16:30:50.014Z] INFO  [Summarizer] Context: transcript=0, files=12, lines=375+60
+[2026-05-19T16:30:50.015Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=f0b7ec4f: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T16:30:50.016Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T16:30:50.017Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T16:30:50.350Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T16:30:50.482Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T16:30:51.407Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T16:30:51.634Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T17:48:21.313Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T17:48:21.455Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T17:48:22.059Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T17:48:22.231Z] INFO  [PostCommitHook] Enqueued: type=commit hash=bf9df996
+[2026-05-19T17:48:22.231Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T17:48:22.238Z] INFO  [QueueWorker] Background worker spawned (PID: 41072)
+[2026-05-19T17:48:22.317Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T17:48:22.320Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T17:48:22.503Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T17:48:22.506Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=bf9df996
+[2026-05-19T17:48:22.602Z] INFO  [GitOps] Commit bf9df996: Add browser video assist and Jarvis voice profile
+[2026-05-19T17:48:22.602Z] INFO  [QueueWorker] Commit: bf9df996 - Add browser video assist and Jarvis voice profile (95ms)
+[2026-05-19T17:48:22.605Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T17:48:22.619Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T17:48:22.620Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T17:48:22.993Z] INFO  [QueueWorker] Git diff: 9 files changed, +282 -9 (373ms)
+[2026-05-19T17:48:22.994Z] INFO  [Summarizer] Generating summary for commit bf9df996
+[2026-05-19T17:48:22.994Z] INFO  [Summarizer] Context: transcript=0, files=9, lines=282+9
+[2026-05-19T17:48:22.994Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=bf9df996: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T17:48:22.997Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T17:48:22.999Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T17:48:23.324Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T17:48:23.453Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T17:48:24.397Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T17:48:24.684Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T17:56:16.218Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T17:56:16.357Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T17:56:16.988Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T17:56:17.190Z] INFO  [PostCommitHook] Enqueued: type=commit hash=5f571395
+[2026-05-19T17:56:17.191Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T17:56:17.199Z] INFO  [QueueWorker] Background worker spawned (PID: 26764)
+[2026-05-19T17:56:17.269Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T17:56:17.271Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T17:56:17.464Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T17:56:17.466Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=5f571395
+[2026-05-19T17:56:17.575Z] INFO  [GitOps] Commit 5f571395: Improve Eva Gmail intent routing
+[2026-05-19T17:56:17.575Z] INFO  [QueueWorker] Commit: 5f571395 - Improve Eva Gmail intent routing (107ms)
+[2026-05-19T17:56:17.578Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T17:56:17.591Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T17:56:17.591Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T17:56:17.937Z] INFO  [QueueWorker] Git diff: 6 files changed, +248 -14 (346ms)
+[2026-05-19T17:56:17.938Z] INFO  [Summarizer] Generating summary for commit 5f571395
+[2026-05-19T17:56:17.938Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=248+14
+[2026-05-19T17:56:17.939Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=5f571395: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T17:56:17.941Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T17:56:17.943Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T17:56:18.252Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T17:56:18.361Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T17:56:19.294Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T17:56:19.527Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T18:03:04.757Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T18:03:04.938Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T18:03:05.570Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T18:03:05.749Z] INFO  [PostCommitHook] Enqueued: type=commit hash=f2a6a6aa
+[2026-05-19T18:03:05.749Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T18:03:05.756Z] INFO  [QueueWorker] Background worker spawned (PID: 7128)
+[2026-05-19T18:03:05.828Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T18:03:05.832Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T18:03:06.083Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T18:03:06.089Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=f2a6a6aa
+[2026-05-19T18:03:06.218Z] INFO  [GitOps] Commit f2a6a6aa: Add Spotify local control
+[2026-05-19T18:03:06.219Z] INFO  [QueueWorker] Commit: f2a6a6aa - Add Spotify local control (128ms)
+[2026-05-19T18:03:06.223Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T18:03:06.234Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T18:03:06.234Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T18:03:06.545Z] INFO  [QueueWorker] Git diff: 7 files changed, +171 -5 (311ms)
+[2026-05-19T18:03:06.546Z] INFO  [Summarizer] Generating summary for commit f2a6a6aa
+[2026-05-19T18:03:06.546Z] INFO  [Summarizer] Context: transcript=0, files=7, lines=171+5
+[2026-05-19T18:03:06.546Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=f2a6a6aa: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T18:03:06.547Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T18:03:06.548Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T18:03:06.868Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T18:03:07.004Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T18:03:07.828Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T18:03:08.094Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T18:18:01.189Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T18:18:01.336Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T18:18:01.953Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T18:18:02.165Z] INFO  [PostCommitHook] Enqueued: type=commit hash=fd56dd84
+[2026-05-19T18:18:02.165Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T18:18:02.171Z] INFO  [QueueWorker] Background worker spawned (PID: 36288)
+[2026-05-19T18:18:02.234Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T18:18:02.237Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T18:18:02.444Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T18:18:02.448Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=fd56dd84
+[2026-05-19T18:18:02.564Z] INFO  [GitOps] Commit fd56dd84: Add Eva action planning loop
+[2026-05-19T18:18:02.564Z] INFO  [QueueWorker] Commit: fd56dd84 - Add Eva action planning loop (114ms)
+[2026-05-19T18:18:02.566Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T18:18:02.575Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T18:18:02.575Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T18:18:02.943Z] INFO  [QueueWorker] Git diff: 7 files changed, +340 -25 (368ms)
+[2026-05-19T18:18:02.944Z] INFO  [Summarizer] Generating summary for commit fd56dd84
+[2026-05-19T18:18:02.944Z] INFO  [Summarizer] Context: transcript=0, files=7, lines=340+25
+[2026-05-19T18:18:02.945Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=fd56dd84: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T18:18:02.948Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T18:18:02.949Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T18:18:03.253Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T18:18:03.365Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T18:18:04.279Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T18:18:04.518Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T18:33:49.647Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-19T18:33:49.781Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-19T18:33:50.403Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-19T18:33:50.649Z] INFO  [PostCommitHook] Enqueued: type=commit hash=6f61a8d2
+[2026-05-19T18:33:50.649Z] INFO  [QueueWorker] Launching background worker
+[2026-05-19T18:33:50.659Z] INFO  [QueueWorker] Background worker spawned (PID: 988)
+[2026-05-19T18:33:50.736Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-19T18:33:50.739Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T18:33:50.925Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-19T18:33:50.929Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=6f61a8d2
+[2026-05-19T18:33:51.024Z] INFO  [GitOps] Commit 6f61a8d2: Add desktop hands for Spotify control
+[2026-05-19T18:33:51.024Z] INFO  [QueueWorker] Commit: 6f61a8d2 - Add desktop hands for Spotify control (94ms)
+[2026-05-19T18:33:51.027Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-19T18:33:51.035Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-19T18:33:51.035Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-19T18:33:51.338Z] INFO  [QueueWorker] Git diff: 11 files changed, +458 -12 (303ms)
+[2026-05-19T18:33:51.339Z] INFO  [Summarizer] Generating summary for commit 6f61a8d2
+[2026-05-19T18:33:51.339Z] INFO  [Summarizer] Context: transcript=0, files=11, lines=458+12
+[2026-05-19T18:33:51.339Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=6f61a8d2: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-19T18:33:51.343Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-19T18:33:51.344Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-19T18:33:51.609Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-19T18:33:51.701Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-19T18:33:52.540Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-19T18:33:52.744Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T06:04:46.625Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T06:04:46.742Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T06:04:47.190Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T06:04:47.359Z] INFO  [PostCommitHook] Enqueued: type=commit hash=210f941b
+[2026-05-20T06:04:47.359Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T06:04:47.366Z] INFO  [QueueWorker] Background worker spawned (PID: 26284)
+[2026-05-20T06:04:47.437Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T06:04:47.443Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T06:04:47.632Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T06:04:47.636Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=210f941b
+[2026-05-20T06:04:47.733Z] INFO  [GitOps] Commit 210f941b: Fix Gmail topic mail routing
+[2026-05-20T06:04:47.733Z] INFO  [QueueWorker] Commit: 210f941b - Fix Gmail topic mail routing (94ms)
+[2026-05-20T06:04:47.735Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T06:04:47.771Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T06:04:47.772Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T06:04:48.026Z] INFO  [QueueWorker] Git diff: 1 files changed, +115 -7 (253ms)
+[2026-05-20T06:04:48.026Z] INFO  [Summarizer] Generating summary for commit 210f941b
+[2026-05-20T06:04:48.026Z] INFO  [Summarizer] Context: transcript=0, files=1, lines=115+7
+[2026-05-20T06:04:48.026Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=210f941b: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T06:04:48.028Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T06:04:48.029Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T06:04:48.258Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T06:04:48.330Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T06:04:48.936Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T06:04:49.080Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T06:41:07.914Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T06:41:08.004Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T06:41:08.438Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T06:41:08.586Z] INFO  [PostCommitHook] Enqueued: type=commit hash=6fc9fdde
+[2026-05-20T06:41:08.586Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T06:41:08.594Z] INFO  [QueueWorker] Background worker spawned (PID: 21916)
+[2026-05-20T06:41:08.665Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T06:41:08.668Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T06:41:08.851Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T06:41:08.854Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=6fc9fdde
+[2026-05-20T06:41:08.932Z] INFO  [GitOps] Commit 6fc9fdde: Add Beeper vision assistant
+[2026-05-20T06:41:08.932Z] INFO  [QueueWorker] Commit: 6fc9fdde - Add Beeper vision assistant (78ms)
+[2026-05-20T06:41:08.934Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T06:41:08.942Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T06:41:08.943Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T06:41:09.223Z] INFO  [QueueWorker] Git diff: 11 files changed, +400 -2 (280ms)
+[2026-05-20T06:41:09.223Z] INFO  [Summarizer] Generating summary for commit 6fc9fdde
+[2026-05-20T06:41:09.223Z] INFO  [Summarizer] Context: transcript=0, files=11, lines=400+2
+[2026-05-20T06:41:09.224Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=6fc9fdde: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T06:41:09.225Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T06:41:09.225Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T06:41:09.454Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T06:41:09.523Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T06:41:10.093Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T06:41:10.234Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T07:23:51.350Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T07:23:51.443Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T07:23:51.889Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T07:23:52.059Z] INFO  [PostCommitHook] Enqueued: type=commit hash=78638ed9
+[2026-05-20T07:23:52.060Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T07:23:52.066Z] INFO  [QueueWorker] Background worker spawned (PID: 22224)
+[2026-05-20T07:23:52.128Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T07:23:52.133Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T07:23:52.311Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T07:23:52.314Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=78638ed9
+[2026-05-20T07:23:52.409Z] INFO  [GitOps] Commit 78638ed9: Add visual actions and smarter memory retrieval
+[2026-05-20T07:23:52.409Z] INFO  [QueueWorker] Commit: 78638ed9 - Add visual actions and smarter memory retrieval (93ms)
+[2026-05-20T07:23:52.411Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T07:23:52.422Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T07:23:52.423Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T07:23:52.726Z] INFO  [QueueWorker] Git diff: 10 files changed, +573 -2 (302ms)
+[2026-05-20T07:23:52.726Z] INFO  [Summarizer] Generating summary for commit 78638ed9
+[2026-05-20T07:23:52.726Z] INFO  [Summarizer] Context: transcript=0, files=10, lines=573+2
+[2026-05-20T07:23:52.726Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=78638ed9: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T07:23:52.728Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T07:23:52.729Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T07:23:52.989Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T07:23:53.081Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T07:23:53.892Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T07:23:54.088Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T07:49:45.479Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T07:49:45.661Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T07:49:46.428Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T07:49:46.706Z] INFO  [PostCommitHook] Enqueued: type=commit hash=c7ebb0b2
+[2026-05-20T07:49:46.706Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T07:49:46.716Z] INFO  [QueueWorker] Background worker spawned (PID: 164)
+[2026-05-20T07:49:46.835Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T07:49:46.841Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T07:49:47.114Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T07:49:47.119Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=c7ebb0b2
+[2026-05-20T07:49:47.257Z] INFO  [GitOps] Commit c7ebb0b2: Add Google Stitch design bridge
+[2026-05-20T07:49:47.258Z] INFO  [QueueWorker] Commit: c7ebb0b2 - Add Google Stitch design bridge (137ms)
+[2026-05-20T07:49:47.261Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T07:49:47.278Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T07:49:47.279Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T07:49:47.731Z] INFO  [QueueWorker] Git diff: 10 files changed, +341 -6 (452ms)
+[2026-05-20T07:49:47.732Z] INFO  [Summarizer] Generating summary for commit c7ebb0b2
+[2026-05-20T07:49:47.732Z] INFO  [Summarizer] Context: transcript=0, files=10, lines=341+6
+[2026-05-20T07:49:47.733Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=c7ebb0b2: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T07:49:47.735Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T07:49:47.736Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T07:49:48.060Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T07:49:48.177Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T07:49:49.222Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T07:49:49.546Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T08:05:30.147Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T08:05:30.307Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T08:05:31.147Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T08:05:31.411Z] INFO  [PostCommitHook] Enqueued: type=commit hash=5a27ef83
+[2026-05-20T08:05:31.411Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T08:05:31.421Z] INFO  [QueueWorker] Background worker spawned (PID: 20176)
+[2026-05-20T08:05:31.537Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T08:05:31.545Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T08:05:31.808Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T08:05:31.812Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=5a27ef83
+[2026-05-20T08:05:31.971Z] INFO  [GitOps] Commit 5a27ef83: Add hybrid vector memory router
+[2026-05-20T08:05:31.971Z] INFO  [QueueWorker] Commit: 5a27ef83 - Add hybrid vector memory router (157ms)
+[2026-05-20T08:05:31.975Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T08:05:31.992Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T08:05:31.993Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T08:05:32.566Z] INFO  [QueueWorker] Git diff: 12 files changed, +722 -3 (573ms)
+[2026-05-20T08:05:32.566Z] INFO  [Summarizer] Generating summary for commit 5a27ef83
+[2026-05-20T08:05:32.566Z] INFO  [Summarizer] Context: transcript=0, files=12, lines=722+3
+[2026-05-20T08:05:32.567Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=5a27ef83: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T08:05:32.569Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T08:05:32.571Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T08:05:32.911Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T08:05:33.043Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T08:05:34.060Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T08:05:34.317Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T14:28:07.381Z] INFO  [activate] Activating JolliMemory extension {"workspaceRoot":"c:\\Users\\victo\\Desktop\\Cursor\\eva-local-assistant","extensionPath":"c:\\Users\\victo\\.cursor\\extensions\\jolli.jollimemory-vscode-0.99.1-universal"}
+[2026-05-20T14:28:07.815Z] INFO  [initialLoad] Loading all panels
+[2026-05-20T14:28:07.816Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-20T14:28:07.948Z] WARN  [SummaryStore] loadIndex: index.json unreadable from hr (fresh repo or backend read failed)
+[2026-05-20T14:28:08.111Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-20T14:28:12.204Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T14:28:12.317Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T14:28:12.972Z] INFO  [KBPathResolver] KB folder initialized: C:\Users\victo\Documents\jolli\eva-local-assistant (remote=https://github.com/VictorHaegeman/eva-local-assistant)
+[2026-05-20T14:28:13.399Z] INFO  [bridge] Merged mode activated {"branch":"main","creationPoint":"8f4f20e6","author":"Victor Haegeman"}
+[2026-05-20T14:28:13.503Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:28:13.627Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T14:28:13.783Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T14:28:14.299Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T14:28:14.434Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T14:28:14.504Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T14:28:14.506Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T14:28:14.506Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:28:14.506Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:28:14.584Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-20T14:28:14.602Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-20T14:28:14.603Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-20T14:28:14.740Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T14:28:14.747Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T14:28:14.747Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:28:14.819Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-20T14:28:14.821Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-20T14:28:14.965Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T14:28:14.971Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T14:28:14.971Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:28:15.030Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-20T14:28:16.589Z] INFO  [initialLoad] All panels loaded — updating status bar
+[2026-05-20T14:28:16.589Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-20T14:28:16.624Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T14:28:16.702Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T14:28:16.706Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T14:28:16.706Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:28:16.764Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-20T14:44:34.130Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T14:44:34.210Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T14:44:34.553Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T14:44:34.673Z] INFO  [PostCommitHook] Enqueued: type=commit hash=436d3c5c
+[2026-05-20T14:44:34.673Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T14:44:34.677Z] INFO  [QueueWorker] Background worker spawned (PID: 35660)
+[2026-05-20T14:44:34.739Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T14:44:34.743Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:44:34.882Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T14:44:34.886Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=436d3c5c
+[2026-05-20T14:44:34.972Z] INFO  [GitOps] Commit 436d3c5c: Improve Eva hybrid memory routing
+[2026-05-20T14:44:34.972Z] INFO  [QueueWorker] Commit: 436d3c5c - Improve Eva hybrid memory routing (83ms)
+[2026-05-20T14:44:34.974Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T14:44:34.997Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T14:44:34.997Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:44:34.998Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T14:44:35.225Z] INFO  [QueueWorker] Git diff: 5 files changed, +473 -6 (227ms)
+[2026-05-20T14:44:35.225Z] INFO  [Summarizer] Generating summary for commit 436d3c5c
+[2026-05-20T14:44:35.225Z] INFO  [Summarizer] Context: transcript=0, files=5, lines=473+6
+[2026-05-20T14:44:35.226Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=436d3c5c: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T14:44:35.228Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T14:44:35.229Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T14:44:35.462Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T14:44:35.519Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T14:44:36.006Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T14:44:36.137Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T14:45:30.365Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T14:45:30.684Z] INFO  [GitOperationDetector] Reset-squash detected: 1 commits (5a27ef83..436d3c5c)
+[2026-05-20T14:45:30.685Z] INFO  [SessionTracker] Saved squash-pending.json: 1 source hashes, parent 5a27ef83
+[2026-05-20T14:45:30.685Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T14:45:30.940Z] INFO  [PostCommitHook] Detected operation: squash
+[2026-05-20T14:45:31.129Z] INFO  [PostCommitHook] Squash-pending validated: 1 source hashes
+[2026-05-20T14:45:31.130Z] INFO  [PostCommitHook] Enqueued: type=squash hash=aa16a855
+[2026-05-20T14:45:31.130Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T14:45:31.134Z] INFO  [QueueWorker] Background worker spawned (PID: 42828)
+[2026-05-20T14:45:31.182Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T14:45:31.185Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T14:45:31.335Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T14:45:31.339Z] INFO  [QueueWorker] Processing queue entry: type=squash hash=aa16a855
+[2026-05-20T14:45:31.475Z] WARN  [SummaryStore] loadIndex: index.json unreadable from xs (fresh repo or backend read failed)
+[2026-05-20T14:45:31.475Z] WARN  [QueueWorker] Squash: 1 of 1 source summaries missing -- merging available ones. Missing: [436d3c5c]
+[2026-05-20T14:45:31.475Z] WARN  [QueueWorker] Squash: no source summaries found for aa16a855 -- skipping
+[2026-05-20T14:45:31.547Z] WARN  [SummaryStore] loadIndex: index.json unreadable from xs (fresh repo or backend read failed)
+[2026-05-20T14:45:31.548Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T14:45:31.549Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T14:45:31.772Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T14:45:31.824Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T14:45:32.253Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T14:45:32.363Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T15:21:47.707Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T15:21:47.781Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T15:21:48.090Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T15:21:48.205Z] INFO  [PostCommitHook] Enqueued: type=commit hash=fb9aa773
+[2026-05-20T15:21:48.205Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T15:21:48.209Z] INFO  [QueueWorker] Background worker spawned (PID: 25876)
+[2026-05-20T15:21:48.262Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T15:21:48.264Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T15:21:48.400Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T15:21:48.403Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=fb9aa773
+[2026-05-20T15:21:48.470Z] INFO  [GitOps] Commit fb9aa773: Add Eva understanding preflight layer
+[2026-05-20T15:21:48.470Z] INFO  [QueueWorker] Commit: fb9aa773 - Add Eva understanding preflight layer (66ms)
+[2026-05-20T15:21:48.471Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T15:21:48.479Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T15:21:48.479Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T15:21:48.480Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T15:21:48.696Z] INFO  [QueueWorker] Git diff: 7 files changed, +555 -37 (216ms)
+[2026-05-20T15:21:48.696Z] INFO  [Summarizer] Generating summary for commit fb9aa773
+[2026-05-20T15:21:48.696Z] INFO  [Summarizer] Context: transcript=0, files=7, lines=555+37
+[2026-05-20T15:21:48.696Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=fb9aa773: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T15:21:48.697Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T15:21:48.698Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T15:21:48.919Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T15:21:48.975Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T15:21:49.419Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T15:21:49.528Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T15:41:59.041Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T15:41:59.112Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T15:41:59.423Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T15:41:59.531Z] INFO  [PostCommitHook] Enqueued: type=commit hash=b67b39e0
+[2026-05-20T15:41:59.531Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T15:41:59.535Z] INFO  [QueueWorker] Background worker spawned (PID: 31344)
+[2026-05-20T15:41:59.583Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T15:41:59.585Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T15:41:59.719Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T15:41:59.722Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=b67b39e0
+[2026-05-20T15:41:59.794Z] INFO  [GitOps] Commit b67b39e0: Add Eva operator journal reflexes
+[2026-05-20T15:41:59.794Z] INFO  [QueueWorker] Commit: b67b39e0 - Add Eva operator journal reflexes (70ms)
+[2026-05-20T15:41:59.795Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T15:41:59.804Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T15:41:59.804Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T15:41:59.804Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T15:42:00.026Z] INFO  [QueueWorker] Git diff: 6 files changed, +421 -1 (221ms)
+[2026-05-20T15:42:00.026Z] INFO  [Summarizer] Generating summary for commit b67b39e0
+[2026-05-20T15:42:00.026Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=421+1
+[2026-05-20T15:42:00.026Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=b67b39e0: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T15:42:00.028Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T15:42:00.028Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T15:42:00.278Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T15:42:00.337Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T15:42:00.758Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T15:42:00.867Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T15:54:46.110Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-20T15:54:46.176Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-20T15:54:46.476Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-20T15:54:46.585Z] INFO  [PostCommitHook] Enqueued: type=commit hash=605dc0fb
+[2026-05-20T15:54:46.585Z] INFO  [QueueWorker] Launching background worker
+[2026-05-20T15:54:46.590Z] INFO  [QueueWorker] Background worker spawned (PID: 7396)
+[2026-05-20T15:54:46.639Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-20T15:54:46.642Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T15:54:46.779Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-20T15:54:46.782Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=605dc0fb
+[2026-05-20T15:54:46.866Z] INFO  [GitOps] Commit 605dc0fb: Add extensible Eva skills catalog
+[2026-05-20T15:54:46.866Z] INFO  [QueueWorker] Commit: 605dc0fb - Add extensible Eva skills catalog (83ms)
+[2026-05-20T15:54:46.868Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-20T15:54:46.877Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-20T15:54:46.877Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-20T15:54:46.877Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-20T15:54:47.118Z] INFO  [QueueWorker] Git diff: 6 files changed, +564 -5 (241ms)
+[2026-05-20T15:54:47.118Z] INFO  [Summarizer] Generating summary for commit 605dc0fb
+[2026-05-20T15:54:47.118Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=564+5
+[2026-05-20T15:54:47.119Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=605dc0fb: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-20T15:54:47.120Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-20T15:54:47.121Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-20T15:54:47.360Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-20T15:54:47.414Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-20T15:54:47.841Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-20T15:54:47.950Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T12:31:24.083Z] INFO  [activate] Activating JolliMemory extension {"workspaceRoot":"c:\\Users\\victo\\Desktop\\Cursor\\eva-local-assistant","extensionPath":"c:\\Users\\victo\\.cursor\\extensions\\jolli.jollimemory-vscode-0.99.1-universal"}
+[2026-05-22T12:31:24.340Z] INFO  [initialLoad] Loading all panels
+[2026-05-22T12:31:24.342Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-22T12:31:24.382Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-22T12:31:24.450Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T12:31:24.548Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T12:31:24.574Z] WARN  [SummaryStore] loadIndex: index.json unreadable from hr (fresh repo or backend read failed)
+[2026-05-22T12:31:26.470Z] INFO  [KBPathResolver] KB folder initialized: C:\Users\victo\Documents\jolli\eva-local-assistant (remote=https://github.com/VictorHaegeman/eva-local-assistant)
+[2026-05-22T12:31:26.811Z] INFO  [bridge] Merged mode activated {"branch":"main","creationPoint":"8f4f20e6","author":"Victor Haegeman"}
+[2026-05-22T12:31:27.078Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:31:27.293Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T12:31:27.473Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T12:31:27.815Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T12:31:27.815Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T12:31:27.984Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T12:31:27.985Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:31:28.016Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T12:31:28.016Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:31:28.290Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-22T12:31:28.291Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-22T12:31:28.293Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-22T12:31:28.496Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T12:31:28.502Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T12:31:28.502Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:31:28.600Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-22T12:31:28.612Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-22T12:31:28.810Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T12:31:28.817Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T12:31:28.817Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:31:28.909Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-22T12:31:32.069Z] INFO  [initialLoad] All panels loaded — updating status bar
+[2026-05-22T12:31:32.069Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-22T12:31:32.114Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T12:31:32.207Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T12:31:32.213Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T12:31:32.213Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:31:32.277Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-22T12:51:12.820Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T12:51:12.911Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T12:51:13.357Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T12:51:13.523Z] INFO  [PostCommitHook] Enqueued: type=commit hash=5684dd07
+[2026-05-22T12:51:13.523Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T12:51:13.530Z] INFO  [QueueWorker] Background worker spawned (PID: 30788)
+[2026-05-22T12:51:13.583Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T12:51:13.586Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:51:13.772Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T12:51:13.776Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=5684dd07
+[2026-05-22T12:51:13.878Z] INFO  [GitOps] Commit 5684dd07: Add autonomous project factory agent flow
+[2026-05-22T12:51:13.878Z] INFO  [QueueWorker] Commit: 5684dd07 - Add autonomous project factory agent flow (100ms)
+[2026-05-22T12:51:13.880Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T12:51:13.889Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T12:51:13.890Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T12:51:13.891Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T12:51:14.167Z] INFO  [QueueWorker] Git diff: 13 files changed, +785 -23 (276ms)
+[2026-05-22T12:51:14.167Z] INFO  [Summarizer] Generating summary for commit 5684dd07
+[2026-05-22T12:51:14.167Z] INFO  [Summarizer] Context: transcript=0, files=13, lines=785+23
+[2026-05-22T12:51:14.168Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=5684dd07: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T12:51:14.169Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T12:51:14.170Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T12:51:14.419Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T12:51:14.489Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T12:51:15.032Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T12:51:15.166Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T13:10:10.908Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T13:10:11.007Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T13:10:11.434Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T13:10:11.603Z] INFO  [PostCommitHook] Enqueued: type=commit hash=d5ddf59e
+[2026-05-22T13:10:11.604Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T13:10:11.612Z] INFO  [QueueWorker] Background worker spawned (PID: 5012)
+[2026-05-22T13:10:11.675Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T13:10:11.678Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T13:10:11.847Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T13:10:11.850Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=d5ddf59e
+[2026-05-22T13:10:11.938Z] INFO  [GitOps] Commit d5ddf59e: Add Eva self improvement loop
+[2026-05-22T13:10:11.938Z] INFO  [QueueWorker] Commit: d5ddf59e - Add Eva self improvement loop (87ms)
+[2026-05-22T13:10:11.940Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T13:10:11.949Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T13:10:11.949Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T13:10:11.950Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T13:10:12.204Z] INFO  [QueueWorker] Git diff: 8 files changed, +669 -1 (254ms)
+[2026-05-22T13:10:12.204Z] INFO  [Summarizer] Generating summary for commit d5ddf59e
+[2026-05-22T13:10:12.204Z] INFO  [Summarizer] Context: transcript=0, files=8, lines=669+1
+[2026-05-22T13:10:12.204Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=d5ddf59e: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T13:10:12.206Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T13:10:12.207Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T13:10:12.457Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T13:10:12.533Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T13:10:13.130Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T13:10:13.276Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T13:15:10.831Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T13:15:10.923Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T13:15:11.353Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T13:15:11.495Z] INFO  [PostCommitHook] Enqueued: type=commit hash=bd24a4cb
+[2026-05-22T13:15:11.495Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T13:15:11.502Z] INFO  [QueueWorker] Background worker spawned (PID: 2932)
+[2026-05-22T13:15:11.577Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T13:15:11.579Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T13:15:11.760Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T13:15:11.765Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=bd24a4cb
+[2026-05-22T13:15:11.854Z] INFO  [GitOps] Commit bd24a4cb: Route fuzzy project work requests to Cursor
+[2026-05-22T13:15:11.854Z] INFO  [QueueWorker] Commit: bd24a4cb - Route fuzzy project work requests to Cursor (87ms)
+[2026-05-22T13:15:11.856Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T13:15:11.866Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T13:15:11.866Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T13:15:11.867Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T13:15:12.135Z] INFO  [QueueWorker] Git diff: 1 files changed, +27 -0 (268ms)
+[2026-05-22T13:15:12.135Z] INFO  [Summarizer] Generating summary for commit bd24a4cb
+[2026-05-22T13:15:12.135Z] INFO  [Summarizer] Context: transcript=0, files=1, lines=27+0
+[2026-05-22T13:15:12.136Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=bd24a4cb: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T13:15:12.137Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T13:15:12.137Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T13:15:12.370Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T13:15:12.441Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T13:15:13.044Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T13:15:13.181Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T18:32:58.786Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T18:32:58.870Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T18:32:59.113Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T18:32:59.148Z] INFO  [PostCommitHook] Enqueued: type=commit hash=421b3085
+[2026-05-22T18:32:59.149Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T18:32:59.153Z] INFO  [QueueWorker] Background worker spawned (PID: 13960)
+[2026-05-22T18:32:59.216Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T18:32:59.219Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T18:32:59.272Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T18:32:59.275Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=421b3085
+[2026-05-22T18:32:59.310Z] INFO  [GitOps] Commit 421b3085: Improve fuzzy project name resolution
+[2026-05-22T18:32:59.310Z] INFO  [QueueWorker] Commit: 421b3085 - Improve fuzzy project name resolution (31ms)
+[2026-05-22T18:32:59.312Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T18:32:59.335Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T18:32:59.335Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T18:32:59.336Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T18:32:59.421Z] INFO  [QueueWorker] Git diff: 1 files changed, +25 -2 (85ms)
+[2026-05-22T18:32:59.422Z] INFO  [Summarizer] Generating summary for commit 421b3085
+[2026-05-22T18:32:59.422Z] INFO  [Summarizer] Context: transcript=0, files=1, lines=25+2
+[2026-05-22T18:32:59.422Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=421b3085: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T18:32:59.423Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T18:32:59.424Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T18:32:59.611Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T18:32:59.655Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T18:33:00.009Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T18:33:00.098Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T18:39:42.905Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T18:39:42.936Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T18:39:43.167Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T18:39:43.204Z] INFO  [PostCommitHook] Enqueued: type=commit hash=aabb7008
+[2026-05-22T18:39:43.204Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T18:39:43.208Z] INFO  [QueueWorker] Background worker spawned (PID: 38384)
+[2026-05-22T18:39:43.264Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T18:39:43.266Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T18:39:43.326Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T18:39:43.329Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=aabb7008
+[2026-05-22T18:39:43.363Z] INFO  [GitOps] Commit aabb7008: Guard Eva against fake action claims
+[2026-05-22T18:39:43.363Z] INFO  [QueueWorker] Commit: aabb7008 - Guard Eva against fake action claims (33ms)
+[2026-05-22T18:39:43.365Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T18:39:43.373Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T18:39:43.373Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T18:39:43.374Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T18:39:43.471Z] INFO  [QueueWorker] Git diff: 3 files changed, +87 -0 (97ms)
+[2026-05-22T18:39:43.471Z] INFO  [Summarizer] Generating summary for commit aabb7008
+[2026-05-22T18:39:43.471Z] INFO  [Summarizer] Context: transcript=0, files=3, lines=87+0
+[2026-05-22T18:39:43.471Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=aabb7008: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T18:39:43.473Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T18:39:43.474Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T18:39:43.655Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T18:39:43.698Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T18:39:44.061Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T18:39:44.152Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T19:48:29.649Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T19:48:29.681Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T19:48:29.915Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T19:48:29.952Z] INFO  [PostCommitHook] Enqueued: type=commit hash=ac84d796
+[2026-05-22T19:48:29.952Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T19:48:29.956Z] INFO  [QueueWorker] Background worker spawned (PID: 33432)
+[2026-05-22T19:48:30.010Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T19:48:30.012Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T19:48:30.063Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T19:48:30.066Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=ac84d796
+[2026-05-22T19:48:30.092Z] INFO  [GitOps] Commit ac84d796: Document Eva cognitive autonomy architecture
+[2026-05-22T19:48:30.092Z] INFO  [QueueWorker] Commit: ac84d796 - Document Eva cognitive autonomy architecture (25ms)
+[2026-05-22T19:48:30.094Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T19:48:30.104Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T19:48:30.104Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T19:48:30.104Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T19:48:30.190Z] INFO  [QueueWorker] Git diff: 2 files changed, +555 -0 (85ms)
+[2026-05-22T19:48:30.190Z] INFO  [Summarizer] Generating summary for commit ac84d796
+[2026-05-22T19:48:30.190Z] INFO  [Summarizer] Context: transcript=0, files=2, lines=555+0
+[2026-05-22T19:48:30.190Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=ac84d796: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T19:48:30.191Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T19:48:30.192Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T19:58:01.598Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T19:58:01.627Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T19:58:01.843Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T19:58:01.880Z] INFO  [PostCommitHook] Enqueued: type=commit hash=91265821
+[2026-05-22T19:58:01.881Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T19:58:01.885Z] INFO  [QueueWorker] Background worker spawned (PID: 24996)
+[2026-05-22T19:58:01.937Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T19:58:01.939Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T19:58:01.989Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T19:58:01.992Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=91265821
+[2026-05-22T19:58:02.019Z] INFO  [GitOps] Commit 91265821: Add embedded map previews in chat
+[2026-05-22T19:58:02.019Z] INFO  [QueueWorker] Commit: 91265821 - Add embedded map previews in chat (26ms)
+[2026-05-22T19:58:02.020Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T19:58:02.027Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T19:58:02.028Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T19:58:02.028Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T19:58:02.124Z] INFO  [QueueWorker] Git diff: 7 files changed, +352 -2 (96ms)
+[2026-05-22T19:58:02.125Z] INFO  [Summarizer] Generating summary for commit 91265821
+[2026-05-22T19:58:02.125Z] INFO  [Summarizer] Context: transcript=0, files=7, lines=352+2
+[2026-05-22T19:58:02.125Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=91265821: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T19:58:02.126Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T19:58:02.127Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T19:58:02.319Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T19:58:02.357Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T19:58:02.678Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T19:58:02.764Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T21:37:33.419Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T21:37:33.451Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T21:37:33.681Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T21:37:33.717Z] INFO  [PostCommitHook] Enqueued: type=commit hash=5ac54f16
+[2026-05-22T21:37:33.717Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T21:37:33.722Z] INFO  [QueueWorker] Background worker spawned (PID: 5416)
+[2026-05-22T21:37:33.765Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T21:37:33.767Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T21:37:33.816Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T21:37:33.819Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=5ac54f16
+[2026-05-22T21:37:33.847Z] INFO  [GitOps] Commit 5ac54f16: Add operational cognitive loop phase one
+[2026-05-22T21:37:33.847Z] INFO  [QueueWorker] Commit: 5ac54f16 - Add operational cognitive loop phase one (26ms)
+[2026-05-22T21:37:33.848Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T21:37:33.857Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T21:37:33.857Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T21:37:33.857Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T21:37:33.938Z] INFO  [QueueWorker] Git diff: 12 files changed, +662 -14 (81ms)
+[2026-05-22T21:37:33.939Z] INFO  [Summarizer] Generating summary for commit 5ac54f16
+[2026-05-22T21:37:33.939Z] INFO  [Summarizer] Context: transcript=0, files=12, lines=662+14
+[2026-05-22T21:37:33.939Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=5ac54f16: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T21:37:33.940Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T21:37:33.940Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T21:45:15.910Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T21:45:15.963Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T21:45:16.223Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T21:45:16.279Z] INFO  [PostCommitHook] Enqueued: type=commit hash=69d2d17c
+[2026-05-22T21:45:16.280Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T21:45:16.285Z] INFO  [QueueWorker] Background worker spawned (PID: 24480)
+[2026-05-22T21:45:16.342Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T21:45:16.344Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T21:45:16.414Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T21:45:16.417Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=69d2d17c
+[2026-05-22T21:45:16.448Z] INFO  [GitOps] Commit 69d2d17c: Improve map intent handling and grounded 3D previews
+[2026-05-22T21:45:16.448Z] INFO  [QueueWorker] Commit: 69d2d17c - Improve map intent handling and grounded 3D previews (30ms)
+[2026-05-22T21:45:16.449Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T21:45:16.456Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T21:45:16.456Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T21:45:16.457Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T21:45:16.546Z] INFO  [QueueWorker] Git diff: 6 files changed, +159 -19 (89ms)
+[2026-05-22T21:45:16.547Z] INFO  [Summarizer] Generating summary for commit 69d2d17c
+[2026-05-22T21:45:16.547Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=159+19
+[2026-05-22T21:45:16.547Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=69d2d17c: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T21:45:16.548Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T21:45:16.549Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T21:45:16.736Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T21:45:16.787Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T21:45:17.144Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T21:45:17.230Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T21:51:10.922Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T21:51:10.951Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T21:51:11.179Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T21:51:11.217Z] INFO  [PostCommitHook] Enqueued: type=commit hash=7ce02308
+[2026-05-22T21:51:11.217Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T21:51:11.221Z] INFO  [QueueWorker] Background worker spawned (PID: 6916)
+[2026-05-22T21:51:11.272Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T21:51:11.274Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T21:51:11.333Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T21:51:11.335Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=7ce02308
+[2026-05-22T21:51:11.368Z] INFO  [GitOps] Commit 7ce02308: Add Jarvis-style cognitive trace UI
+[2026-05-22T21:51:11.368Z] INFO  [QueueWorker] Commit: 7ce02308 - Add Jarvis-style cognitive trace UI (31ms)
+[2026-05-22T21:51:11.369Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T21:51:11.376Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T21:51:11.377Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T21:51:11.377Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T21:51:11.457Z] INFO  [QueueWorker] Git diff: 6 files changed, +422 -17 (80ms)
+[2026-05-22T21:51:11.457Z] INFO  [Summarizer] Generating summary for commit 7ce02308
+[2026-05-22T21:51:11.457Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=422+17
+[2026-05-22T21:51:11.458Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=7ce02308: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T21:51:11.459Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T21:51:11.460Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T22:06:49.259Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T22:06:49.297Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T22:06:49.539Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T22:06:49.579Z] INFO  [PostCommitHook] Enqueued: type=commit hash=31a472ea
+[2026-05-22T22:06:49.579Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T22:06:49.584Z] INFO  [QueueWorker] Background worker spawned (PID: 31116)
+[2026-05-22T22:06:49.636Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T22:06:49.638Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T22:06:49.692Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T22:06:49.695Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=31a472ea
+[2026-05-22T22:06:49.721Z] INFO  [GitOps] Commit 31a472ea: Fix Windows Eva restart cleanup
+[2026-05-22T22:06:49.721Z] INFO  [QueueWorker] Commit: 31a472ea - Fix Windows Eva restart cleanup (26ms)
+[2026-05-22T22:06:49.724Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T22:06:49.731Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T22:06:49.731Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T22:06:49.731Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T22:06:49.810Z] INFO  [QueueWorker] Git diff: 3 files changed, +96 -7 (78ms)
+[2026-05-22T22:06:49.810Z] INFO  [Summarizer] Generating summary for commit 31a472ea
+[2026-05-22T22:06:49.810Z] INFO  [Summarizer] Context: transcript=0, files=3, lines=96+7
+[2026-05-22T22:06:49.810Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=31a472ea: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T22:06:49.811Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T22:06:49.812Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T22:14:49.733Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-22T22:14:49.763Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-22T22:14:49.979Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-22T22:14:50.011Z] INFO  [PostCommitHook] Enqueued: type=commit hash=392fb675
+[2026-05-22T22:14:50.011Z] INFO  [QueueWorker] Launching background worker
+[2026-05-22T22:14:50.015Z] INFO  [QueueWorker] Background worker spawned (PID: 36380)
+[2026-05-22T22:14:50.066Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-22T22:14:50.068Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T22:14:50.117Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-22T22:14:50.120Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=392fb675
+[2026-05-22T22:14:50.146Z] INFO  [GitOps] Commit 392fb675: Improve London map alias handling
+[2026-05-22T22:14:50.147Z] INFO  [QueueWorker] Commit: 392fb675 - Improve London map alias handling (25ms)
+[2026-05-22T22:14:50.148Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-22T22:14:50.155Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-22T22:14:50.156Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-22T22:14:50.156Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-22T22:14:50.230Z] INFO  [QueueWorker] Git diff: 1 files changed, +18 -0 (74ms)
+[2026-05-22T22:14:50.230Z] INFO  [Summarizer] Generating summary for commit 392fb675
+[2026-05-22T22:14:50.230Z] INFO  [Summarizer] Context: transcript=0, files=1, lines=18+0
+[2026-05-22T22:14:50.231Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=392fb675: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-22T22:14:50.231Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-22T22:14:50.232Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-22T22:14:50.423Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-22T22:14:50.463Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-22T22:14:50.780Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-22T22:14:50.857Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T11:19:28.705Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-23T11:19:28.747Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-23T11:19:29.075Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-23T11:19:29.114Z] INFO  [PostCommitHook] Enqueued: type=commit hash=b0b93f5b
+[2026-05-23T11:19:29.114Z] INFO  [QueueWorker] Launching background worker
+[2026-05-23T11:19:29.119Z] INFO  [QueueWorker] Background worker spawned (PID: 5824)
+[2026-05-23T11:19:29.172Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-23T11:19:29.174Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T11:19:29.235Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-23T11:19:29.238Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=b0b93f5b
+[2026-05-23T11:19:29.269Z] INFO  [GitOps] Commit b0b93f5b: Improve live Eva reasoning and map previews
+[2026-05-23T11:19:29.269Z] INFO  [QueueWorker] Commit: b0b93f5b - Improve live Eva reasoning and map previews (30ms)
+[2026-05-23T11:19:29.271Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-23T11:19:29.282Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-23T11:19:29.282Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T11:19:29.283Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-23T11:19:29.376Z] INFO  [QueueWorker] Git diff: 5 files changed, +513 -24 (93ms)
+[2026-05-23T11:19:29.376Z] INFO  [Summarizer] Generating summary for commit b0b93f5b
+[2026-05-23T11:19:29.376Z] INFO  [Summarizer] Context: transcript=0, files=5, lines=513+24
+[2026-05-23T11:19:29.376Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=b0b93f5b: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-23T11:19:29.377Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-23T11:19:29.378Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-23T11:19:29.595Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-23T11:19:29.652Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-23T11:19:30.099Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T11:19:30.189Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T11:25:02.923Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-23T11:25:02.961Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-23T11:25:03.240Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-23T11:25:03.282Z] INFO  [PostCommitHook] Enqueued: type=commit hash=887e7874
+[2026-05-23T11:25:03.282Z] INFO  [QueueWorker] Launching background worker
+[2026-05-23T11:25:03.287Z] INFO  [QueueWorker] Background worker spawned (PID: 17096)
+[2026-05-23T11:25:03.342Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-23T11:25:03.344Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T11:25:03.399Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-23T11:25:03.402Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=887e7874
+[2026-05-23T11:25:03.431Z] INFO  [GitOps] Commit 887e7874: Add Jarvis style tactical map preview
+[2026-05-23T11:25:03.431Z] INFO  [QueueWorker] Commit: 887e7874 - Add Jarvis style tactical map preview (28ms)
+[2026-05-23T11:25:03.432Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-23T11:25:03.440Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-23T11:25:03.440Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T11:25:03.441Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-23T11:25:03.525Z] INFO  [QueueWorker] Git diff: 2 files changed, +356 -28 (84ms)
+[2026-05-23T11:25:03.525Z] INFO  [Summarizer] Generating summary for commit 887e7874
+[2026-05-23T11:25:03.525Z] INFO  [Summarizer] Context: transcript=0, files=2, lines=356+28
+[2026-05-23T11:25:03.525Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=887e7874: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-23T11:25:03.526Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-23T11:25:03.527Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-23T11:25:03.743Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-23T11:25:03.837Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-23T11:25:04.274Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T11:25:04.367Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T12:11:39.117Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-23T12:11:39.149Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-23T12:11:39.382Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-23T12:11:39.436Z] INFO  [PostCommitHook] Enqueued: type=commit hash=19164a50
+[2026-05-23T12:11:39.436Z] INFO  [QueueWorker] Launching background worker
+[2026-05-23T12:11:39.444Z] INFO  [QueueWorker] Background worker spawned (PID: 31516)
+[2026-05-23T12:11:39.506Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-23T12:11:39.508Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T12:11:39.571Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-23T12:11:39.574Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=19164a50
+[2026-05-23T12:11:39.607Z] INFO  [GitOps] Commit 19164a50: Add local cognitive reasoning loop
+[2026-05-23T12:11:39.607Z] INFO  [QueueWorker] Commit: 19164a50 - Add local cognitive reasoning loop (32ms)
+[2026-05-23T12:11:39.609Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-23T12:11:39.617Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-23T12:11:39.618Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T12:11:39.618Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-23T12:11:39.712Z] INFO  [QueueWorker] Git diff: 12 files changed, +691 -9 (94ms)
+[2026-05-23T12:11:39.713Z] INFO  [Summarizer] Generating summary for commit 19164a50
+[2026-05-23T12:11:39.713Z] INFO  [Summarizer] Context: transcript=0, files=12, lines=691+9
+[2026-05-23T12:11:39.713Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=19164a50: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-23T12:11:39.714Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-23T12:11:39.715Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-23T12:11:39.922Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-23T12:11:39.976Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-23T12:11:40.401Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T12:11:40.509Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T13:18:25.199Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-23T13:18:25.239Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-23T13:18:25.456Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-23T13:18:25.488Z] INFO  [PostCommitHook] Enqueued: type=commit hash=3498979f
+[2026-05-23T13:18:25.489Z] INFO  [QueueWorker] Launching background worker
+[2026-05-23T13:18:25.492Z] INFO  [QueueWorker] Background worker spawned (PID: 43468)
+[2026-05-23T13:18:25.550Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-23T13:18:25.553Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T13:18:25.609Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-23T13:18:25.612Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=3498979f
+[2026-05-23T13:18:25.646Z] INFO  [GitOps] Commit 3498979f: Fix Gmail intent routing regressions
+[2026-05-23T13:18:25.646Z] INFO  [QueueWorker] Commit: 3498979f - Fix Gmail intent routing regressions (32ms)
+[2026-05-23T13:18:25.648Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-23T13:18:25.656Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-23T13:18:25.657Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-23T13:18:25.657Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-23T13:18:25.749Z] INFO  [QueueWorker] Git diff: 6 files changed, +171 -21 (92ms)
+[2026-05-23T13:18:25.750Z] INFO  [Summarizer] Generating summary for commit 3498979f
+[2026-05-23T13:18:25.750Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=171+21
+[2026-05-23T13:18:25.750Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=3498979f: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-23T13:18:25.751Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-23T13:18:25.752Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-23T13:18:25.967Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-23T13:18:26.029Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-23T13:18:26.497Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-23T13:18:26.606Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:06:10.106Z] INFO  [activate] Activating JolliMemory extension {"workspaceRoot":"c:\\Users\\victo\\Desktop\\Cursor\\eva-local-assistant","extensionPath":"c:\\Users\\victo\\.cursor\\extensions\\jolli.jollimemory-vscode-0.99.1-universal"}
+[2026-05-24T16:06:10.544Z] INFO  [initialLoad] Loading all panels
+[2026-05-24T16:06:10.547Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-24T16:06:10.639Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-24T16:06:10.803Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-24T16:06:10.805Z] WARN  [SummaryStore] loadIndex: index.json unreadable from hr (fresh repo or backend read failed)
+[2026-05-24T16:06:10.903Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-24T16:06:15.319Z] INFO  [KBPathResolver] KB folder initialized: C:\Users\victo\Documents\jolli\eva-local-assistant (remote=https://github.com/VictorHaegeman/eva-local-assistant)
+[2026-05-24T16:06:15.620Z] INFO  [bridge] Merged mode activated {"branch":"main","creationPoint":"8f4f20e6","author":"Victor Haegeman"}
+[2026-05-24T16:06:15.764Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:06:15.973Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T16:06:16.065Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:06:16.066Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:06:16.132Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:06:16.136Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:06:16.137Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:06:16.137Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:06:16.158Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:06:16.389Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-24T16:06:16.443Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-24T16:06:16.451Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-24T16:06:16.764Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:06:16.784Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:06:16.785Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:06:16.932Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-24T16:06:16.952Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-24T16:06:17.241Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:06:17.253Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:06:17.254Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:06:17.349Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-24T16:06:24.959Z] INFO  [initialLoad] All panels loaded — updating status bar
+[2026-05-24T16:06:24.959Z] INFO  [Installer] Checking Jolli Memory status
+[2026-05-24T16:06:25.748Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:06:28.849Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:06:28.929Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:06:28.930Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for c:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:06:29.072Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/undefined, copilotChat=false
+[2026-05-24T16:20:33.670Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-24T16:20:33.717Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-24T16:20:34.036Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-24T16:20:34.089Z] INFO  [PostCommitHook] Enqueued: type=commit hash=d4bf30a8
+[2026-05-24T16:20:34.089Z] INFO  [QueueWorker] Launching background worker
+[2026-05-24T16:20:34.097Z] INFO  [QueueWorker] Background worker spawned (PID: 38840)
+[2026-05-24T16:20:34.154Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-24T16:20:34.157Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:20:34.238Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T16:20:34.241Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=d4bf30a8
+[2026-05-24T16:20:34.286Z] INFO  [GitOps] Commit d4bf30a8: Add cognitive retry loop and LinkedIn operator route
+[2026-05-24T16:20:34.286Z] INFO  [QueueWorker] Commit: d4bf30a8 - Add cognitive retry loop and LinkedIn operator route (44ms)
+[2026-05-24T16:20:34.288Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:20:34.326Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:20:34.326Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:20:34.327Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-24T16:20:34.464Z] INFO  [QueueWorker] Git diff: 14 files changed, +694 -158 (137ms)
+[2026-05-24T16:20:34.465Z] INFO  [Summarizer] Generating summary for commit d4bf30a8
+[2026-05-24T16:20:34.465Z] INFO  [Summarizer] Context: transcript=0, files=14, lines=694+158
+[2026-05-24T16:20:34.465Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=d4bf30a8: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-24T16:20:34.466Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-24T16:20:34.467Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-24T16:20:34.687Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-24T16:20:34.756Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-24T16:20:35.351Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:20:35.495Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:30:34.282Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-24T16:30:34.323Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-24T16:30:34.667Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-24T16:30:34.724Z] INFO  [PostCommitHook] Enqueued: type=commit hash=2a7ca63e
+[2026-05-24T16:30:34.725Z] INFO  [QueueWorker] Launching background worker
+[2026-05-24T16:30:34.733Z] INFO  [QueueWorker] Background worker spawned (PID: 26548)
+[2026-05-24T16:30:34.808Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-24T16:30:34.810Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:30:34.885Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T16:30:34.890Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=2a7ca63e
+[2026-05-24T16:30:34.928Z] INFO  [GitOps] Commit 2a7ca63e: Prevent news prompts from reusing action context
+[2026-05-24T16:30:34.929Z] INFO  [QueueWorker] Commit: 2a7ca63e - Prevent news prompts from reusing action context (38ms)
+[2026-05-24T16:30:34.931Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:30:34.942Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:30:34.943Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:30:34.943Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-24T16:30:35.067Z] INFO  [QueueWorker] Git diff: 6 files changed, +93 -1 (124ms)
+[2026-05-24T16:30:35.068Z] INFO  [Summarizer] Generating summary for commit 2a7ca63e
+[2026-05-24T16:30:35.068Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=93+1
+[2026-05-24T16:30:35.068Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=2a7ca63e: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-24T16:30:35.069Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-24T16:30:35.070Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-24T16:30:35.308Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-24T16:30:35.379Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-24T16:30:35.955Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:30:36.112Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:38:34.365Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-24T16:38:34.411Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-24T16:38:34.782Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-24T16:38:34.835Z] INFO  [PostCommitHook] Enqueued: type=commit hash=fc3cee0d
+[2026-05-24T16:38:34.835Z] INFO  [QueueWorker] Launching background worker
+[2026-05-24T16:38:34.845Z] INFO  [QueueWorker] Background worker spawned (PID: 13200)
+[2026-05-24T16:38:34.908Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-24T16:38:34.911Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:38:34.982Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T16:38:34.985Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=fc3cee0d
+[2026-05-24T16:38:35.024Z] INFO  [GitOps] Commit fc3cee0d: Improve cognitive trace interface
+[2026-05-24T16:38:35.024Z] INFO  [QueueWorker] Commit: fc3cee0d - Improve cognitive trace interface (37ms)
+[2026-05-24T16:38:35.026Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T16:38:35.034Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T16:38:35.035Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T16:38:35.035Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-24T16:38:35.146Z] INFO  [QueueWorker] Git diff: 2 files changed, +359 -51 (110ms)
+[2026-05-24T16:38:35.146Z] INFO  [Summarizer] Generating summary for commit fc3cee0d
+[2026-05-24T16:38:35.146Z] INFO  [Summarizer] Context: transcript=0, files=2, lines=359+51
+[2026-05-24T16:38:35.146Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=fc3cee0d: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-24T16:38:35.148Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-24T16:38:35.148Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-24T16:38:35.371Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-24T16:38:35.450Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-24T16:38:36.112Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T16:38:36.287Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T17:06:39.163Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-24T17:06:39.207Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-24T17:06:39.519Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-24T17:06:39.573Z] INFO  [PostCommitHook] Enqueued: type=commit hash=05b7774c
+[2026-05-24T17:06:39.573Z] INFO  [QueueWorker] Launching background worker
+[2026-05-24T17:06:39.581Z] INFO  [QueueWorker] Background worker spawned (PID: 25740)
+[2026-05-24T17:06:39.638Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-24T17:06:39.642Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T17:06:39.718Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T17:06:39.721Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=05b7774c
+[2026-05-24T17:06:39.759Z] INFO  [GitOps] Commit 05b7774c: Separate LinkedIn activity from post drafting
+[2026-05-24T17:06:39.759Z] INFO  [QueueWorker] Commit: 05b7774c - Separate LinkedIn activity from post drafting (37ms)
+[2026-05-24T17:06:39.762Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T17:06:39.772Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T17:06:39.773Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T17:06:39.773Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-24T17:06:39.900Z] INFO  [QueueWorker] Git diff: 8 files changed, +302 -11 (127ms)
+[2026-05-24T17:06:39.901Z] INFO  [Summarizer] Generating summary for commit 05b7774c
+[2026-05-24T17:06:39.901Z] INFO  [Summarizer] Context: transcript=0, files=8, lines=302+11
+[2026-05-24T17:06:39.901Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=05b7774c: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-24T17:06:39.902Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-24T17:06:39.903Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-24T17:06:40.138Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-24T17:06:40.228Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-24T17:06:40.915Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T17:06:41.093Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T17:23:57.869Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-24T17:23:57.951Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-24T17:23:58.505Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-24T17:23:58.608Z] INFO  [PostCommitHook] Enqueued: type=commit hash=58df7470
+[2026-05-24T17:23:58.608Z] INFO  [QueueWorker] Launching background worker
+[2026-05-24T17:23:58.622Z] INFO  [QueueWorker] Background worker spawned (PID: 42188)
+[2026-05-24T17:23:58.742Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-24T17:23:58.747Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T17:23:58.879Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T17:23:58.886Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=58df7470
+[2026-05-24T17:23:58.947Z] INFO  [GitOps] Commit 58df7470: Reject unverified Beeper action results
+[2026-05-24T17:23:58.948Z] INFO  [QueueWorker] Commit: 58df7470 - Reject unverified Beeper action results (59ms)
+[2026-05-24T17:23:58.950Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T17:23:58.964Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T17:23:58.965Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T17:23:58.966Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-24T17:23:59.180Z] INFO  [QueueWorker] Git diff: 6 files changed, +132 -3 (214ms)
+[2026-05-24T17:23:59.180Z] INFO  [Summarizer] Generating summary for commit 58df7470
+[2026-05-24T17:23:59.180Z] INFO  [Summarizer] Context: transcript=0, files=6, lines=132+3
+[2026-05-24T17:23:59.181Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=58df7470: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-24T17:23:59.183Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-24T17:23:59.184Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-24T17:23:59.488Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-24T17:23:59.634Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-24T17:24:00.664Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T17:24:00.902Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T17:40:31.387Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-24T17:40:31.474Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-24T17:40:32.106Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-24T17:40:32.226Z] INFO  [PostCommitHook] Enqueued: type=commit hash=a2f3ea2c
+[2026-05-24T17:40:32.226Z] INFO  [QueueWorker] Launching background worker
+[2026-05-24T17:40:32.237Z] INFO  [QueueWorker] Background worker spawned (PID: 24468)
+[2026-05-24T17:40:32.346Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-24T17:40:32.350Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T17:40:32.475Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T17:40:32.480Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=a2f3ea2c
+[2026-05-24T17:40:32.543Z] INFO  [GitOps] Commit a2f3ea2c: Upgrade Eva Jarvis-style frontend HUD
+[2026-05-24T17:40:32.543Z] INFO  [QueueWorker] Commit: a2f3ea2c - Upgrade Eva Jarvis-style frontend HUD (61ms)
+[2026-05-24T17:40:32.546Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T17:40:32.561Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T17:40:32.561Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T17:40:32.563Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-24T17:40:32.803Z] INFO  [QueueWorker] Git diff: 5 files changed, +771 -0 (239ms)
+[2026-05-24T17:40:32.803Z] INFO  [Summarizer] Generating summary for commit a2f3ea2c
+[2026-05-24T17:40:32.803Z] INFO  [Summarizer] Context: transcript=0, files=5, lines=771+0
+[2026-05-24T17:40:32.804Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=a2f3ea2c: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-24T17:40:32.808Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-24T17:40:32.809Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-24T17:40:33.116Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-24T17:40:33.260Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-24T17:40:34.364Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T17:40:34.680Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-24T18:08:47.019Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-24T18:08:47.054Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-24T18:08:47.306Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-24T18:08:47.343Z] INFO  [PostCommitHook] Enqueued: type=commit hash=0dbc34a5
+[2026-05-24T18:08:47.344Z] INFO  [QueueWorker] Launching background worker
+[2026-05-24T18:08:47.348Z] INFO  [QueueWorker] Background worker spawned (PID: 24884)
+[2026-05-24T18:08:47.404Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-24T18:08:47.406Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T18:08:47.467Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-24T18:08:47.470Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=0dbc34a5
+[2026-05-24T18:08:47.501Z] INFO  [GitOps] Commit 0dbc34a5: Refine Eva frontend information hierarchy
+[2026-05-24T18:08:47.501Z] INFO  [QueueWorker] Commit: 0dbc34a5 - Refine Eva frontend information hierarchy (30ms)
+[2026-05-24T18:08:47.503Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-24T18:08:47.526Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-24T18:08:47.527Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-24T18:08:47.527Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-24T18:08:47.617Z] INFO  [QueueWorker] Git diff: 4 files changed, +296 -125 (90ms)
+[2026-05-24T18:08:47.617Z] INFO  [Summarizer] Generating summary for commit 0dbc34a5
+[2026-05-24T18:08:47.617Z] INFO  [Summarizer] Context: transcript=0, files=4, lines=296+125
+[2026-05-24T18:08:47.618Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=0dbc34a5: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-24T18:08:47.619Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-24T18:08:47.619Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-25T10:58:23.330Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-25T10:58:23.392Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-25T10:58:24.002Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-25T10:58:24.060Z] INFO  [PostCommitHook] Enqueued: type=commit hash=e75d2230
+[2026-05-25T10:58:24.060Z] INFO  [QueueWorker] Launching background worker
+[2026-05-25T10:58:24.069Z] INFO  [QueueWorker] Background worker spawned (PID: 43708)
+[2026-05-25T10:58:24.128Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-25T10:58:24.132Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T10:58:24.221Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-25T10:58:24.225Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=e75d2230
+[2026-05-25T10:58:24.275Z] INFO  [GitOps] Commit e75d2230: Improve Eva message markdown display
+[2026-05-25T10:58:24.275Z] INFO  [QueueWorker] Commit: e75d2230 - Improve Eva message markdown display (48ms)
+[2026-05-25T10:58:24.278Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-25T10:58:24.321Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-25T10:58:24.321Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T10:58:24.322Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-25T10:58:24.454Z] INFO  [QueueWorker] Git diff: 2 files changed, +337 -5 (132ms)
+[2026-05-25T10:58:24.454Z] INFO  [Summarizer] Generating summary for commit e75d2230
+[2026-05-25T10:58:24.454Z] INFO  [Summarizer] Context: transcript=0, files=2, lines=337+5
+[2026-05-25T10:58:24.454Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=e75d2230: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-25T10:58:24.455Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-25T10:58:24.456Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-25T10:58:24.710Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-25T10:58:24.803Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-25T10:58:25.548Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-25T10:58:25.743Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-25T11:07:53.871Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-25T11:07:53.906Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-25T11:07:54.316Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-25T11:07:54.350Z] INFO  [PostCommitHook] Enqueued: type=commit hash=3bcb1d47
+[2026-05-25T11:07:54.350Z] INFO  [QueueWorker] Launching background worker
+[2026-05-25T11:07:54.355Z] INFO  [QueueWorker] Background worker spawned (PID: 40072)
+[2026-05-25T11:07:54.420Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-25T11:07:54.422Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T11:07:54.476Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-25T11:07:54.480Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=3bcb1d47
+[2026-05-25T11:07:54.515Z] INFO  [GitOps] Commit 3bcb1d47: Polish Eva command composer
+[2026-05-25T11:07:54.515Z] INFO  [QueueWorker] Commit: 3bcb1d47 - Polish Eva command composer (34ms)
+[2026-05-25T11:07:54.518Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-25T11:07:54.527Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-25T11:07:54.527Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T11:07:54.528Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-25T11:07:54.665Z] INFO  [QueueWorker] Git diff: 2 files changed, +221 -71 (137ms)
+[2026-05-25T11:07:54.665Z] INFO  [Summarizer] Generating summary for commit 3bcb1d47
+[2026-05-25T11:07:54.665Z] INFO  [Summarizer] Context: transcript=0, files=2, lines=221+71
+[2026-05-25T11:07:54.666Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=3bcb1d47: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-25T11:07:54.667Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-25T11:07:54.668Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-25T11:07:54.884Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-25T11:07:54.947Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-25T11:07:55.420Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-25T11:07:55.539Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-25T11:15:29.815Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-25T11:15:29.847Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-25T11:15:30.295Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-25T11:15:30.332Z] INFO  [PostCommitHook] Enqueued: type=commit hash=02fb08b2
+[2026-05-25T11:15:30.332Z] INFO  [QueueWorker] Launching background worker
+[2026-05-25T11:15:30.337Z] INFO  [QueueWorker] Background worker spawned (PID: 23528)
+[2026-05-25T11:15:30.393Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-25T11:15:30.395Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T11:15:30.457Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-25T11:15:30.459Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=02fb08b2
+[2026-05-25T11:15:30.490Z] INFO  [GitOps] Commit 02fb08b2: Animate Eva thinking pipeline arrows
+[2026-05-25T11:15:30.491Z] INFO  [QueueWorker] Commit: 02fb08b2 - Animate Eva thinking pipeline arrows (30ms)
+[2026-05-25T11:15:30.492Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-25T11:15:30.501Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-25T11:15:30.501Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T11:15:30.502Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-25T11:15:30.604Z] INFO  [QueueWorker] Git diff: 2 files changed, +108 -8 (102ms)
+[2026-05-25T11:15:30.604Z] INFO  [Summarizer] Generating summary for commit 02fb08b2
+[2026-05-25T11:15:30.604Z] INFO  [Summarizer] Context: transcript=0, files=2, lines=108+8
+[2026-05-25T11:15:30.605Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=02fb08b2: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-25T11:15:30.606Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-25T11:15:30.606Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-25T11:15:30.831Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-25T11:15:30.904Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-25T11:15:31.389Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-25T11:15:31.505Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-25T11:36:25.854Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-25T11:36:25.889Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-25T11:36:26.268Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-25T11:36:26.307Z] INFO  [PostCommitHook] Enqueued: type=commit hash=9792bbd5
+[2026-05-25T11:36:26.307Z] INFO  [QueueWorker] Launching background worker
+[2026-05-25T11:36:26.311Z] INFO  [QueueWorker] Background worker spawned (PID: 38888)
+[2026-05-25T11:36:26.369Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-25T11:36:26.371Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T11:36:26.432Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-25T11:36:26.435Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=9792bbd5
+[2026-05-25T11:36:26.465Z] INFO  [GitOps] Commit 9792bbd5: Add local Gmail importance classification
+[2026-05-25T11:36:26.466Z] INFO  [QueueWorker] Commit: 9792bbd5 - Add local Gmail importance classification (30ms)
+[2026-05-25T11:36:26.467Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-25T11:36:26.492Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-25T11:36:26.493Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T11:36:26.493Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-25T11:36:26.582Z] INFO  [QueueWorker] Git diff: 7 files changed, +366 -10 (88ms)
+[2026-05-25T11:36:26.582Z] INFO  [Summarizer] Generating summary for commit 9792bbd5
+[2026-05-25T11:36:26.582Z] INFO  [Summarizer] Context: transcript=0, files=7, lines=366+10
+[2026-05-25T11:36:26.582Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=9792bbd5: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-25T11:36:26.583Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-25T11:36:26.584Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-25T13:25:22.687Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-05-25T13:25:22.747Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-05-25T13:25:23.563Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-05-25T13:25:23.683Z] INFO  [PostCommitHook] Enqueued: type=commit hash=34d11952
+[2026-05-25T13:25:23.684Z] INFO  [QueueWorker] Launching background worker
+[2026-05-25T13:25:23.693Z] INFO  [QueueWorker] Background worker spawned (PID: 912)
+[2026-05-25T13:25:23.811Z] INFO  [QueueWorker] === Queue worker started ===
+[2026-05-25T13:25:23.815Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T13:25:23.941Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-05-25T13:25:23.947Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=34d11952
+[2026-05-25T13:25:24.010Z] INFO  [GitOps] Commit 34d11952: Add Obsidian vault bridge and autonomous project routing
+[2026-05-25T13:25:24.010Z] INFO  [QueueWorker] Commit: 34d11952 - Add Obsidian vault bridge and autonomous project routing (61ms)
+[2026-05-25T13:25:24.012Z] INFO  [CodexDiscoverer] Discovered 0 Codex session(s)
+[2026-05-25T13:25:24.054Z] WARN  [CursorDiscoverer] Skipping Cursor composer 153a4331-9ebc-4358-8ffc-4f44d5a1e6c0: non-finite lastUpdatedAt
+[2026-05-25T13:25:24.054Z] INFO  [CursorDiscoverer] Discovered 0 Cursor session(s) for C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-05-25T13:25:24.055Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-05-25T13:25:24.299Z] INFO  [QueueWorker] Git diff: 20 files changed, +537 -83 (244ms)
+[2026-05-25T13:25:24.300Z] INFO  [Summarizer] Generating summary for commit 34d11952
+[2026-05-25T13:25:24.300Z] INFO  [Summarizer] Context: transcript=0, files=20, lines=537+83
+[2026-05-25T13:25:24.300Z] ERROR [QueueWorker] Failed to process queue entry type=commit hash=34d11952: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-05-25T13:25:24.302Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-05-25T13:25:24.304Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-05-25T13:25:24.583Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-05-25T13:25:24.730Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-05-25T13:25:25.771Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
+[2026-05-25T13:25:26.054Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Rd (fresh repo or backend read failed)
