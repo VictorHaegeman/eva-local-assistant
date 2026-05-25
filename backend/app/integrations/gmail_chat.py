@@ -14,6 +14,7 @@ from app.integrations.gmail_client import (
     list_gmail_messages,
     message_to_dict,
 )
+from app.integrations.email_classifier import classify_email
 from app.llm.ollama_client import OllamaClientError, ask_ollama
 from app.memory.profile_store import build_profile_prompt_context
 
@@ -402,18 +403,32 @@ def format_gmail_message_list() -> str:
     if not messages:
         return "Source: Gmail API.\nJe n'ai trouve aucun mail recent dans Gmail."
 
+    classified = [(message, classify_email(message)) for message in messages]
+    useful = [(message, classification) for message, classification in classified if not classification.is_noise]
+    noise = [(message, classification) for message, classification in classified if classification.is_noise]
+
     lines = [
         "Source: Gmail API, inbox reelle.",
-        "Derniers mails Gmail reels renvoyes par Google:",
+        "Tri local: je separe les vrais mails utiles des pubs/newsletters probables.",
     ]
-    for index, message in enumerate(messages, start=1):
+    if useful:
+        lines.append("Mails utiles a regarder:")
+    for index, (message, classification) in enumerate(useful, start=1):
         lines.append(
             f"{index}. {message.subject}\n"
             f"   De: {message.sender}\n"
             f"   Date: {message.date}\n"
+            f"   Tri: {classification.category} ({classification.importance_score}/100) - {classification.reason}\n"
             f"   ID: {message.id}\n"
             f"   Extrait: {message.snippet}"
         )
+    if noise:
+        lines.append("")
+        lines.append("Mis de cote comme pub/newsletter/notification faible:")
+        for message, classification in noise[:5]:
+            lines.append(
+                f"- {message.subject} ({classification.category}, {classification.importance_score}/100) - {message.sender}"
+            )
     return "\n\n".join(lines)
 
 
@@ -429,10 +444,12 @@ def format_gmail_topic_message_list(topic: str, max_results: int = 8) -> str:
     ]
     for index, shallow_message in enumerate(messages, start=1):
         message = get_gmail_message(shallow_message.id)
+        classification = classify_email(message, include_body=True)
         lines.append(
             f"{index}. {message.subject}\n"
             f"   De: {message.sender}\n"
             f"   Date: {message.date}\n"
+            f"   Tri: {classification.category} ({classification.importance_score}/100) - {classification.reason}\n"
             f"   ID: {message.id}\n"
             f"   Extrait: {message.snippet}\n"
             f"   Lecture: {(message.body or message.snippet)[:600].strip()}"
@@ -588,6 +605,7 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
             return f"Source: Gmail API.\nJe n'ai trouve que {len(messages)} mail(s) recent(s), pas de mail numero {selected_index + 1}."
 
         original = get_gmail_message(messages[selected_index].id)
+        classification = classify_email(original, include_body=True)
         source_label = "Source: Gmail API + brouillon Gmail." if reply_requested else "Source: Gmail API, inbox reelle."
         lines = [source_label]
         if topic:
@@ -598,6 +616,10 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
                 ]
             )
         lines.append(f"Mail source: {original.subject} ({original.sender})")
+        lines.append(
+            f"Tri Eva: {classification.category} ({classification.importance_score}/100). "
+            f"{classification.reason}. Action: {classification.recommended_action}."
+        )
 
         should_open_related_link = open_requested and _wants_related_external_link(message)
         if open_requested:
@@ -622,6 +644,15 @@ async def build_gmail_chat_response(message: str, force_list: bool = False) -> s
             if (inspect_requested or read_body_requested or topic) and original.body:
                 preview = original.body[:1200].strip()
                 lines.append(f"Extrait lu dans le mail:\n{preview}")
+            return "\n\n".join(lines)
+
+        if classification.is_noise:
+            lines.extend(
+                [
+                    "Je ne cree pas de brouillon de reponse pour ce mail: Eva le classe comme pub, newsletter ou notification faible.",
+                    "Action conseillee: l'ignorer, le classer, ou me demander explicitement de le lire si tu veux verifier.",
+                ]
+            )
             return "\n\n".join(lines)
 
         if _looks_like_automated_message(original):
@@ -714,5 +745,5 @@ Corps:
     return None
 
 
-def gmail_message_dicts(query: str, max_results: int) -> list[dict[str, str]]:
+def gmail_message_dicts(query: str, max_results: int) -> list[dict[str, object]]:
     return [message_to_dict(message) for message in list_gmail_messages(query, max_results)]

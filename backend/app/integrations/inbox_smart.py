@@ -12,7 +12,7 @@ from app.integrations.gmail_client import (
 MAX_BODY_CHARS = 4000
 
 
-def _message_preview(message: Any, include_body: bool = False) -> dict[str, str]:
+def _message_preview(message: Any, include_body: bool = False) -> dict[str, Any]:
     payload = message_to_dict(message, include_body=include_body)
     if include_body and payload.get("body"):
         payload["body"] = payload["body"][:MAX_BODY_CHARS]
@@ -36,14 +36,15 @@ def collect_inbox_signals(
             "available": False,
             "status": status,
             "messages": [],
+            "noise_messages": [],
             "linkedin_notifications": [],
             "summary": "Gmail n'est pas encore connecte. Le Smart Brief utilisera seulement les sources RSS/web.",
         }
 
     try:
         inbox_refs = list_gmail_messages(
-            query="in:inbox newer_than:7d -category:promotions",
-            max_results=max_inbox,
+            query="in:inbox newer_than:7d",
+            max_results=min(max_inbox * 2, 25),
         )
         linkedin_refs = list_gmail_messages(
             query='in:inbox newer_than:14d ("LinkedIn" OR "linkedin")',
@@ -51,9 +52,20 @@ def collect_inbox_signals(
         )
 
         messages = []
+        noise_messages = []
         for message in inbox_refs:
             full_message = get_gmail_message(message.id) if include_bodies else message
-            messages.append(_message_preview(full_message, include_body=include_bodies))
+            preview = _message_preview(full_message, include_body=include_bodies)
+            if preview.get("is_noise"):
+                noise_messages.append(preview)
+            else:
+                messages.append(preview)
+
+        messages = sorted(
+            messages,
+            key=lambda item: int(item.get("importance_score", 0)),
+            reverse=True,
+        )[:max_inbox]
 
         linkedin_notifications = []
         for message in linkedin_refs:
@@ -65,6 +77,7 @@ def collect_inbox_signals(
             "available": False,
             "status": status,
             "messages": [],
+            "noise_messages": [],
             "linkedin_notifications": [],
             "summary": f"Gmail indisponible pour le Smart Brief: {exc}",
         }
@@ -74,9 +87,10 @@ def collect_inbox_signals(
         "available": True,
         "status": status,
         "messages": messages,
+        "noise_messages": noise_messages,
         "linkedin_notifications": linkedin_notifications,
         "summary": (
-            f"{len(messages)} mails recents lus en lecture seule, "
+            f"{len(messages)} mails utiles lus, {len(noise_messages)} pubs/newsletters mises de cote, "
             f"{len(linkedin_notifications)} signaux LinkedIn detectes via Gmail."
         ),
     }
@@ -96,7 +110,20 @@ def format_inbox_signals_for_prompt(signals: dict[str, Any]) -> str:
                 f"{index}. {message.get('subject', '(sans objet)')}\n"
                 f"De: {message.get('from', '')}\n"
                 f"Date: {message.get('date', '')}\n"
+                f"Tri: {message.get('importance_category', 'normal')} "
+                f"({message.get('importance_score', 0)}/100) - {message.get('classification_reason', '')}\n"
                 f"Extrait: {(message.get('body') or message.get('snippet') or '')[:1200]}"
+            )
+
+    noise_messages = signals.get("noise_messages", [])
+    if noise_messages:
+        lines.append("\nPubs/newsletters mises de cote:")
+        for index, message in enumerate(noise_messages[:5], start=1):
+            lines.append(
+                f"{index}. {message.get('subject', '(sans objet)')} - "
+                f"{message.get('from', '')} - "
+                f"{message.get('importance_category', 'pub')} "
+                f"({message.get('importance_score', 0)}/100)"
             )
 
     linkedin_notifications = signals.get("linkedin_notifications", [])

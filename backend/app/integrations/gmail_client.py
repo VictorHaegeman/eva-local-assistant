@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from app.config import settings
+from app.integrations.email_classifier import classification_to_dict, classify_email
 
 
 class GmailIntegrationError(Exception):
@@ -261,7 +262,8 @@ def _message_from_payload(payload: dict[str, Any], include_body: bool) -> GmailM
     )
 
 
-def message_to_dict(message: GmailMessage, include_body: bool = False) -> dict[str, str]:
+def message_to_dict(message: GmailMessage, include_body: bool = False) -> dict[str, object]:
+    classification = classify_email(message, include_body=include_body)
     payload = {
         "id": message.id,
         "thread_id": message.thread_id,
@@ -274,6 +276,12 @@ def message_to_dict(message: GmailMessage, include_body: bool = False) -> dict[s
         "date": message.date,
         "snippet": message.snippet,
         "labels": ", ".join(message.label_ids),
+        "classification": classification_to_dict(classification),
+        "importance_category": classification.category,
+        "importance_score": classification.importance_score,
+        "is_noise": classification.is_noise,
+        "is_important": classification.is_important,
+        "classification_reason": classification.reason,
     }
     if include_body:
         payload["body"] = message.body

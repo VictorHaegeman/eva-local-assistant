@@ -151,6 +151,20 @@ function StatusPill({ children, tone = "neutral" }) {
 }
 
 
+function mailTone(message) {
+  if (message?.is_noise) return "warning";
+  if (message?.is_important) return "ok";
+  return "neutral";
+}
+
+
+function mailCategoryLabel(message) {
+  const category = message?.importance_category || message?.classification?.category || "normal";
+  const score = message?.importance_score ?? message?.classification?.importance_score ?? 0;
+  return `${category} ${score}/100`;
+}
+
+
 function EmptyState({ children }) {
   return <div className="panel-empty">{children}</div>;
 }
@@ -706,10 +720,13 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
         {messages.length ? (
           <div className="panel-list">
             {messages.map((message) => (
-              <div key={message.id} className="panel-row">
+              <div key={message.id} className={`panel-row ${message.is_noise ? "muted-row" : ""}`}>
                 <div>
                   <strong>{message.subject || "Sans objet"}</strong>
                   <span>{message.from || message.sender_email || "Expediteur inconnu"}</span>
+                  {message.classification_reason && (
+                    <span className="panel-row-note">{message.classification_reason}</span>
+                  )}
                 </div>
                 <div className="panel-row-actions">
                   <button
@@ -720,6 +737,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
                   >
                     {runningJob === `gmail_draft_${message.id}` ? "Creation..." : "Brouillon"}
                   </button>
+                  <StatusPill tone={mailTone(message)}>{mailCategoryLabel(message)}</StatusPill>
                   <StatusPill>{message.date || "inbox"}</StatusPill>
                 </div>
               </div>

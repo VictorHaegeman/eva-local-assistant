@@ -12,6 +12,7 @@ Eva peut maintenant:
 - scorer les articles selon Victor: IA, business, finance, DreamLense, LinkedIn, risques et opportunites;
 - produire un brief court avec seulement l'important;
 - lire Gmail si OAuth est connecte;
+- distinguer les mails utiles des pubs, newsletters et notifications faibles;
 - creer des brouillons Gmail via la brique Gmail, hors Smart Brief;
 - detecter les notifications LinkedIn via Gmail si elles arrivent dans la boite mail.
 
@@ -46,8 +47,28 @@ Eva ne peut pas envoyer de mail depuis cette brique. Elle peut:
 
 - lire les mails recents;
 - extraire les signaux importants;
+- mettre de cote les pubs/newsletters probables;
 - reperer des notifications LinkedIn recues par email;
 - creer des brouillons via les routes Gmail existantes.
+
+## Tri Gmail local
+
+Eva classe chaque mail localement avec:
+
+- les labels Gmail (`CATEGORY_PROMOTIONS`, `CATEGORY_SOCIAL`, `IMPORTANT`, etc.);
+- l'expediteur (`no-reply`, newsletter, domaine humain probable);
+- l'objet et l'extrait;
+- les signaux utiles pour Victor: DreamLense, prospect, client, devis, facture, rendez-vous, appartement, contrat;
+- les signaux de bruit: promotion, reduction, unsubscribe, newsletter, notification sociale.
+
+Chaque mail recoit:
+
+- une categorie: `important`, `normal`, `transactionnel`, `notification`, `social`, `newsletter` ou `pub`;
+- un score d'importance sur 100;
+- une raison courte;
+- une action recommandee.
+
+Le Smart Brief utilise d'abord les mails non bruyants et garde les pubs/newsletters dans une section separee.
 
 LinkedIn direct reste volontairement limite. La version propre actuelle:
 
