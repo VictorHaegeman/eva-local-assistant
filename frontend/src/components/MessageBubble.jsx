@@ -4,7 +4,6 @@ import {
   Database,
   ExternalLink,
   GitBranch,
-  MapPinned,
   Maximize2,
   Minimize2,
   Navigation,
@@ -15,6 +14,178 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+
+function isMarkdownBoundary(line) {
+  return (
+    /^```/.test(line) ||
+    /^#{1,3}\s+/.test(line) ||
+    /^\s*\d+\.\s+/.test(line) ||
+    /^\s*[-*]\s+/.test(line)
+  );
+}
+
+
+function parseMarkdownBlocks(content = "") {
+  const lines = String(content).replace(/\r\n/g, "\n").split("\n");
+  const blocks = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+
+    if (!line.trim()) {
+      index += 1;
+      continue;
+    }
+
+    if (/^```/.test(line)) {
+      const codeLines = [];
+      index += 1;
+      while (index < lines.length && !/^```/.test(lines[index])) {
+        codeLines.push(lines[index]);
+        index += 1;
+      }
+      index += 1;
+      blocks.push({ type: "code", text: codeLines.join("\n") });
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+    if (headingMatch) {
+      blocks.push({
+        type: "heading",
+        level: headingMatch[1].length,
+        text: headingMatch[2].trim(),
+      });
+      index += 1;
+      continue;
+    }
+
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items = [];
+      while (index < lines.length) {
+        const itemMatch = lines[index].match(/^\s*\d+\.\s+(.+)$/);
+        if (!itemMatch) break;
+        items.push(itemMatch[1].trim());
+        index += 1;
+      }
+      blocks.push({ type: "ordered", items });
+      continue;
+    }
+
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items = [];
+      while (index < lines.length) {
+        const itemMatch = lines[index].match(/^\s*[-*]\s+(.+)$/);
+        if (!itemMatch) break;
+        items.push(itemMatch[1].trim());
+        index += 1;
+      }
+      blocks.push({ type: "unordered", items });
+      continue;
+    }
+
+    const paragraph = [];
+    while (index < lines.length && lines[index].trim() && !isMarkdownBoundary(lines[index])) {
+      paragraph.push(lines[index].trim());
+      index += 1;
+    }
+    blocks.push({ type: "paragraph", text: paragraph.join(" ") });
+  }
+
+  return blocks;
+}
+
+
+function renderInlineMarkdown(text) {
+  const pattern = /(\*\*[^*]+?\*\*|`[^`]+?`|\[[^\]]+?\]\(https?:\/\/[^)]+?\)|https?:\/\/[^\s)]+)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const token = match[0];
+    const key = `${match.index}-${token}`;
+
+    if (token.startsWith("**")) {
+      parts.push(<strong key={key}>{token.slice(2, -2)}</strong>);
+    } else if (token.startsWith("`")) {
+      parts.push(<code key={key}>{token.slice(1, -1)}</code>);
+    } else if (token.startsWith("[")) {
+      const linkMatch = token.match(/^\[([^\]]+?)\]\((https?:\/\/[^)]+?)\)$/);
+      if (linkMatch) {
+        parts.push(
+          <a key={key} href={linkMatch[2]} target="_blank" rel="noreferrer">
+            {linkMatch[1]}
+          </a>
+        );
+      } else {
+        parts.push(token);
+      }
+    } else {
+      parts.push(
+        <a key={key} href={token} target="_blank" rel="noreferrer">
+          {token}
+        </a>
+      );
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+
+function MarkdownContent({ content }) {
+  const blocks = useMemo(() => parseMarkdownBlocks(content), [content]);
+
+  return (
+    <div className="message-markdown">
+      {blocks.map((block, index) => {
+        if (block.type === "heading") {
+          const HeadingTag = block.level === 1 ? "h3" : block.level === 2 ? "h4" : "h5";
+          return <HeadingTag key={`${block.type}-${index}`}>{renderInlineMarkdown(block.text)}</HeadingTag>;
+        }
+
+        if (block.type === "ordered") {
+          return (
+            <ol key={`${block.type}-${index}`}>
+              {block.items.map((item, itemIndex) => (
+                <li key={`${itemIndex}-${item}`}>{renderInlineMarkdown(item)}</li>
+              ))}
+            </ol>
+          );
+        }
+
+        if (block.type === "unordered") {
+          return (
+            <ul key={`${block.type}-${index}`}>
+              {block.items.map((item, itemIndex) => (
+                <li key={`${itemIndex}-${item}`}>{renderInlineMarkdown(item)}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (block.type === "code") {
+          return <pre key={`${block.type}-${index}`}><code>{block.text}</code></pre>;
+        }
+
+        return <p key={`${block.type}-${index}`}>{renderInlineMarkdown(block.text)}</p>;
+      })}
+    </div>
+  );
+}
 
 
 function buildMapLinks(webPreview) {
@@ -270,7 +441,7 @@ export function MessageBubble({ message }) {
       <div className="message-stack">
         <span className="message-author">{isUser ? "Victor" : "Eva"}</span>
         <div className="message-bubble">
-          {message.content}
+          {isUser ? message.content : <MarkdownContent content={message.content} />}
 
           {!isUser && cognitiveTrace && <CognitiveTrace trace={cognitiveTrace} />}
 
