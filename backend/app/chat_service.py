@@ -20,6 +20,7 @@ from app.agents.understanding import build_understanding_frame, format_understan
 from app.integrations.gmail_chat import (
     build_gmail_chat_response,
     format_gmail_message_list,
+    wants_gmail_auto_reply,
     wants_gmail_inspect,
     wants_gmail_open,
     wants_gmail_list,
@@ -642,6 +643,7 @@ async def process_chat_messages(
             action_plan.route in {"gmail_read", "gmail_reply_audit", "gmail_reply_draft"}
             or understanding.primary_domain == "gmail"
             or wants_gmail_inspect(gmail_context_message)
+            or wants_gmail_auto_reply(gmail_context_message)
             or wants_gmail_open(gmail_context_message)
             or wants_gmail_list(gmail_context_message)
             or wants_gmail_reply_audit(gmail_context_message)

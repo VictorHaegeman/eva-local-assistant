@@ -68,6 +68,7 @@ docs/HEARTBEAT.md
 docs/LINKEDIN_ASSISTANT.md
 docs/SMART_BRIEF_INBOX.md
 docs/EVA_COGNITIVE_AUTONOMY.md
+docs/EVA_OPENJARVIS_SKILLS_LANGUAGES.md
 ```
 
 Elle organise Eva en grandes etapes:
@@ -532,7 +533,7 @@ Gmail:
 - lecture inbox/envoyes;
 - lecture Google Calendar en lecture seule via le meme OAuth;
 - brouillon de reponse genere par Ollama puis cree dans Gmail;
-- aucun envoi automatique.
+- auto-reponse Gmail possible uniquement pour les cas evidents, avec flags locaux explicites, scope `gmail.send`, exemples envoyes similaires, detection de langue et blocage des sujets sensibles.
 
 Routes Gmail:
 
@@ -541,6 +542,7 @@ Routes Gmail:
 - `GET /gmail/messages`;
 - `GET /gmail/messages/{message_id}`;
 - `POST /gmail/reply-draft`: redige et cree un brouillon Gmail reel, sans envoyer;
+- `POST /gmail/auto-reply/run`: analyse les mails recents et envoie seulement les reponses evidentes si le mode est active;
 - `GET /calendar/status`;
 - `GET /calendar/events`.
 
@@ -551,6 +553,13 @@ EVA_GMAIL_ENABLED=true
 EVA_GMAIL_CREDENTIALS_PATH=data/gmail_credentials.json
 EVA_GMAIL_TOKEN_PATH=data/gmail_token.json
 EVA_GMAIL_MAX_SENT_EXAMPLES=5
+EVA_GMAIL_AUTO_SEND_OBVIOUS_REPLIES=false
+EVA_GMAIL_AUTO_REPLY_QUERY=in:inbox newer_than:7d -category:promotions -category:social
+EVA_GMAIL_AUTO_REPLY_MAX_PER_RUN=3
+EVA_GMAIL_AUTO_REPLY_MIN_SENT_EXAMPLES=1
+EVA_GMAIL_AUTO_REPLY_MIN_CONFIDENCE=0.9
+EVA_GMAIL_AUTO_REPLY_MIN_SIMILARITY=0.34
+EVA_GMAIL_AUTO_REPLY_OPEN_SENT_THREAD=false
 ```
 
 Connexion Gmail:
@@ -589,10 +598,25 @@ Scopes Google utilises:
 ```text
 https://www.googleapis.com/auth/gmail.readonly
 https://www.googleapis.com/auth/gmail.compose
+https://www.googleapis.com/auth/gmail.send
 https://www.googleapis.com/auth/calendar.readonly
 ```
 
-Le scope `gmail.compose` sert uniquement a creer un brouillon Gmail. Eva garde `can_send=false`: elle ne clique pas sur envoyer et n'utilise pas `gmail.send`.
+Le scope `gmail.compose` sert a creer des brouillons. Le scope `gmail.send` ne sert qu'au mode auto-reponse evidente. Pour activer ce mode localement:
+
+```env
+EVA_ALLOW_AUTO_EXTERNAL_SEND=true
+EVA_GMAIL_AUTO_SEND_OBVIOUS_REPLIES=true
+EVA_HEARTBEAT_ENABLED=true
+```
+
+Garde-fous de l'auto-reponse:
+
+- Eva ignore pubs, newsletters, no-reply, alertes automatiques et fils deja repondus;
+- Eva bloque facture, paiement, contrat, logement, juridique, securite, mot de passe, plainte, remboursement;
+- Eva repond en francais si le mail est en francais, en anglais si le mail est en anglais;
+- si la similarite avec tes anciens mails envoyes ou la confiance est trop faible, Eva cree un brouillon ou ignore au lieu d'envoyer;
+- si le token n'a pas encore `gmail.send`, le panneau Gmail demandera `Reconnecter scopes`.
 
 Alternative PowerShell:
 
@@ -1729,6 +1753,8 @@ Le coffre cree par Eva contient:
 - `50 - Operating Rules/`: regles de comportement d'Eva.
 
 Depuis le panneau Memoire, le bouton `Ouvrir le coffre` lance Obsidian via le protocole local `obsidian://` si Obsidian est installe sur Windows.
+
+Sur Windows, `open-eva-obsidian.bat` ouvre aussi le coffre dans l'application Obsidian et tente d'afficher directement la vue Graph. Eva cree une configuration locale `.obsidian/graph.json` avec des couleurs pour profil, souvenirs et projets. Si Obsidian ouvre seulement l'index, utilise `Ctrl+G` dans Obsidian: Eva ajoute aussi ce raccourci localement.
 
 ## Structure
 

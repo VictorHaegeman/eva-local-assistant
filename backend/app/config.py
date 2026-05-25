@@ -71,6 +71,31 @@ class Settings:
     )
     eva_gmail_token_path: str = os.getenv("EVA_GMAIL_TOKEN_PATH", "data/gmail_token.json")
     eva_gmail_max_sent_examples: int = _env_int("EVA_GMAIL_MAX_SENT_EXAMPLES", 5)
+    eva_gmail_auto_send_obvious_replies: bool = _env_bool(
+        "EVA_GMAIL_AUTO_SEND_OBVIOUS_REPLIES",
+        False,
+    )
+    eva_gmail_auto_reply_query: str = os.getenv(
+        "EVA_GMAIL_AUTO_REPLY_QUERY",
+        "in:inbox newer_than:7d -category:promotions -category:social",
+    )
+    eva_gmail_auto_reply_max_per_run: int = _env_int("EVA_GMAIL_AUTO_REPLY_MAX_PER_RUN", 3)
+    eva_gmail_auto_reply_min_sent_examples: int = _env_int(
+        "EVA_GMAIL_AUTO_REPLY_MIN_SENT_EXAMPLES",
+        1,
+    )
+    eva_gmail_auto_reply_min_confidence: float = _env_float(
+        "EVA_GMAIL_AUTO_REPLY_MIN_CONFIDENCE",
+        0.9,
+    )
+    eva_gmail_auto_reply_min_similarity: float = _env_float(
+        "EVA_GMAIL_AUTO_REPLY_MIN_SIMILARITY",
+        0.34,
+    )
+    eva_gmail_auto_reply_open_sent_thread: bool = _env_bool(
+        "EVA_GMAIL_AUTO_REPLY_OPEN_SENT_THREAD",
+        False,
+    )
     eva_heartbeat_enabled: bool = _env_bool("EVA_HEARTBEAT_ENABLED", False)
     eva_heartbeat_poll_seconds: int = _env_int("EVA_HEARTBEAT_POLL_SECONDS", 60)
     eva_daily_brief_enabled: bool = _env_bool("EVA_DAILY_BRIEF_ENABLED", True)

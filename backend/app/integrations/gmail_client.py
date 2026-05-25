@@ -37,10 +37,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
 GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose"
+GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
 CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 GMAIL_SCOPES = [
     GMAIL_READONLY_SCOPE,
     GMAIL_COMPOSE_SCOPE,
+    GMAIL_SEND_SCOPE,
     CALENDAR_READONLY_SCOPE,
 ]
 
@@ -63,6 +65,11 @@ def gmail_token_path() -> Path:
 def gmail_status() -> dict[str, object]:
     token_scope_status = google_token_scope_status()
     compose_status = google_token_scope_status([GMAIL_COMPOSE_SCOPE])
+    send_status = google_token_scope_status([GMAIL_SEND_SCOPE])
+    auto_send_enabled = (
+        settings.eva_gmail_auto_send_obvious_replies
+        and settings.eva_allow_auto_external_send
+    )
     return {
         "enabled": settings.eva_gmail_enabled,
         "credentials_path": str(gmail_credentials_path()),
@@ -73,9 +80,17 @@ def gmail_status() -> dict[str, object]:
         "missing_scopes": token_scope_status["missing_scopes"],
         "scopes": GMAIL_SCOPES,
         "can_create_drafts": compose_status["has_required_scopes"],
-        "drafts_require_manual_send": True,
-        "can_send": False,
-        "send_requires_confirmation": True,
+        "can_send": send_status["has_required_scopes"],
+        "missing_send_scopes": send_status["missing_scopes"],
+        "auto_send_obvious_replies_enabled": settings.eva_gmail_auto_send_obvious_replies,
+        "auto_external_send_allowed": settings.eva_allow_auto_external_send,
+        "can_auto_send_obvious_replies": send_status["has_required_scopes"] and auto_send_enabled,
+        "auto_reply_query": settings.eva_gmail_auto_reply_query,
+        "auto_reply_max_per_run": settings.eva_gmail_auto_reply_max_per_run,
+        "auto_reply_min_sent_examples": settings.eva_gmail_auto_reply_min_sent_examples,
+        "auto_reply_min_confidence": settings.eva_gmail_auto_reply_min_confidence,
+        "drafts_require_manual_send": not auto_send_enabled,
+        "send_requires_confirmation": not auto_send_enabled,
     }
 
 
@@ -424,6 +439,64 @@ def create_gmail_reply_draft(
         "thread_id": thread_id,
         "thread_url": thread_url,
         "drafts_url": drafts_url,
+        "to": recipient,
+        "subject": str(email["Subject"]),
+    }
+
+
+def send_gmail_reply(
+    original: GmailMessage,
+    body: str,
+    subject: str = "",
+    open_in_browser: bool = False,
+) -> dict[str, str]:
+    clean_body = body.strip()
+    if not clean_body:
+        raise GmailIntegrationError("Envoi refuse: corps de mail vide.")
+
+    _require_token_scopes([GMAIL_SEND_SCOPE])
+    service = _gmail_service()
+
+    recipient = original.reply_to_email or original.sender_email
+    if not recipient:
+        raise GmailIntegrationError("Envoi impossible: destinataire introuvable.")
+
+    profile = service.users().getProfile(userId="me").execute()
+    from_email = str(profile.get("emailAddress", "")).strip()
+
+    email = EmailMessage()
+    if from_email:
+        email["From"] = from_email
+    email["To"] = recipient
+    email["Subject"] = subject.strip() or _reply_subject(original.subject)
+    if original.message_id_header:
+        email["In-Reply-To"] = original.message_id_header
+        references = " ".join(
+            part for part in (original.references, original.message_id_header) if part
+        )
+        if references:
+            email["References"] = references
+    email.set_content(clean_body)
+
+    request_body: dict[str, object] = {
+        "raw": _encode_raw_message(email),
+        "threadId": original.thread_id,
+    }
+    sent = service.users().messages().send(userId="me", body=request_body).execute()
+    sent_message_id = str(sent.get("id", ""))
+    thread_id = str(sent.get("threadId", original.thread_id))
+    thread_url = f"https://mail.google.com/mail/u/0/#all/{thread_id or original.thread_id}"
+
+    if open_in_browser:
+        from app.integrations.browser import open_url
+
+        open_url(thread_url)
+
+    return {
+        "sent": "true",
+        "message_id": sent_message_id,
+        "thread_id": thread_id,
+        "thread_url": thread_url,
         "to": recipient,
         "subject": str(email["Subject"]),
     }

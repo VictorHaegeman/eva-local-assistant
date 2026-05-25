@@ -1,5 +1,8 @@
 import os
+import json
 import re
+import time
+import hashlib
 import subprocess
 from dataclasses import asdict, is_dataclass
 from datetime import UTC, datetime
@@ -27,12 +30,88 @@ DEFAULT_FOLDERS = (
     "90 - Inbox",
 )
 
+VAULT_INDEX_FILE = "00 - Eva/INDEX"
+
 
 def _vault_path() -> Path:
     configured = Path(settings.eva_obsidian_vault_path)
     if configured.is_absolute():
         return configured
     return PROJECT_ROOT / configured
+
+
+def _obsidian_app_config_dir() -> Path:
+    if os.name == "nt":
+        return Path(os.environ.get("APPDATA", "")) / "obsidian"
+    return Path.home() / ".config" / "obsidian"
+
+
+def _obsidian_vault_id(vault: Path) -> str:
+    return hashlib.sha1(str(vault.resolve()).encode("utf-8")).hexdigest()[:16]
+
+
+def _obsidian_vault_name(vault: Path) -> str:
+    return vault.name
+
+
+def _register_obsidian_vault(vault: Path) -> dict[str, str]:
+    config_dir = _obsidian_app_config_dir()
+    if not str(config_dir).strip():
+        return {"registered": "false", "reason": "appdata_missing"}
+
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_path = config_dir / "obsidian.json"
+    vault_id = _obsidian_vault_id(vault)
+    now_ms = int(time.time() * 1000)
+    try:
+        payload = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        payload = {}
+
+    vaults = payload.get("vaults")
+    if not isinstance(vaults, dict):
+        vaults = {}
+    resolved_vault = str(vault.resolve())
+    vaults = {
+        key: value
+        for key, value in vaults.items()
+        if not (
+            key != vault_id
+            and isinstance(value, dict)
+            and str(value.get("path", "")).lower() == resolved_vault.lower()
+        )
+    }
+    vaults[vault_id] = {
+        "path": resolved_vault,
+        "ts": now_ms,
+        "open": True,
+    }
+    payload["vaults"] = vaults
+    config_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    window_state_path = config_dir / f"{vault_id}.json"
+    _write_if_missing(
+        window_state_path,
+        json.dumps(
+            {
+                "x": 80,
+                "y": 60,
+                "width": 1280,
+                "height": 850,
+                "isMaximized": False,
+                "devTools": False,
+                "zoom": 0,
+            },
+            separators=(",", ":"),
+        ),
+    )
+
+    return {
+        "registered": "true",
+        "vault_id": vault_id,
+        "vault_name": _obsidian_vault_name(vault),
+        "config_path": str(config_path),
+    }
 
 
 def _safe_filename(value: str, fallback: str = "general") -> str:
@@ -162,6 +241,43 @@ def ensure_obsidian_vault() -> Path:
             obsidian_dir / "appearance.json",
             '{\n  "theme": "obsidian",\n  "accentColor": "#54d7ff"\n}\n',
         )
+        _write_if_missing(
+            obsidian_dir / "graph.json",
+            json.dumps(
+                {
+                    "collapse-filter": False,
+                    "search": "",
+                    "showTags": True,
+                    "showAttachments": False,
+                    "hideUnresolved": False,
+                    "showOrphans": True,
+                    "collapse-color-groups": False,
+                    "colorGroups": [
+                        {"query": "path:\"10 - Profile\"", "color": {"a": 1, "rgb": 5634047}},
+                        {"query": "path:\"20 - Memories\"", "color": {"a": 1, "rgb": 65484}},
+                        {"query": "path:\"30 - Projects\"", "color": {"a": 1, "rgb": 16755200}},
+                    ],
+                    "collapse-display": False,
+                    "showArrow": False,
+                    "textFadeMultiplier": 0,
+                    "nodeSizeMultiplier": 1,
+                    "lineSizeMultiplier": 1,
+                    "collapse-forces": False,
+                    "centerStrength": 0.518713248970312,
+                    "repelStrength": 10,
+                    "linkStrength": 1,
+                    "linkDistance": 250,
+                    "scale": 1,
+                    "close": False,
+                },
+                indent=2,
+            )
+            + "\n",
+        )
+        _write_if_missing(
+            obsidian_dir / "hotkeys.json",
+            json.dumps({"graph:open": [{"modifiers": ["Mod"], "key": "G"}]}, indent=2) + "\n",
+        )
 
         readme_path = vault / "00 - Eva" / "README.md"
         if not readme_path.exists():
@@ -197,6 +313,7 @@ def ensure_obsidian_vault() -> Path:
                     "- [[30 - Projects/Projects|Projets]]",
                     "- [[50 - Operating Rules/Eva Operating Rules|Regles operatoires Eva]]",
                     "- [[40 - Daily|Journal quotidien]]",
+                    "- Ouvre le graphe Obsidian avec `Ctrl+G` si la vue ne s'affiche pas deja.",
                     "",
                     "## Role du vault",
                     "",
@@ -232,7 +349,57 @@ def ensure_obsidian_vault() -> Path:
 
 
 def obsidian_open_uri() -> str:
-    return f"obsidian://open?path={quote(str(_vault_path()))}"
+    vault = _vault_path()
+    return (
+        "obsidian://open?"
+        f"vault={quote(_obsidian_vault_name(vault))}"
+        f"&file={quote(VAULT_INDEX_FILE, safe='')}"
+    )
+
+
+def obsidian_path_open_uri() -> str:
+    index_path = _vault_path().resolve() / "00 - Eva" / "INDEX.md"
+    return f"obsidian://open?path={quote(str(index_path))}"
+
+
+def _open_obsidian_graph_view() -> None:
+    if os.name != "nt":
+        return
+
+    script = r"""
+$shell = New-Object -ComObject WScript.Shell
+Start-Sleep -Seconds 3
+$null = $shell.AppActivate('Obsidian')
+Start-Sleep -Milliseconds 500
+$shell.SendKeys('^g')
+Start-Sleep -Seconds 1
+$shell.SendKeys('^p')
+Start-Sleep -Milliseconds 300
+$shell.SendKeys('Open graph view')
+Start-Sleep -Milliseconds 300
+$shell.SendKeys('{ENTER}')
+"""
+    subprocess.Popen(
+        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+
+
+def _obsidian_exe_path() -> Path | None:
+    if os.name != "nt":
+        return None
+
+    candidates = [
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Obsidian" / "Obsidian.exe",
+        Path(os.environ.get("PROGRAMFILES", "")) / "Obsidian" / "Obsidian.exe",
+        Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Obsidian" / "Obsidian.exe",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def obsidian_status() -> dict[str, Any]:
@@ -244,6 +411,10 @@ def obsidian_status() -> dict[str, Any]:
         "exists": vault.exists(),
         "markdown_files": len(markdown_files),
         "open_uri": obsidian_open_uri(),
+        "path_open_uri": obsidian_path_open_uri(),
+        "vault_name": _obsidian_vault_name(vault),
+        "vault_id": _obsidian_vault_id(vault),
+        "app_config_dir": str(_obsidian_app_config_dir()),
         "folders": [
             {
                 "name": folder,
@@ -255,11 +426,12 @@ def obsidian_status() -> dict[str, Any]:
     }
 
 
-def open_obsidian_vault() -> dict[str, Any]:
+def open_obsidian_vault(open_graph: bool = True) -> dict[str, Any]:
     if not settings.eva_obsidian_memory_enabled:
         raise ObsidianMemoryError("La memoire Obsidian est desactivee.")
 
     vault = ensure_obsidian_vault()
+    registration = _register_obsidian_vault(vault)
     uri = obsidian_open_uri()
     try:
         if os.name == "nt":
@@ -273,10 +445,15 @@ def open_obsidian_vault() -> dict[str, Any]:
             f"Impossible d'ouvrir Obsidian automatiquement. Ouvre ce dossier dans Obsidian: {vault}"
         ) from exc
 
+    if open_graph:
+        _open_obsidian_graph_view()
+
     return {
         "opened": True,
         "path": str(vault),
         "open_uri": uri,
+        "registration": registration,
+        "graph_requested": open_graph,
     }
 
 

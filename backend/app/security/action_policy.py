@@ -33,6 +33,10 @@ DRAFT_ONLY_ACTIONS = {
     "pr_plan",
 }
 
+GATED_AUTO_ACTIONS = {
+    "gmail_auto_send_obvious_reply",
+}
+
 CONFIRMATION_REQUIRED_ACTIONS = {
     "command",
     "delete_path",
@@ -125,6 +129,12 @@ def classify_action(action_type: str, payload: dict[str, Any] | None = None) -> 
     if clean_type in DRAFT_ONLY_ACTIONS:
         return ActionPolicyDecision("draft_only", "Brouillon ou preparation sans action externe.")
 
+    if clean_type in GATED_AUTO_ACTIONS:
+        return ActionPolicyDecision(
+            "confirmation_required",
+            "Envoi externe autorise seulement avec flags locaux explicites et garde-fous.",
+        )
+
     if clean_type in CONFIRMATION_REQUIRED_ACTIONS:
         return ActionPolicyDecision("confirmation_required", "Action critique avec validation obligatoire.")
 
@@ -193,6 +203,13 @@ def can_auto_execute(action_type: str, payload: dict[str, Any] | None = None) ->
 
     if clean_type == "github_repo_create" and not settings.eva_project_factory_auto_github:
         return False, "creation repo GitHub auto desactivee"
+
+    if clean_type == "gmail_auto_send_obvious_reply":
+        allowed = settings.eva_allow_auto_external_send and settings.eva_gmail_auto_send_obvious_replies
+        return (
+            allowed,
+            "auto-reponse Gmail desactivee" if not allowed else "auto-reponse Gmail evidente autorisee",
+        )
 
     if clean_type in OPERATOR_AUTO_ACTIONS:
         return True, "mode operator"

@@ -63,6 +63,7 @@ from app.integrations.gmail_client import (
     list_gmail_messages,
     message_to_dict,
 )
+from app.integrations.gmail_auto_reply import GmailAutoReplyError, run_gmail_auto_reply_once
 from app.integrations.gmail_chat import parse_reply_draft
 from app.integrations.gmail_auth import GmailAuthLaunchError, start_gmail_oauth_flow
 from app.integrations.google_calendar_client import (
@@ -419,6 +420,11 @@ class GmailReplyDraftRequest(BaseModel):
     open_in_browser: bool = True
 
 
+class GmailAutoReplyRunRequest(BaseModel):
+    max_results: int = Field(default=10, ge=1, le=25)
+    dry_run: bool = False
+
+
 class LinkedInPostDraftRequest(BaseModel):
     topic: str = Field(min_length=1, max_length=5000)
     angle: str = Field(default="", max_length=1000)
@@ -616,13 +622,14 @@ async def autonomy() -> dict[str, object]:
             "commit Git local initial",
             "creation de repo GitHub si gh est connecte",
             "self-improvement: memoire, tache locale et prompt Cursor",
+            "auto-reponse Gmail evidente si EVA_GMAIL_AUTO_SEND_OBVIOUS_REPLIES=true, EVA_ALLOW_AUTO_EXTERNAL_SEND=true et gmail.send actif",
         ],
         "protected_even_in_operator": [
             "suppression de fichiers sauf EVA_ALLOW_AUTO_DELETE=true",
             "git push sauf EVA_ALLOW_AUTO_GIT_PUSH=true ou EVA_PROJECT_FACTORY_AUTO_PUSH=true",
             "publication",
             "envoi de message",
-            "envoi d'email",
+            "envoi d'email non evident ou sans flags Gmail explicites",
             "publication LinkedIn",
             "commandes critiques: reset, clean, delete, shutdown, format, execution policy",
             "auto-modification par cursor-agent sauf EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT=true ou demande explicite",
@@ -1338,6 +1345,19 @@ Corps:
         "draft": draft,
         "gmail_draft": gmail_draft,
     }
+
+
+@app.post("/gmail/auto-reply/run", dependencies=[Depends(require_sensitive_access)])
+async def gmail_auto_reply_run(request: GmailAutoReplyRunRequest) -> dict[str, object]:
+    try:
+        return await run_gmail_auto_reply_once(
+            max_results=request.max_results,
+            dry_run=request.dry_run,
+        )
+    except GmailIntegrationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except GmailAutoReplyError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.post("/linkedin/post-draft", dependencies=[Depends(require_sensitive_access)])

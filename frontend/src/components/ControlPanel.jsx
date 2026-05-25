@@ -43,6 +43,7 @@ import {
   createProjectFactoryActions,
   getChatHistory,
   planProjectFactory,
+  runGmailAutoReply,
   runHeartbeat,
   syncObsidianMemory,
 } from "../api";
@@ -89,7 +90,7 @@ const panelMeta = {
     icon: Mail,
     kicker: "Mouth",
     title: "Gmail assistant",
-    description: "Lecture autorisee et brouillons uniquement, aucun envoi automatique.",
+    description: "Lecture, brouillons et auto-reponses evidentes si le scope d'envoi est actif.",
   },
   linkedin: {
     icon: Network,
@@ -410,6 +411,24 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleRunGmailAutoReply() {
+    setRunningJob("gmail_auto_reply");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await runGmailAutoReply(10, false);
+      setJobResult(
+        `Auto-reponses: ${result.sent_count || 0} envoyee(s), ${result.drafted_count || 0} brouillon(s), ${result.skipped_count || 0} ignoree(s).`
+      );
+      await loadPanel();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   function renderMemory() {
     const memories = data?.memories || [];
     const obsidian = data?.obsidian || {};
@@ -696,7 +715,8 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           <Metric label="integration" value={status.enabled ? "active" : "off"} tone={status.enabled ? "ok" : "warning"} />
           <Metric label="OAuth token" value={status.token_exists ? "connecte" : "absent"} tone={status.token_exists ? "ok" : "warning"} />
           <Metric label="brouillons" value={status.can_create_drafts ? "actifs" : "scope"} tone={status.can_create_drafts ? "ok" : "warning"} />
-          <Metric label="envoi" value={status.can_send ? "possible" : "bloque"} tone={status.can_send ? "warning" : "ok"} />
+          <Metric label="scope send" value={status.can_send ? "ok" : "manquant"} tone={status.can_send ? "ok" : "warning"} />
+          <Metric label="auto-reponse" value={status.can_auto_send_obvious_replies ? "active" : "off"} tone={status.can_auto_send_obvious_replies ? "warning" : "neutral"} />
         </div>
         {!status.token_exists && (
           <div className="panel-empty">
@@ -711,7 +731,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               {status.token_exists ? "connecte" : "a connecter"}
             </StatusPill>
           </div>
-          <p>Eva ouvre Google dans ton navigateur. Tu valides toi-meme Gmail lecture + brouillons, et Calendar lecture.</p>
+          <p>Eva ouvre Google dans ton navigateur. Tu valides Gmail lecture, brouillons, envoi encadre et Calendar lecture.</p>
           <div className="panel-actions">
             <button
               type="button"
@@ -740,6 +760,32 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           </div>
           {!status.enabled && <p>Active EVA_GMAIL_ENABLED=true dans backend/.env.</p>}
           {!status.credentials_exists && <p>Ajoute le JSON OAuth complet dans data/gmail_credentials.json.</p>}
+          {status.token_exists && !status.can_send && (
+            <p>Le scope gmail.send manque encore. Clique Reconnecter scopes avant les auto-reponses.</p>
+          )}
+        </section>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Auto-reponses evidentes</h3>
+            <StatusPill tone={status.can_auto_send_obvious_replies ? "warning" : "neutral"}>
+              {status.can_auto_send_obvious_replies ? "active" : "protege"}
+            </StatusPill>
+          </div>
+          <p>Eva envoie seule uniquement si le mail est non sensible, dans la bonne langue, deja similaire a tes reponses passees et au-dessus du seuil de confiance.</p>
+          <Field label="Recherche" value={status.auto_reply_query || "inbox"} />
+          <Field label="Seuil" value={`${Math.round((status.auto_reply_min_confidence || 0) * 100)}%`} />
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={handleRunGmailAutoReply}
+              disabled={Boolean(runningJob) || !status.can_auto_send_obvious_replies}
+            >
+              <Play size={15} aria-hidden="true" />
+              {runningJob === "gmail_auto_reply" ? "Analyse..." : "Lancer maintenant"}
+            </button>
+          </div>
+          {!status.auto_external_send_allowed && <p>Active EVA_ALLOW_AUTO_EXTERNAL_SEND=true dans backend/.env pour autoriser ce mode.</p>}
         </section>
         {data?.messagesError && <div className="panel-error">{data.messagesError}</div>}
         {messages.length ? (

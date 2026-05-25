@@ -236,18 +236,19 @@ LOCAL_SKILL_CATALOG: tuple[dict[str, object], ...] = (
         "key": "gmail_inbox_operator",
         "label": "Inbox Gmail intelligente",
         "category": "gmail",
-        "policy_level": "draft_only",
+        "policy_level": "confirmation_required",
         "trigger_words": ["gmail", "mail", "inbox", "dernier mail", "pas repondu", "brouillon"],
-        "description": "Lire les vrais mails, auditer les fils sans reponse, creer des brouillons sans envoi.",
+        "description": "Lire les vrais mails, auditer les fils sans reponse, creer des brouillons et auto-envoyer seulement les reponses evidentes.",
         "instructions": (
             "Lis le mail reel avant tout brouillon. Ne reponds pas aux alertes automatiques comme si elles etaient humaines. "
-            "Ne dis jamais qu'un mail est envoye."
+            "Ne dis jamais qu'un mail est envoye sans preuve Gmail. L'auto-envoi est reserve aux cas evidents, courts, non sensibles, "
+            "dans la langue du mail, avec exemples envoyes similaires et flags locaux explicites."
         ),
-        "tool_hints": ["gmail_reply_draft", "google_calendar"],
+        "tool_hints": ["gmail_reply_draft", "gmail_auto_reply", "google_calendar"],
         "status": "active",
         "extension_type": "connector",
-        "requires": ["OAuth Gmail local", "scope gmail.readonly", "scope gmail.compose pour brouillons"],
-        "next_steps": ["tri prioritaire", "creation calendrier apres validation"],
+        "requires": ["OAuth Gmail local", "scope gmail.readonly", "scope gmail.compose", "scope gmail.send pour auto-reponses evidentes"],
+        "next_steps": ["meilleur matching des exemples envoyes", "creation calendrier apres validation"],
         "enabled": True,
     },
     {

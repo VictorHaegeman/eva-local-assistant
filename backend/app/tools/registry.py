@@ -148,6 +148,13 @@ TOOLS = (
         description="Brouillon de reponse email, aucun envoi automatique.",
     ),
     ToolDescriptor(
+        key="gmail_auto_reply",
+        label="Auto-reponse Gmail",
+        category="gmail",
+        policy_level="confirmation_required",
+        description="Envoie seulement les reponses evidentes, non sensibles et similaires aux anciens mails envoyes.",
+    ),
+    ToolDescriptor(
         key="linkedin_draft",
         label="LinkedIn",
         category="linkedin",

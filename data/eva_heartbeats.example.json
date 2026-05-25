@@ -15,6 +15,14 @@
       "description": "Prepare un resume des mails recents si Gmail est connecte."
     },
     {
+      "key": "gmail_auto_reply",
+      "label": "Auto-reponses Gmail",
+      "enabled": false,
+      "time": "",
+      "repeat_minutes": 15,
+      "description": "Envoie seulement les reponses Gmail evidentes si les flags locaux et le scope gmail.send sont actifs."
+    },
+    {
       "key": "end_of_day_log",
       "label": "Journal du soir",
       "enabled": false,

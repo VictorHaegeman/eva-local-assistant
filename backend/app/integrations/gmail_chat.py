@@ -14,6 +14,7 @@ from app.integrations.gmail_client import (
     list_gmail_messages,
     message_to_dict,
 )
+from app.integrations.gmail_auto_reply import run_gmail_auto_reply_once
 from app.integrations.email_classifier import classify_email
 from app.llm.ollama_client import OllamaClientError, ask_ollama
 from app.memory.profile_store import build_profile_prompt_context
@@ -200,6 +201,26 @@ def wants_gmail_reply_draft(message: str) -> bool:
         return False
 
     return any(marker in normalized for marker in reply_markers)
+
+
+def wants_gmail_auto_reply(message: str) -> bool:
+    normalized = _normalize(message)
+    if not _has_gmail_context(normalized) and "mail" not in normalized:
+        return False
+    return any(
+        marker in normalized
+        for marker in (
+            "auto repond",
+            "auto-repond",
+            "repond toute seule",
+            "reponds toute seule",
+            "envoie toute seule",
+            "auto reponse",
+            "auto-reponse",
+            "lance les auto reponses",
+            "lance les auto-reponses",
+        )
+    )
 
 
 def _has_reply_audit_context(normalized: str) -> bool:
@@ -567,6 +588,30 @@ def build_gmail_reply_audit_response(message: str) -> str:
 
 
 async def build_gmail_chat_response(message: str, force_list: bool = False) -> str | None:
+    if wants_gmail_auto_reply(message):
+        report = await run_gmail_auto_reply_once()
+        lines = [
+            "Source: Gmail API + auto-reponse encadree.",
+            f"Statut: {report.get('status')}.",
+        ]
+        if report.get("reason"):
+            lines.append(str(report["reason"]))
+        lines.append(
+            f"Resultat: {report.get('sent_count', 0)} envoyee(s), "
+            f"{report.get('drafted_count', 0)} brouillon(s), "
+            f"{report.get('skipped_count', 0)} ignoree(s)."
+        )
+        for item in (report.get("sent") or [])[:3]:
+            if isinstance(item, dict):
+                message_payload = item.get("message", {})
+                decision = item.get("decision", {})
+                if isinstance(message_payload, dict) and isinstance(decision, dict):
+                    lines.append(
+                        f"- Envoye: {message_payload.get('subject', 'sans objet')} "
+                        f"({int(float(decision.get('confidence', 0)) * 100)}%, {decision.get('language', '')})"
+                    )
+        return "\n".join(lines)
+
     reply_audit_requested = wants_gmail_reply_audit(message)
     if reply_audit_requested:
         return build_gmail_reply_audit_response(message)

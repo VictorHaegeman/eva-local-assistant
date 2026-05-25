@@ -7,6 +7,7 @@ from typing import Any
 
 from app.briefs.smart_brief import generate_smart_morning_brief
 from app.config import settings
+from app.integrations.gmail_auto_reply import GmailAutoReplyError, run_gmail_auto_reply_once
 from app.integrations.gmail_client import GmailIntegrationError, list_gmail_messages
 
 
@@ -84,6 +85,19 @@ async def run_heartbeat_job(job_key: str) -> dict[str, Any]:
             result = f"{len(messages)} mails recents lus pour triage."
         except GmailIntegrationError as exc:
             result = f"Gmail non disponible pour le triage: {exc}"
+    elif job_key == "gmail_auto_reply":
+        try:
+            report = await run_gmail_auto_reply_once()
+            result = (
+                f"Auto-reponses Gmail: {report.get('sent_count', 0)} envoyees, "
+                f"{report.get('drafted_count', 0)} brouillons, "
+                f"{report.get('skipped_count', 0)} ignorees. "
+                f"Statut: {report.get('status')}."
+            )
+            if report.get("reason"):
+                result = f"{result} {report['reason']}"
+        except (GmailIntegrationError, GmailAutoReplyError) as exc:
+            result = f"Auto-reponses Gmail indisponibles: {exc}"
     elif job_key == "end_of_day_log":
         result = "Journal du soir prepare: recap manuel a completer dans le chat."
     else:
@@ -117,8 +131,29 @@ async def _run_due_jobs_once() -> None:
 
         job_key = str(job.get("key", "")).strip()
         scheduled_time = str(job.get("time", "")).strip()
+        try:
+            repeat_minutes = int(job.get("repeat_minutes") or 0)
+        except (TypeError, ValueError):
+            repeat_minutes = 0
+        last_run_at = runs.get(job_key, {}).get("last_run_at")
         last_run_date = runs.get(job_key, {}).get("last_run_date")
-        if not job_key or not scheduled_time or last_run_date == today:
+        if not job_key:
+            continue
+
+        if repeat_minutes > 0:
+            should_run = True
+            if last_run_at:
+                try:
+                    last_dt = datetime.fromisoformat(str(last_run_at))
+                    delta_seconds = (now - last_dt).total_seconds()
+                    should_run = delta_seconds >= repeat_minutes * 60
+                except ValueError:
+                    should_run = True
+            if should_run:
+                await run_heartbeat_job(job_key)
+            continue
+
+        if not scheduled_time or last_run_date == today:
             continue
 
         try:

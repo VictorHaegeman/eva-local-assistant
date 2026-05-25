@@ -205,6 +205,17 @@ export async function createGmailReplyDraft(messageId, instruction = "Redige une
 }
 
 
+export async function runGmailAutoReply(maxResults = 10, dryRun = false) {
+  return request("/gmail/auto-reply/run", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ max_results: maxResults, dry_run: dryRun }),
+  });
+}
+
+
 export async function getLinkedInStatus() {
   return request("/linkedin/status");
 }
