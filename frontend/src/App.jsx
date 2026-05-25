@@ -25,6 +25,65 @@ const welcomeMessage = {
   localOnly: true,
 };
 
+const panelShellMeta = {
+  chats: {
+    title: "Conversations",
+    subtitle: "Historique local des echanges web et Telegram.",
+  },
+  memory: {
+    title: "Memoire locale",
+    subtitle: "Souvenirs, profil et contexte Obsidian disponibles pour Eva.",
+  },
+  screen: {
+    title: "Vision ecran",
+    subtitle: "Lecture locale des pixels et actions guidees sur le PC.",
+  },
+  tools: {
+    title: "Tools",
+    subtitle: "Capacites locales, permissions et limites operationnelles.",
+  },
+  skills: {
+    title: "Skills",
+    subtitle: "Savoir-faire specialises qu'Eva peut choisir selon la demande.",
+  },
+  heartbeat: {
+    title: "Heartbeat",
+    subtitle: "Automatisations locales et jobs planifies.",
+  },
+  gmail: {
+    title: "Gmail",
+    subtitle: "Inbox, brouillons, tri et reponses encadrees.",
+  },
+  linkedin: {
+    title: "LinkedIn",
+    subtitle: "Preparation de posts, veille et actions navigateur locales.",
+  },
+  projects: {
+    title: "Projets",
+    subtitle: "Workspaces connus et contexte de code.",
+  },
+  brief: {
+    title: "Smart Brief",
+    subtitle: "Veille quotidienne filtree pour Victor et DreamLense.",
+  },
+  projectFactory: {
+    title: "Project Factory",
+    subtitle: "Idee -> workspace -> repo -> prompt de production.",
+  },
+  actions: {
+    title: "Actions",
+    subtitle: "Journal des operations sensibles et executions locales.",
+  },
+  ollama: {
+    title: "Ollama",
+    subtitle: "Moteur IA local et modeles gratuits.",
+  },
+  doctor: {
+    title: "Doctor",
+    subtitle: "Diagnostic local de la stack Eva.",
+  },
+};
+
 const EVA_VOICE_PROFILE = {
   preferredNames: [
     "Microsoft Ryan",
@@ -359,6 +418,17 @@ export default function App() {
   }
 
   const currentMode = modes.find((item) => item.name === mode);
+  const isChatPanel = activePanel === "chat";
+  const panelMeta = panelShellMeta[activePanel] || panelShellMeta.doctor;
+  const shellEyebrow = isChatPanel ? "Eva local core" : "Eva control core";
+  const shellTitle = isChatPanel
+    ? currentMode
+      ? `Mode ${currentMode.label}`
+      : "Assistant personnel"
+    : panelMeta.title;
+  const shellSubtitle = isChatPanel
+    ? currentMode?.description || "Conversation locale avec Eva."
+    : panelMeta.subtitle;
 
   return (
     <main className="app-shell">
@@ -374,7 +444,7 @@ export default function App() {
       />
 
       <section
-        className={`chat-shell ${activePanel === "chat" ? "chat-mode" : "panel-mode"}`}
+        className={`chat-shell ${isChatPanel ? "chat-mode" : "panel-mode"}`}
         aria-label="Conversation avec Eva"
       >
         <JarvisHud
@@ -383,12 +453,14 @@ export default function App() {
           loading={loading}
           currentMode={currentMode}
           messages={messages}
+          variant={isChatPanel ? "chat" : "panel"}
         />
 
-        <header className="desktop-header">
-          <div>
-            <span className="eyebrow">Eva local core</span>
-            <h2>{currentMode ? `Mode ${currentMode.label}` : "Assistant personnel"}</h2>
+        <header className={`desktop-header ${isChatPanel ? "chat-header" : "panel-header"}`}>
+          <div className="desktop-header-copy">
+            <span className="eyebrow">{shellEyebrow}</span>
+            <h2>{shellTitle}</h2>
+            <p>{shellSubtitle}</p>
           </div>
           <div className="desktop-status">
             <ShieldCheck size={16} aria-hidden="true" />
@@ -403,12 +475,12 @@ export default function App() {
               <Sparkles size={18} aria-hidden="true" />
               Eva
             </div>
-            <p>{currentMode ? `Mode ${currentMode.label}` : backendStatus.state === "ready" ? "Connectee en local" : "Connexion locale"}</p>
+            <p>{isChatPanel ? (currentMode ? `Mode ${currentMode.label}` : backendStatus.state === "ready" ? "Connectee en local" : "Connexion locale") : shellTitle}</p>
           </div>
           <span className={`status-dot ${backendStatus.state}`} />
         </header>
 
-        {activePanel === "chat" ? (
+        {isChatPanel ? (
           <ChatWindow
             messages={messages}
             loading={loading}
@@ -425,7 +497,7 @@ export default function App() {
           />
         )}
 
-        {activePanel === "chat" && (
+        {isChatPanel && (
           <ChatInput
             onSend={handleSend}
             disabled={loading}

@@ -197,13 +197,11 @@ function renderDoctorChecks(checks = []) {
   if (!checks.length) return <EmptyState>Aucun diagnostic disponible.</EmptyState>;
 
   return (
-    <div className="panel-list">
+    <div className="doctor-check-grid">
       {checks.map((check) => (
-        <div key={check.name} className="panel-row">
-          <div>
-            <strong>{check.message}</strong>
-            <span>{check.name}</span>
-          </div>
+        <div key={check.name} className={`doctor-check-card ${statusClass(check.status)}`}>
+          <span>{check.name}</span>
+          <strong>{check.message}</strong>
           <StatusPill tone={statusClass(check.status)}>{check.status}</StatusPill>
         </div>
       ))}
@@ -1132,19 +1130,31 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
 
   function renderDoctor() {
     const diagnostic = data || doctor;
+    const checks = diagnostic?.checks || [];
+    const okCount = checks.filter((check) => statusClass(check.status) === "ok").length;
+    const warningCount = checks.filter((check) => statusClass(check.status) === "warning").length;
+    const errorCount = checks.filter((check) => statusClass(check.status) === "error").length;
 
     return (
       <>
         <div className="panel-metrics">
           <Metric label="statut" value={diagnostic?.status || "scan"} tone={statusClass(diagnostic?.status)} />
-          <Metric label="checks" value={diagnostic?.checks?.length || 0} />
-          <Metric label="mode" value="local" tone="ok" />
+          <Metric label="checks ok" value={`${okCount}/${checks.length || 0}`} tone={errorCount ? "error" : warningCount ? "warning" : "ok"} />
+          <Metric label="mode" value="local only" tone="ok" />
         </div>
-        <section className="panel-card">
-          <h3>Resume</h3>
+        <section className="panel-card doctor-summary-card">
+          <div>
+            <span className="panel-section-kicker">Etat systeme</span>
+            <h3>{diagnostic?.status === "ok" ? "Eva est operationnelle" : "Points a surveiller"}</h3>
+          </div>
           <p>{diagnostic?.summary || "Diagnostic en cours."}</p>
+          <div className="doctor-status-strip">
+            <StatusPill tone="ok">{okCount} ok</StatusPill>
+            <StatusPill tone={warningCount ? "warning" : "neutral"}>{warningCount} warning</StatusPill>
+            <StatusPill tone={errorCount ? "error" : "neutral"}>{errorCount} error</StatusPill>
+          </div>
         </section>
-        {renderDoctorChecks(diagnostic?.checks)}
+        {renderDoctorChecks(checks)}
       </>
     );
   }
@@ -1169,8 +1179,8 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
   }
 
   return (
-    <div className="panel-window">
-      <div className="control-panel">
+    <div className={`panel-window panel-window-${panel}`}>
+      <div className={`control-panel control-panel-${panel}`}>
         <header className="panel-hero">
           <div className="panel-hero-icon">
             <Icon size={24} aria-hidden="true" />

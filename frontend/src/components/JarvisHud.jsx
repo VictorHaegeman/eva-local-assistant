@@ -44,6 +44,7 @@ export function JarvisHud({
   loading,
   currentMode,
   messages = [],
+  variant = "chat",
 }) {
   const trace = useMemo(() => latestCognitiveTrace(messages), [messages]);
   const tone = statusTone(status);
@@ -51,9 +52,10 @@ export function JarvisHud({
   const hasDecision = loading || Boolean(trace);
   const traceStatus = trace?.status || (loading ? "processing" : "");
   const traceConfidence = Number(trace?.confidence) || (loading ? 64 : 0);
+  const compact = variant === "panel";
 
   return (
-    <div className="jarvis-hud" aria-hidden="true">
+    <div className={`jarvis-hud ${compact ? "jarvis-hud-panel" : "jarvis-hud-chat"}`} aria-hidden="true">
       <div className="hud-grid-plane" />
       <div className="hud-sweep" />
       <div className="hud-noise" />
@@ -63,34 +65,38 @@ export function JarvisHud({
       <div className="hud-corner hud-corner-bl" />
       <div className="hud-corner hud-corner-br" />
 
-      <div className="hud-vitals hud-vitals-left">
-        <div className="hud-readout">
-          <Activity size={15} />
-          <span>Core</span>
-          <strong>{tone === "ready" ? "online" : tone}</strong>
-          <i className={`hud-led ${tone}`} />
+      {!compact && (
+        <div className="hud-vitals hud-vitals-left">
+          <div className="hud-readout">
+            <Activity size={15} />
+            <span>Core</span>
+            <strong>{tone === "ready" ? "online" : tone}</strong>
+            <i className={`hud-led ${tone}`} />
+          </div>
+          <div className="hud-readout">
+            <BrainCircuit size={15} />
+            <span>Mode</span>
+            <strong>{modeLabel}</strong>
+          </div>
+          <div className="hud-readout">
+            <Cpu size={15} />
+            <span>Model</span>
+            <strong>{status?.model || "Ollama"}</strong>
+          </div>
         </div>
-        <div className="hud-readout">
-          <BrainCircuit size={15} />
-          <span>Mode</span>
-          <strong>{modeLabel}</strong>
-        </div>
-        <div className="hud-readout">
-          <Cpu size={15} />
-          <span>Model</span>
-          <strong>{status?.model || "Ollama"}</strong>
-        </div>
-      </div>
+      )}
 
-      <div className={`hud-radar ${loading ? "active" : ""}`}>
-        <span className="hud-radar-ring ring-a" />
-        <span className="hud-radar-ring ring-b" />
-        <span className="hud-radar-ring ring-c" />
-        <span className="hud-radar-sweep" />
-        <strong>Eva</strong>
-      </div>
+      {!compact && (
+        <div className={`hud-radar ${loading ? "active" : ""}`}>
+          <span className="hud-radar-ring ring-a" />
+          <span className="hud-radar-ring ring-b" />
+          <span className="hud-radar-ring ring-c" />
+          <span className="hud-radar-sweep" />
+          <strong>Eva</strong>
+        </div>
+      )}
 
-      {hasDecision && (
+      {!compact && hasDecision && (
         <div className="hud-decision-strip">
           <span>Decision stream</span>
           <strong>{trace?.selected || "Analyse en cours"}</strong>
@@ -99,7 +105,7 @@ export function JarvisHud({
         </div>
       )}
 
-      {doctor?.status && doctor.status !== "ok" && (
+      {!compact && doctor?.status && doctor.status !== "ok" && (
         <div className="hud-doctor-alert">
           <ShieldCheck size={14} />
           <span>Doctor</span>
