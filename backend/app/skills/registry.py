@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -11,6 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
 SKILLS_EXAMPLE_PATH = DATA_DIR / "eva_skills.example.json"
 SKILLS_PATH = DATA_DIR / "eva_skills.json"
+SKILLPACKS_DIR = DATA_DIR / "eva_skillpacks"
 
 SkillStatus = Literal["active", "candidate", "experimental", "planned"]
 SkillSource = Literal["core", "local"]
@@ -354,6 +356,12 @@ def _safe_key(value: object) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "", str(value).strip())[:80]
 
 
+def _normalize_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value.lower())
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    return " ".join(normalized.split())
+
+
 def _skill_from_payload(payload: dict[str, object]) -> SkillDescriptor | None:
     key = _safe_key(payload.get("key"))
     label = str(payload.get("label", "")).strip()[:120]
@@ -407,10 +415,79 @@ def load_local_skills() -> tuple[SkillDescriptor, ...]:
     return tuple(loaded)
 
 
+def _skillpack_from_dir(path: Path) -> SkillDescriptor | None:
+    manifest_path = path / "skill.json"
+    skill_path = path / "SKILL.md"
+    if not manifest_path.exists() or not skill_path.exists():
+        return None
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        instructions = skill_path.read_text(encoding="utf-8").strip()
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    if not isinstance(manifest, dict) or not instructions:
+        return None
+
+    key = _safe_key(manifest.get("key") or path.name)
+    label = str(manifest.get("label", "")).strip()[:120]
+    if not key or not label:
+        return None
+
+    policy_level = str(manifest.get("policy_level", "read_only")).strip()
+    if policy_level not in {"read_only", "draft_only", "confirmation_required", "blocked"}:
+        policy_level = "read_only"
+
+    status = str(manifest.get("status", "active")).strip()
+    if status not in {"active", "candidate", "experimental", "planned"}:
+        status = "active"
+
+    return SkillDescriptor(
+        key=key,
+        label=label,
+        category=str(manifest.get("category", "skillpack")).strip()[:80] or "skillpack",
+        policy_level=policy_level,  # type: ignore[arg-type]
+        trigger_words=_safe_tuple(manifest.get("trigger_words")),
+        description=str(manifest.get("description", "")).strip()[:600],
+        instructions=instructions[:2600],
+        tool_hints=_safe_tuple(manifest.get("tool_hints")),
+        source="local",
+        status=status,  # type: ignore[arg-type]
+        extension_type="skillpack",
+        requires=_safe_tuple(manifest.get("requires")),
+        next_steps=_safe_tuple(manifest.get("next_steps")),
+        enabled=bool(manifest.get("enabled", True)),
+    )
+
+
+def load_skillpacks() -> tuple[SkillDescriptor, ...]:
+    if not SKILLPACKS_DIR.exists():
+        return ()
+
+    loaded: list[SkillDescriptor] = []
+    for path in sorted(SKILLPACKS_DIR.iterdir(), key=lambda item: item.name.lower()):
+        if not path.is_dir():
+            continue
+        skill = _skillpack_from_dir(path)
+        if skill:
+            loaded.append(skill)
+    return tuple(loaded)
+
+
 def all_skills() -> tuple[SkillDescriptor, ...]:
     local_by_key = {skill.key: skill for skill in load_local_skills()}
-    core = tuple(local_by_key.pop(skill.key, skill) for skill in SKILLS)
-    return (*core, *local_by_key.values())
+    skillpack_by_key = {skill.key: skill for skill in load_skillpacks()}
+    core_skills: list[SkillDescriptor] = []
+    for skill in SKILLS:
+        replacement = local_by_key.pop(skill.key, None)
+        if replacement is None:
+            replacement = skillpack_by_key.pop(skill.key, None)
+        core_skills.append(replacement or skill)
+
+    core = tuple(core_skills)
+    merged_local = {**skillpack_by_key, **local_by_key}
+    return (*core, *merged_local.values())
 
 
 def list_skills() -> list[dict[str, object]]:
@@ -436,8 +513,18 @@ def list_skills() -> list[dict[str, object]]:
 
 
 def _matches_skill(skill: SkillDescriptor, message: str) -> bool:
-    normalized = message.lower()
-    return any(trigger in normalized for trigger in skill.trigger_words)
+    normalized = _normalize_text(message)
+    for trigger in skill.trigger_words:
+        normalized_trigger = _normalize_text(trigger)
+        if not normalized_trigger:
+            continue
+        if len(normalized_trigger) <= 3 and re.fullmatch(r"[a-z0-9_+-]+", normalized_trigger):
+            if re.search(rf"\b{re.escape(normalized_trigger)}\b", normalized):
+                return True
+            continue
+        if normalized_trigger in normalized:
+            return True
+    return False
 
 
 def select_skills(message: str, limit: int = 4) -> list[SkillDescriptor]:

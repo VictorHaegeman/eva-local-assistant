@@ -1,0 +1,13 @@
+{
+  "key": "desktop_hands_pack",
+  "label": "Desktop Hands",
+  "category": "desktop",
+  "policy_level": "draft_only",
+  "trigger_words": ["ouvre", "lance", "clique", "spotify", "youtube", "brave", "carte", "maps", "obsidian", "cursor"],
+  "description": "Ouvrir apps/sites et agir sur le PC avec ponts locaux et vision ecran.",
+  "tool_hints": ["browser_bridge", "spotify_assistant", "desktop_control", "screen_reader", "visual_action"],
+  "requires": ["session PC locale ou Telegram autorise"],
+  "next_steps": ["meilleure verification visuelle apres action", "actions UI plus robustes"],
+  "status": "active",
+  "enabled": true
+}

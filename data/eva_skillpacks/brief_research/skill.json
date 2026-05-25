@@ -1,0 +1,13 @@
+{
+  "key": "brief_research_pack",
+  "label": "Smart Brief Research",
+  "category": "brief",
+  "policy_level": "read_only",
+  "trigger_words": ["news", "actu", "actualites", "brief", "veille", "rss", "article", "tendance"],
+  "description": "Transformer les sources en brief court, utile et filtre pour Victor.",
+  "tool_hints": ["smart_brief", "rss_brief", "web_search", "gmail_notifications"],
+  "requires": ["sources RSS locales", "Ollama local"],
+  "next_steps": ["scoring plus fin par cluster memoire", "sources sectorielles DreamLense"],
+  "status": "active",
+  "enabled": true
+}

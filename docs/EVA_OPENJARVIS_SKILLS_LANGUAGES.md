@@ -70,15 +70,29 @@ Decision actuelle: ne pas ajouter Rust juste pour copier OpenJarvis. On garde Py
 
 Decision mise en oeuvre: ajouter Rust comme sidecar optionnel, sans rendre Eva dependante de Rust. Sur le PC actuel, `cargo` est absent; Eva utilise donc le fallback Python jusqu'a installation de Rustup.
 
-## Prochaine brique utile
+## Skillpacks locaux implementes
 
-Ajouter un dossier local:
+Eva charge maintenant des skillpacks locaux:
 
 ```text
 data/eva_skillpacks/
-  gmail_auto_reply/SKILL.md
-  project_factory/SKILL.md
-  screen_operator/SKILL.md
+  brief_research/
+  deep_task_planner/
+  desktop_hands/
+  gmail_triage/
+  project_builder/
+  self_improvement/
 ```
 
-Puis un loader qui expose ces `SKILL.md` comme descriptions longues dans le prompt, sans executer de scripts externes.
+Chaque dossier contient:
+
+- `skill.json`: metadata, triggers, niveau de securite, outils utiles;
+- `SKILL.md`: methode longue injectee dans le prompt Ollama quand la demande correspond.
+
+Ces skillpacks ne lancent aucun code externe. Ils servent a orienter la comprehension et le routage d'Eva, comme des fiches operateur locales.
+
+Prochaine evolution utile:
+
+- ajouter un score d'efficacite par skill depuis le journal operateur;
+- desactiver automatiquement les skills qui provoquent de mauvaises routes;
+- creer une commande locale pour generer une nouvelle skill depuis une correction de Victor.

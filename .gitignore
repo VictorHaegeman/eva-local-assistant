@@ -25,6 +25,8 @@ pnpm-debug.log*
 # Local data
 data/*
 !data/.gitkeep
+!data/eva_skillpacks/
+!data/eva_skillpacks/**
 !data/eva_profile.example.json
 !data/eva_allowed_paths.example.json
 !data/eva_sources.example.json

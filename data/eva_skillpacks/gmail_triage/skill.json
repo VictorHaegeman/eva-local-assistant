@@ -1,0 +1,13 @@
+{
+  "key": "gmail_triage_pack",
+  "label": "Gmail Triage",
+  "category": "gmail",
+  "policy_level": "confirmation_required",
+  "trigger_words": ["gmail", "mail", "email", "inbox", "dernier mail", "non repondu", "pas repondu", "calendrier"],
+  "description": "Lire les vrais mails, filtrer pubs/notifications, ouvrir le bon fil et preparer une reponse fiable.",
+  "tool_hints": ["gmail_client", "gmail_reply_draft", "gmail_auto_reply", "calendar_read"],
+  "requires": ["OAuth Gmail local", "token Gmail valide"],
+  "next_steps": ["classification pub vs important", "creation calendrier encadree"],
+  "status": "active",
+  "enabled": true
+}

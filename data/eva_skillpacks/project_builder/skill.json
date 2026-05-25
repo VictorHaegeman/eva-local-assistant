@@ -1,0 +1,13 @@
+{
+  "key": "project_builder_pack",
+  "label": "Project Builder",
+  "category": "code",
+  "policy_level": "draft_only",
+  "trigger_words": ["nouveau projet", "idee projet", "projet", "repo", "github", "cursor", "codex", "f1", "machine learning"],
+  "description": "Creer ou retrouver un projet, preparer workspace/GitHub/Cursor et auditer le resultat.",
+  "tool_hints": ["project_factory", "rust_project_indexer", "project_context", "cursor_prompt", "cursor_agent"],
+  "requires": ["dossiers autorises", "Git", "GitHub CLI optionnel", "Cursor CLI optionnel"],
+  "next_steps": ["monitoring cursor-agent", "audit automatique post-generation"],
+  "status": "active",
+  "enabled": true
+}

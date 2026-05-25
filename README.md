@@ -1583,6 +1583,41 @@ Eva possede maintenant un registre de skills locales:
 
 Ces skills ne sont pas des services externes. Elles sont des consignes locales injectees dans le prompt Ollama pour guider Eva selon la demande.
 
+Eva peut aussi charger des skillpacks locaux au format proche de `SKILL.md`:
+
+```text
+data/eva_skillpacks/
+  brief_research/
+    skill.json
+    SKILL.md
+  deep_task_planner/
+    skill.json
+    SKILL.md
+  desktop_hands/
+    skill.json
+    SKILL.md
+  gmail_triage/
+    skill.json
+    SKILL.md
+  project_builder/
+    skill.json
+    SKILL.md
+  self_improvement/
+    skill.json
+    SKILL.md
+```
+
+`skill.json` contient les declencheurs, le niveau de securite, les outils suggeres et les prerequis. `SKILL.md` contient la methode longue que Eva injecte dans son prompt quand la demande correspond.
+
+Skillpacks ajoutes:
+
+- Smart Brief Research: filtrage actu/RSS/articles pour Victor;
+- Deep Task Planner: comprendre, router, executer, verifier, plan B;
+- Desktop Hands: apps, Brave, Spotify, YouTube, cartes et vision ecran;
+- Gmail Triage: vrais mails, pubs vs important, brouillons fiables;
+- Project Builder: nouveau projet, fuzzy matching, Cursor/GitHub;
+- Self Improvement: transformer les corrections en memoire, regle ou tache.
+
 Eva a aussi un catalogue d'extensions locales personnalisables:
 
 ```text

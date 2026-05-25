@@ -1,0 +1,13 @@
+{
+  "key": "deep_task_planner_pack",
+  "label": "Deep Task Planner",
+  "category": "agents",
+  "policy_level": "read_only",
+  "trigger_words": ["fais", "ouvre", "lance", "cherche", "trouve", "analyse", "corrige", "autonome", "reessaie"],
+  "description": "Forcer Eva a comprendre, router, executer, verifier et tenter un plan B.",
+  "tool_hints": ["understanding_layer", "action_planner", "operator_journal", "reflex_recovery"],
+  "requires": ["boucle cognitive active"],
+  "next_steps": ["evals de prompts frustrants", "score de verification par outil"],
+  "status": "active",
+  "enabled": true
+}

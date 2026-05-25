@@ -1,0 +1,13 @@
+{
+  "key": "self_improvement_pack",
+  "label": "Self Improvement",
+  "category": "learning",
+  "policy_level": "draft_only",
+  "trigger_words": ["dorenavant", "apprends", "retiens", "ameliore", "tu n'as pas compris", "pas normal"],
+  "description": "Transformer les corrections de Victor en memoire, regle, skill ou tache d'amelioration.",
+  "tool_hints": ["memory_store", "obsidian_memory", "self_improvement_loop", "eval_prompts"],
+  "requires": ["memoire SQLite", "Obsidian optionnel"],
+  "next_steps": ["tests de regression automatiques", "skill optimizer local"],
+  "status": "active",
+  "enabled": true
+}

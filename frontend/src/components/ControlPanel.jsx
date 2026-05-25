@@ -633,31 +633,50 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     const skills = data?.skills || [];
     const categories = new Set(skills.map((skill) => skill.category));
     const enabledSkills = skills.filter((skill) => skill.enabled !== false);
+    const skillpacks = skills.filter((skill) => skill.extension_type === "skillpack");
 
     return (
       <>
         <div className="panel-metrics">
           <Metric label="skills actives" value={enabledSkills.length} tone={enabledSkills.length ? "ok" : "warning"} />
           <Metric label="categories" value={categories.size} />
-          <Metric label="mode" value="local" tone="ok" />
+          <Metric label="skillpacks" value={skillpacks.length} tone={skillpacks.length ? "ok" : "neutral"} />
         </div>
         <div className="panel-grid">
           {skills.map((skill) => (
-            <section key={skill.key} className="panel-card">
+            <section
+              key={skill.key}
+              className={`panel-card skill-card ${skill.extension_type === "skillpack" ? "skill-card-pack" : ""}`}
+            >
               <div className="panel-card-heading">
                 <h3>{skill.label}</h3>
                 <StatusPill tone={statusClass(skill.policy_level)}>{skill.policy_level}</StatusPill>
               </div>
               <p>{skill.description}</p>
-              <Field label="Categorie" value={skill.category} />
-              <Field label="Source" value={skill.source || "core"} />
-              <Field label="Statut" value={skill.status || "active"} />
-              {skill.extension_type && <Field label="Extension" value={skill.extension_type} />}
+              <div className="skill-card-meta">
+                <Field label="Categorie" value={skill.category} />
+                <Field label="Source" value={skill.source || "core"} />
+                <Field label="Statut" value={skill.status || "active"} />
+                {skill.extension_type && <Field label="Extension" value={skill.extension_type} />}
+              </div>
+              {skill.instructions && (
+                <div className="skill-instructions">
+                  <strong>Methode</strong>
+                  <span>{skill.instructions.slice(0, 260)}{skill.instructions.length > 260 ? "..." : ""}</span>
+                </div>
+              )}
               <div className="panel-chip-list">
                 {(skill.trigger_words || []).slice(0, 6).map((trigger) => (
                   <StatusPill key={trigger}>{trigger}</StatusPill>
                 ))}
               </div>
+              {(skill.tool_hints || []).length > 0 && (
+                <div className="panel-chip-list tool-chip-list">
+                  {(skill.tool_hints || []).slice(0, 5).map((tool) => (
+                    <StatusPill key={tool} tone="ok">{tool}</StatusPill>
+                  ))}
+                </div>
+              )}
               {(skill.next_steps || []).length > 0 && (
                 <Field label="Prochaine etape" value={(skill.next_steps || []).slice(0, 2).join(" | ")} />
               )}
