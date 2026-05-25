@@ -138,6 +138,7 @@ from app.memory.obsidian_store import (
     ObsidianMemoryError,
     ensure_obsidian_vault,
     mirror_memory_to_obsidian,
+    open_obsidian_vault,
     obsidian_status,
     sync_memories_to_obsidian,
 )
@@ -768,6 +769,14 @@ async def memory_obsidian_sync() -> dict[str, object]:
         loaded_memories = list_memories(limit=200)
         return sync_memories_to_obsidian(loaded_memories)
     except (MemoryStoreError, ObsidianMemoryError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/memory/obsidian/open", dependencies=[Depends(require_sensitive_access)])
+async def memory_obsidian_open() -> dict[str, object]:
+    try:
+        return open_obsidian_vault()
+    except ObsidianMemoryError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 

@@ -65,6 +65,22 @@ def _has_any(text: str, markers: tuple[str, ...]) -> bool:
 def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
     text = _normalise(message)
 
+    if intent.name in {
+        "terminal_error",
+        "screen_read",
+        "google_oauth_setup",
+        "calendar_read",
+        "gmail_read",
+        "gmail_reply_audit",
+        "gmail_reply_draft",
+        "project_factory",
+        "cursor_work",
+        "linkedin_activity",
+        "linkedin_browser_post",
+        "web_search",
+    }:
+        return intent.name
+
     if _has_any(text, ("spotify", "musique", "playlist", "lance une chanson", "mets ")):
         return "spotify"
 
@@ -140,9 +156,6 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
         ),
     ):
         return "browser_or_video"
-
-    if intent.name != "generic_chat":
-        return intent.name
 
     if _has_any(
         text,

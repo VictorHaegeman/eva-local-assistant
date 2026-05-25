@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -27,17 +28,27 @@ def _slugify(value: str) -> str:
     return slug or "nouveau-projet"
 
 
+def _normalize_project_text(value: str) -> str:
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value)
+        if not unicodedata.combining(char)
+    )
+
+
 def infer_project_name(idea: str) -> str:
+    normalized_idea = _normalize_project_text(idea)
     patterns = (
+        r"(?:idee|idée|idÃ©e)\s+de\s+projet\s*:\s*(?P<name>[A-Za-z0-9 _-]{3,60})",
         r"(?:nomme|nommé|appelle|appelé|projet)\s+(?P<name>[A-Za-z0-9 _-]{3,60})",
         r"(?:idee|idée|projet)\s*:\s*(?P<name>[A-Za-z0-9 _-]{3,60})",
     )
     for pattern in patterns:
-        match = re.search(pattern, idea, flags=re.IGNORECASE)
+        match = re.search(pattern, normalized_idea, flags=re.IGNORECASE)
         if match:
             return _safe_project_name(match.group("name"))
 
-    words = re.findall(r"[A-Za-z0-9]+", idea)
+    words = re.findall(r"[A-Za-z0-9]+", normalized_idea)
     if not words:
         return "Nouveau Projet"
     ignored = {
@@ -50,11 +61,30 @@ def infer_project_name(idea: str) -> str:
         "projet",
         "idee",
         "idée",
+        "j",
+        "ai",
+        "jai",
+        "de",
+        "du",
+        "des",
+        "pour",
+        "sur",
+        "mon",
+        "ma",
+        "mes",
+        "ton",
+        "ta",
+        "tes",
+        "lance",
+        "demarre",
+        "prepare",
+        "idée",
         "une",
         "un",
         "app",
         "application",
         "site",
+        "web",
     }
     useful = [word for word in words if word.lower() not in ignored]
     return _safe_project_name(" ".join(useful[:4]) or "Nouveau Projet")
@@ -125,7 +155,8 @@ Instructions:
 5. Garde les changements scopes.
 6. N'ajoute pas d'API payante.
 7. Documente les commandes de lancement.
-8. Ne pousse rien sur GitHub sans validation de Victor.
+8. Code la V1 directement dans ce workspace si cursor-agent est disponible.
+9. Ne publie rien et n'envoie aucun message externe. Eva gere Git/GitHub selon sa configuration locale.
 
 Livrable attendu:
 - code initial;
@@ -149,7 +180,7 @@ def build_project_plan(idea: str, project_name: str | None = None) -> dict[str, 
 
     files = {
         "README.md": f"# {name}\n\nProjet prepare par Eva.\n\n## Idee\n\n{clean_idea}\n\n## Stack\n\n- Frontend: {stack['frontend']}\n- Backend: {stack['backend']}\n\n## Lancement\n\nA completer apres generation du projet.\n",
-        "PROJECT_BRIEF.md": f"# Brief projet - {name}\n\n## Idee\n\n{clean_idea}\n\n## Objectif V1\n\nConstruire une premiere version utilisable, simple et maintenable.\n\n## Stack proposee\n\n- Template: {stack['template']}\n- Frontend: {stack['frontend']}\n- Backend: {stack['backend']}\n- Notes: {stack['notes']}\n\n## Contraintes\n\n- Local-first quand possible.\n- Pas d'API payante obligatoire.\n- Secrets hors Git.\n- GitHub et push apres validation humaine.\n",
+        "PROJECT_BRIEF.md": f"# Brief projet - {name}\n\n## Idee\n\n{clean_idea}\n\n## Objectif V1\n\nConstruire une premiere version utilisable, simple et maintenable.\n\n## Stack proposee\n\n- Template: {stack['template']}\n- Frontend: {stack['frontend']}\n- Backend: {stack['backend']}\n- Notes: {stack['notes']}\n\n## Contraintes\n\n- Local-first quand possible.\n- Pas d'API payante obligatoire.\n- Secrets hors Git.\n- GitHub et push geres par Eva Project Factory si les flags locaux sont actifs.\n",
         "TASKS.md": f"# Tasks - {name}\n\n- [ ] Valider le scope V1\n- [ ] Creer le squelette technique\n- [ ] Ajouter README de lancement\n- [ ] Verifier le rendu local\n- [ ] Preparer le premier commit\n",
         "CURSOR_PROMPT.md": cursor_prompt + "\n",
         ".gitignore": "node_modules/\ndist/\nbuild/\n.env\n.env.*\n!.env.example\n.venv/\n__pycache__/\n*.pyc\n.DS_Store\nThumbs.db\n",
@@ -179,19 +210,20 @@ def build_project_plan(idea: str, project_name: str | None = None) -> dict[str, 
         "commands": commands,
         "cursor_prompt": cursor_prompt,
         "safety": {
-            "requires_confirmation": [
+            "auto_scope": [
                 "creer le dossier projet",
                 "ecrire les fichiers",
                 "copier dans le presse-papiers",
                 "ouvrir Cursor",
                 "lancer cursor-agent pour coder la V1",
                 "creer le repo GitHub",
-                "git push",
+                "git push si EVA_PROJECT_FACTORY_AUTO_PUSH=true",
             ],
-            "blocked": [
+            "protected": [
                 "appel API OpenAI",
                 "automatisation ChatGPT web",
                 "envoi ou publication sans validation",
+                "suppression de fichiers",
             ],
         },
     }
@@ -204,7 +236,7 @@ def create_project_factory_action(idea: str, project_name: str | None = None) ->
         title=f"Creer le workspace projet {plan['project_name']}",
         description=(
             "Project Factory: cree le dossier, les fichiers de cadrage, "
-            "CURSOR_PROMPT.md et prepare les commandes locales. Validation obligatoire."
+            "CURSOR_PROMPT.md et prepare les commandes locales."
         ),
         payload=plan,
     )
@@ -221,13 +253,13 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
     clipboard_action = create_action(
         action_type="clipboard_set_prompt",
         title=f"Copier le prompt Cursor pour {plan['project_name']}",
-        description="Copie le prompt dans le presse-papiers Windows. Validation obligatoire.",
+        description="Copie le prompt dans le presse-papiers Windows.",
         payload={"prompt": plan["cursor_prompt"], "project_name": plan["project_name"]},
     )
     cursor_action = create_action(
         action_type="cursor_open_project",
         title=f"Ouvrir Cursor pour {plan['project_name']}",
-        description="Ouvre Cursor sur le dossier projet. Validation obligatoire.",
+        description="Ouvre Cursor sur le dossier projet.",
         payload={"workspace_path": plan["workspace_path"]},
     )
     cursor_agent_action = create_action(
@@ -248,7 +280,7 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
     github_action = create_action(
         action_type="github_repo_create",
         title=f"Creer le repo GitHub {plan['repo_name']}",
-        description="Cree le repo via GitHub CLI gh. Validation obligatoire.",
+        description="Cree le repo via GitHub CLI gh si gh est authentifie.",
         payload={
             "workspace_path": plan["workspace_path"],
             "repo_name": plan["repo_name"],

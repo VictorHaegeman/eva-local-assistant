@@ -53,7 +53,7 @@ La politique d'action classe les operations en quatre niveaux:
 
 - `read_only`: lecture, recherche, diagnostic;
 - `draft_only`: brouillon, prompt, plan;
-- `confirmation_required`: commande, ecriture, suppression, push, envoi;
+- `confirmation_required`: suppression, envoi, publication, commande critique;
 - `blocked`: secrets, appels OpenAI obligatoires, cloud payant obligatoire, suppression irreversible non encadree.
 
 Route:
@@ -112,5 +112,6 @@ docs/LINKEDIN_ASSISTANT.md
 - gratuit a l'usage;
 - pas d'API OpenAI;
 - pas de cloud obligatoire;
-- actions sensibles avec validation humaine;
+- Project Factory autonome bornee au dossier projets;
+- actions sensibles avec validation humaine ou flag explicite;
 - données locales ignorees par Git.

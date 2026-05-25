@@ -314,6 +314,9 @@ def _should_accept_interpretation(
     if mail_context and interpretation.route == "cursor_work" and not cursor_context:
         return False
 
+    if base_frame.primary_domain == "project" and interpretation.route == "cursor_work":
+        return False
+
     if (
         base_frame.action_plan.route == "linkedin_activity"
         and interpretation.route == "linkedin_browser_post"

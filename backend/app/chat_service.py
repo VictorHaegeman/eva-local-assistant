@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from typing import Any
 
 from app.actions.action_detector import create_pending_action_from_message
@@ -123,8 +124,17 @@ PROJECT_CONTEXT_MARKERS = (
 PROJECT_FACTORY_MARKERS = (
     "nouveau projet",
     "nouvelle idee projet",
+    "nouvelle idee de projet",
+    "idee de projet",
+    "j'ai une idee de projet",
+    "jai une idee de projet",
+    "j'ai une nouvelle idee",
+    "jai une nouvelle idee",
     "cree un projet",
     "creer un projet",
+    "lance un projet",
+    "demarre un projet",
+    "prepare un projet",
     "project factory",
 )
 
@@ -161,8 +171,21 @@ def _should_attach_project_context(message: str) -> bool:
 
 
 def _should_create_project_factory_plan(message: str) -> bool:
-    normalized = message.lower()
-    return any(marker in normalized for marker in PROJECT_FACTORY_MARKERS)
+    normalized = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", message.lower())
+        if not unicodedata.combining(char)
+    )
+    normalized = " ".join(normalized.split())
+    if any(marker in normalized for marker in PROJECT_FACTORY_MARKERS):
+        return True
+    return bool(
+        re.search(
+            r"\b(?:cree|creer|lance|demarre|prepare|monte|setup|scaffold|initialise)\b"
+            r".{0,80}\b(?:projet|repo|repository|workspace|application|app|saas|site|outil|mvp)\b",
+            normalized,
+        )
+    )
 
 
 def _mirror_memory(memory: object) -> None:
@@ -420,6 +443,10 @@ async def process_chat_messages(
                     "message": {
                         "role": "assistant",
                         "content": content,
+                        "cognitive_trace": build_reasoning_trace(
+                            understanding,
+                            selected_route="project_factory",
+                        ),
                     },
                     "saved_memory": None,
                     "pending_action": None,
@@ -438,6 +465,10 @@ async def process_chat_messages(
                         "Actions en attente:\n"
                         + "\n".join(f"- #{action.id} [{action.action_type}] {action.title}" for action in actions)
                         + "\n\nActive EVA_PROJECT_FACTORY_AUTO_EXECUTE=true pour lancer automatiquement ce flux."
+                    ),
+                    "cognitive_trace": build_reasoning_trace(
+                        understanding,
+                        selected_route="project_factory",
                     ),
                 },
                 "saved_memory": None,

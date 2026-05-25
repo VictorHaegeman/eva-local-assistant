@@ -119,6 +119,13 @@ export async function syncObsidianMemory() {
 }
 
 
+export async function openObsidianMemory() {
+  return request("/memory/obsidian/open", {
+    method: "POST",
+  });
+}
+
+
 export async function getProjects() {
   return request("/projects");
 }

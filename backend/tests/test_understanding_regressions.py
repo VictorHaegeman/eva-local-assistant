@@ -93,6 +93,19 @@ def test_news_does_not_reuse_linkedin_context() -> None:
     assert frame.action_plan.route == "web_search"
 
 
+def test_new_project_idea_routes_to_project_factory() -> None:
+    frame = _frame("j'ai une nouvelle idee de projet: une app SaaS pour suivre mes prospects")
+    assert frame.primary_domain == "project"
+    assert frame.expected_outcome == "create_workspace"
+    assert frame.action_plan.route == "project_factory"
+
+
+def test_create_app_routes_to_project_factory_before_browser() -> None:
+    frame = _frame("cree une app web pour visualiser mes ventes et lance le projet")
+    assert frame.primary_domain == "project"
+    assert frame.action_plan.route == "project_factory"
+
+
 def test_future_action_claim_is_not_success() -> None:
     report = criticize_response(
         "Je vais essayer de naviguer sur LinkedIn directement pour voir les messages non repondu.",
@@ -118,6 +131,8 @@ if __name__ == "__main__":
     test_linkedin_post_routes_to_linkedin_operator()
     test_linkedin_activity_does_not_create_post()
     test_news_does_not_reuse_linkedin_context()
+    test_new_project_idea_routes_to_project_factory()
+    test_create_app_routes_to_project_factory_before_browser()
     test_future_action_claim_is_not_success()
     test_beeper_unverified_response_is_not_useful()
     print("understanding regressions OK")

@@ -22,6 +22,8 @@ from app.integrations.gmail_chat import build_gmail_chat_response
 from app.integrations.linkedin_assistant import build_linkedin_activity_response, build_linkedin_chat_response
 from app.integrations.map_preview import build_map_preview_from_message
 from app.integrations.spotify_assistant import open_spotify_from_message
+from app.project_factory.automation import auto_execute_project_factory_actions, format_project_factory_results
+from app.project_factory.planner import create_project_factory_actions
 from app.projects.project_chat import (
     build_chat_cursor_prompt_response,
     build_cursor_work_session_response,
@@ -70,6 +72,7 @@ ACTION_ROUTES = {
     "beeper_messages",
     "linkedin_activity",
     "linkedin_browser_post",
+    "project_factory",
     "web_search",
 }
 
@@ -88,6 +91,7 @@ ROUTE_LABELS = {
     "beeper_messages": "Beeper",
     "linkedin_activity": "Activite LinkedIn",
     "linkedin_browser_post": "LinkedIn",
+    "project_factory": "Project Factory",
     "generic_chat": "Reponse directe",
 }
 
@@ -159,6 +163,7 @@ def _tool_for_route(route: str, understanding: UnderstandingFrame) -> str:
         "beeper_messages": "beeper_assistant",
         "linkedin_activity": "linkedin_activity",
         "linkedin_browser_post": "linkedin_assistant",
+        "project_factory": "project_factory",
         "web_search": "web_search",
         "screen_read": "screen_reader",
     }.get(route, understanding.tool_preference)
@@ -170,7 +175,9 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
 
     if domain == "gmail":
         routes.extend(["gmail_read", "gmail_reply_draft"])
-    elif domain in {"cursor", "project"}:
+    elif domain == "project":
+        routes.extend(["project_factory", "cursor_work", "web_search"])
+    elif domain == "cursor":
         routes.extend(["cursor_work", "web_search"])
     elif domain == "browser":
         routes.extend(["browser_or_video", "web_search"])
@@ -212,7 +219,9 @@ def _route_options(
         base_options.extend(["web_search", "browser_or_video"])
     elif domain == "gmail":
         base_options.extend(["gmail_read", "gmail_reply_draft", "generic_chat"])
-    elif domain in {"cursor", "project"} or selected_route == "cursor_work":
+    elif domain == "project" or selected_route == "project_factory":
+        base_options.extend(["project_factory", "cursor_work", "web_search", "generic_chat"])
+    elif domain == "cursor" or selected_route == "cursor_work":
         base_options.extend(["cursor_work", "web_search", "generic_chat"])
     elif domain == "browser":
         base_options.extend(["browser_or_video", "web_search", "generic_chat"])
@@ -462,6 +471,39 @@ async def _execute_route_once(
             confidence=0.84,
         )
         return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "project_factory" or (use_domain_fallback and understanding.primary_domain == "project"):
+        if not trusted_actions:
+            result = _blocked(
+                "project_factory",
+                "Project Factory demande une session fiable: PC local ou Telegram autorise.",
+                ("relancer depuis le PC local", "ou depuis ton Telegram autorise"),
+            )
+            return RouteExecution(content=build_blocked_response(result), result=result, selected_route=route)
+
+        bundle = create_project_factory_actions(message)
+        plan = bundle["plan"]
+        actions = bundle["actions"]
+        results = auto_execute_project_factory_actions(actions)
+        content = format_project_factory_results(plan, results)
+        failed = [result for result in results if isinstance(result.get("action"), dict) and result["action"].get("status") == "failed"]
+        skipped = [result for result in results if result.get("skipped")]
+        status = "partial" if failed or skipped else "success"
+        result = ToolResult(
+            tool="project_factory",
+            status=status,
+            evidence=(
+                f"Workspace cible: {plan['workspace_path']}",
+                f"Actions Project Factory traitees: {len(results)}",
+            ),
+            data={"plan": plan, "results": results},
+            confidence=0.88 if status == "success" else 0.68,
+        )
+        return RouteExecution(
+            content=content,
+            result=verify_result(result),
+            selected_route="project_factory",
+        )
 
     if route == "spotify" or (use_domain_fallback and understanding.primary_domain == "spotify"):
         content = open_spotify_from_message(message)

@@ -133,7 +133,7 @@ class Settings:
         True,
     )
     eva_project_factory_auto_github: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_GITHUB", True)
-    eva_project_factory_auto_push: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_PUSH", False)
+    eva_project_factory_auto_push: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_PUSH", True)
     eva_project_factory_auto_cursor_agent: bool = _env_bool(
         "EVA_PROJECT_FACTORY_AUTO_CURSOR_AGENT",
         True,

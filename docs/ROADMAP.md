@@ -175,19 +175,16 @@ Backlog:
 - creation de `README.md`, `PROJECT_BRIEF.md`, `TASKS.md`, `CURSOR_PROMPT.md`;
 - ajout automatique dans `data/eva_projects.json`;
 - detection Cursor CLI;
-- ouverture du projet dans Cursor apres validation;
-- copie du prompt dans le presse-papiers Windows apres validation;
-- creation de repo GitHub via `gh repo create` apres validation, sans API GitHub directe;
-- push uniquement apres validation;
+- ouverture du projet dans Cursor en mode Project Factory autonome;
+- copie du prompt dans le presse-papiers Windows;
+- creation de repo GitHub via `gh repo create`, sans API GitHub directe;
+- push automatique borne au projet si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`;
 - commande Telegram `/idea` et `/project`.
 
 Regles de securite:
 
-- creation de dossier: validation obligatoire;
-- ecriture de fichiers: validation obligatoire;
-- GitHub: validation obligatoire;
-- push: validation obligatoire;
-- presse-papiers et ouverture d'apps: validation obligatoire;
+- creation de dossier/ecriture/GitHub autorisee dans `EVA_PROJECTS_DIR` pour Project Factory;
+- suppression, envoi, publication et commandes critiques restent proteges;
 - Cursor est pilote par CLI/fichiers/presse-papiers, pas par API;
 - Codex reste externe et optionnel;
 - Eva ne depend pas de l'API OpenAI.

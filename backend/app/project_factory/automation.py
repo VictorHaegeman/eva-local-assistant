@@ -45,14 +45,43 @@ def auto_execute_project_factory_actions(actions: list[EvaAction]) -> list[dict[
     results: list[dict[str, object]] = []
     ordered_actions = sorted(actions, key=lambda action: AUTO_ACTION_ORDER.get(action.action_type, 999))
     has_agent_run = any(action.action_type == "cursor_agent_project_run" for action in actions)
+    deferred_pushes: list[EvaAction] = []
+    agent_started = False
 
     for action in ordered_actions:
         if action.action_type == "git_push" and has_agent_run:
+            deferred_pushes.append(action)
+            continue
+
+        enabled, reason = _auto_enabled_for(action)
+        if not enabled:
             results.append(
                 {
                     "executed": False,
                     "skipped": True,
-                    "reason": "push differe jusqu'a la fin de cursor-agent",
+                    "reason": reason,
+                    "action": action_to_dict(action),
+                }
+            )
+            continue
+
+        update_action_status(action.id, "approved")
+        result = execute_action(action.id)
+        results.append(result)
+        if action.action_type == "cursor_agent_project_run":
+            action_payload = result.get("action")
+            if isinstance(action_payload, dict):
+                agent_started = "started=True" in str(action_payload.get("result", ""))
+
+    for action in deferred_pushes:
+        if agent_started:
+            results.append(
+                {
+                    "executed": False,
+                    "skipped": True,
+                    "reason": (
+                        "push gere par le superviseur cursor-agent apres audit final"
+                    ),
                     "action": action_to_dict(action),
                 }
             )
@@ -108,16 +137,20 @@ def format_project_factory_results(
         title = action.get("title")
         status = action.get("status")
 
-        if result.get("executed"):
+        result_text = str(action.get("result", ""))
+
+        if result.get("executed") and "started=False" in result_text:
+            pending_lines.append(f"- #{action_id} [{action_type}] {title}: {result_text}")
+        elif result.get("executed"):
             executed_lines.append(f"- #{action_id} [{action_type}] {title}")
         elif status == "failed":
-            failed_lines.append(f"- #{action_id} [{action_type}] {title}: {action.get('result', '')}")
+            failed_lines.append(f"- #{action_id} [{action_type}] {title}: {result_text}")
         else:
             reason = result.get("reason", "non execute")
             pending_lines.append(f"- #{action_id} [{action_type}] {title} ({reason})")
 
     lines = [
-        f"Project Factory lance pour {plan['project_name']}.",
+        f"Project Factory autonome lance pour {plan['project_name']}.",
         f"Dossier cible: {plan['workspace_path']}",
         f"Repo GitHub propose: {plan['repo_name']}",
         "",
@@ -129,7 +162,7 @@ def format_project_factory_results(
         lines.append("")
 
     if pending_lines:
-        lines.append("Reste en attente:")
+        lines.append("Non lance ou differe:")
         lines.extend(pending_lines)
         lines.append("")
 

@@ -93,6 +93,58 @@ def has_news_context(text: str) -> bool:
     return _has_any(text, NEWS_MARKERS)
 
 
+def _looks_like_new_project_request(text: str) -> bool:
+    if _has_any(
+        text,
+        (
+            "project factory",
+            "nouveau projet",
+            "nouvelle idee projet",
+            "nouvelle idee de projet",
+            "idee de projet",
+            "j'ai une idee de projet",
+            "jai une idee de projet",
+            "j'ai une nouvelle idee",
+            "jai une nouvelle idee",
+        ),
+    ):
+        return True
+
+    create_markers = (
+        "cree",
+        "creer",
+        "crée",
+        "lance",
+        "demarre",
+        "prepare",
+        "monte",
+        "setup",
+        "scaffold",
+        "initialise",
+    )
+    target_markers = (
+        "projet",
+        "repo",
+        "repository",
+        "workspace",
+        "application",
+        "app",
+        "saas",
+        "site",
+        "outil",
+        "mvp",
+    )
+    if _has_any(text, create_markers) and _has_any(text, target_markers):
+        return True
+
+    return bool(
+        re.search(
+            r"\b(?:nouvelle?|nouveau|new)\b.{0,40}\b(?:idee|idée|projet|app|saas|repo)\b",
+            text,
+        )
+    )
+
+
 def classify_user_intent(message: str) -> UserIntent:
     text = normalize_intent_text(message)
 
@@ -366,20 +418,14 @@ def classify_user_intent(message: str) -> UserIntent:
             summary="Lire les derniers mails Gmail reels via l'API Google.",
         )
 
-    if _has_any(
-        text,
-        (
-            "nouveau projet",
-            "nouvelle idee projet",
-            "cree un projet",
-            "creer un projet",
-            "project factory",
-        ),
-    ):
+    if _looks_like_new_project_request(text):
         return UserIntent(
             name="project_factory",
-            confidence=0.88,
-            summary="Transformer une idee en workspace local, fichiers projet, prompt Cursor et Git/GitHub.",
+            confidence=0.92,
+            summary=(
+                "Transformer une idee en workspace local, fichiers projet, prompt Cursor, Git/GitHub "
+                "et lancement agent autonome si disponible."
+            ),
         )
 
     project_work_context = _has_project_word(text) and _has_any(

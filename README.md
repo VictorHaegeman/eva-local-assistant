@@ -35,7 +35,8 @@ Protection actuelle:
 - les routes sensibles acceptent automatiquement le PC local (`localhost`, `127.0.0.1`);
 - depuis un autre appareil du Wi-Fi, ces routes sont bloquees sauf si un `X-Eva-Api-Token` est configure;
 - Telegram n'est accepte que si `EVA_TELEGRAM_ALLOWED_CHAT_ID` correspond a ton chat personnel;
-- les actions de type suppression, publication, envoi ou `git push` restent hors automatisation par defaut;
+- les actions de type suppression, publication et envoi restent hors automatisation par defaut;
+- le flux Project Factory peut creer workspace, repo GitHub et push automatiquement si les flags locaux sont actifs;
 - les lectures fichier passent uniquement par les dossiers autorises dans `data/eva_allowed_paths.json`.
 - Eva interprete l'intention avant de lancer un outil. Exemple: si Victor demande de "recuperer le script Google et le coller dans le code", Eva comprend que le "script" est le JSON OAuth Google Cloud, refuse de le coller dans le code, et utilise `data/gmail_credentials.json` puis le flux OAuth local.
 
@@ -208,11 +209,12 @@ Eva peut faire directement:
 - creer un workspace projet;
 - faire un commit Git local initial;
 - creer un repo GitHub si `gh` est installe et connecte.
+- pousser le projet cree par Project Factory si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
 
 Ces actions restent protegees meme en mode `operator`:
 
 - suppression de fichiers, sauf `EVA_ALLOW_AUTO_DELETE=true`;
-- `git push`, sauf `EVA_ALLOW_AUTO_GIT_PUSH=true` ou `EVA_PROJECT_FACTORY_AUTO_PUSH=true`;
+- `git push` hors Project Factory, sauf `EVA_ALLOW_AUTO_GIT_PUSH=true`;
 - publication LinkedIn ou contenu public;
 - envoi d'email ou message externe;
 - commandes critiques: `git reset`, `git clean`, suppression, shutdown, formatage, execution policy, etc.;
@@ -653,13 +655,15 @@ Commandes projet depuis iPhone:
 /codex DreamLense corrige le bug de formulaire et garde le style premium
 ```
 
-Eva cree alors des actions en attente pour:
+En mode confiance, Eva execute directement le flux Project Factory pour:
 
 - creer le workspace local;
 - generer `README.md`, `PROJECT_BRIEF.md`, `TASKS.md` et `CURSOR_PROMPT.md`;
 - copier le prompt Cursor;
 - ouvrir le projet dans Cursor;
-- creer le repo GitHub via `gh`.
+- creer le repo GitHub via `gh`;
+- lancer `cursor-agent` si disponible;
+- pousser le repo si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
 
 Pour `/cursor` et `/codex`, Eva:
 
@@ -804,7 +808,7 @@ EVA_PROJECT_FACTORY_AUTO_PUSH=true
 
 Pour que GitHub soit vraiment autonome depuis Telegram, `gh auth status` doit etre OK sur le PC. Sans ca, Eva peut preparer le workspace et le commit local, mais la creation du repo et le push echoueront proprement.
 
-Par defaut, chaque action critique reste validable avec `/approve ID`.
+Dans le mode confiance Project Factory, Eva ne cree pas seulement des actions en attente: elle lance le flux directement depuis le PC ou Telegram autorise. Si une dependance manque (`gh auth`, `cursor-agent`), elle continue les etapes possibles et signale le blocage exact.
 
 Mode confiance pour tes nouvelles idees:
 
@@ -1227,7 +1231,7 @@ Important:
 - Eva peut preparer un prompt Cursor/Codex directement dans le chat;
 - Eva peut lancer `cursor-agent` en arriere-plan si la CLI est installee et activee;
 - Eva ne modifie pas les fichiers hors Project Factory autonome sans validation;
-- Eva ne fait pas de `git push` sauf si `EVA_ALLOW_AUTO_GIT_PUSH=true` ou `EVA_PROJECT_FACTORY_AUTO_PUSH=true`;
+- Eva ne fait pas de `git push` hors Project Factory sauf si `EVA_ALLOW_AUTO_GIT_PUSH=true`;
 - elle peut lire/analyser les projets configures et preparer plans, prompts, README drafts et PR plans.
 
 ## Self Improvement Loop
@@ -1590,7 +1594,7 @@ Chaque skill expose maintenant:
 - prochaines etapes;
 - niveau de securite.
 
-Les skills respectent la politique de securite: lecture et brouillons sans confirmation, validation humaine pour envoi, publication, modification de fichier, commande systeme ou `git push`.
+Les skills respectent la politique de securite: lecture, brouillons, Project Factory et actions locales non critiques peuvent partir automatiquement; envoi, publication, suppression et commandes systeme critiques restent proteges.
 
 ## Voix Eva
 
@@ -1632,7 +1636,7 @@ Eva doit raisonner comme un operateur local:
 5. utiliser les outils surs disponibles: memoire, fichiers autorises, projets, RSS, recherche web gratuite, Gmail, Calendar, navigateur, lecture d'ecran;
 6. executer directement ce qui est autorise en mode operator;
 7. proposer un plan B si la premiere piste bloque;
-8. demander validation pour les actions dangereuses restantes: suppression, envoi, publication, `git push`, commande systeme critique.
+8. demander validation pour les actions dangereuses restantes: suppression, envoi, publication, commande systeme critique.
 
 Cette boucle est implementee dans `backend/app/agents/action_planner.py`. Elle produit un plan interne pour chaque prompt: objectif interprete, route d'action, outil cible, niveau de securite et etapes. Eva ne doit pas le reciter a chaque reponse; il sert a eviter les reactions betes du type "je ne peux pas ouvrir d'application" alors qu'un outil local existe.
 
@@ -1676,7 +1680,7 @@ Ce que ca change concretement:
 - une action locale sure peut etre executee sans te redemander;
 - si une piste echoue, Eva tente une autre piste avant de conclure;
 - si aucun outil local ne suffit, Eva peut lancer une recherche web gratuite et l'utiliser comme plan B;
-- une action critique reste protegee: envoi, publication, suppression, `git push`, achat/paiement;
+- une action critique reste protegee: envoi, publication, suppression, achat/paiement;
 - meme une reponse simple peut afficher une trace de decision dans le chat;
 - Eva evite de tomber dans les reponses generiques du type "je ne peux pas ouvrir d'application" quand un outil local existe.
 
@@ -1710,9 +1714,21 @@ Endpoints utiles:
 ```text
 GET /memory/obsidian/status
 POST /memory/obsidian/sync
+POST /memory/obsidian/open
 ```
 
 Eva ne devient pas plus intelligente par entrainement du modele local. Elle apprend au sens assistant personnel: elle conserve des informations non sensibles, les reinjecte dans le contexte Ollama, et les miroir dans Obsidian pour que Victor puisse les relire, corriger ou enrichir.
+
+Le coffre cree par Eva contient:
+
+- `00 - Eva/INDEX.md`: navigation du second cerveau;
+- `10 - Profile/Victor.md`: profil local genere depuis `data/eva_profile.json`;
+- `20 - Memories/`: souvenirs classes par categorie;
+- `30 - Projects/Projects.md`: index des projets connus;
+- `40 - Daily/`: journal quotidien des souvenirs;
+- `50 - Operating Rules/`: regles de comportement d'Eva.
+
+Depuis le panneau Memoire, le bouton `Ouvrir le coffre` lance Obsidian via le protocole local `obsidian://` si Obsidian est installe sur Windows.
 
 ## Structure
 

@@ -79,11 +79,12 @@ Eva, nouvelle idee projet: une app SaaS pour ...
 Eva doit repondre:
 
 1. comprendre l'idee;
-2. poser 2-3 questions si necessaire;
+2. inferer un nom et une stack raisonnables;
 3. creer un brief projet;
-4. proposer un plan;
-5. creer une action en attente;
-6. executer seulement apres validation.
+4. creer le workspace local;
+5. creer le repo GitHub si `gh` est connecte;
+6. lancer Cursor/cursor-agent si disponible;
+7. auditer le resultat et relancer une correction si besoin.
 
 ## Workflow cible
 
@@ -161,11 +162,11 @@ Avant de toucher au PC, Eva doit afficher:
 - repo GitHub qui sera cree;
 - risque et retour arriere.
 
-Validation possible:
+Validation possible pour les actions generales:
 
 - bouton dans Eva;
 - `/approve ID` sur Telegram;
-- jamais automatique pour GitHub, ecriture fichier, commande systeme ou push.
+- les suppressions, envois, publications et commandes critiques restent protegees.
 
 Decision ajoutee pour le flux "nouvelle idee projet":
 
@@ -176,6 +177,7 @@ EVA_PROJECT_FACTORY_AUTO_EXECUTE=true
 EVA_PROJECT_FACTORY_AUTO_COPY_PROMPT=true
 EVA_PROJECT_FACTORY_AUTO_OPEN_CURSOR=true
 EVA_PROJECT_FACTORY_AUTO_GITHUB=true
+EVA_PROJECT_FACTORY_AUTO_PUSH=true
 ```
 
 Ce mode est volontairement borne:
@@ -186,12 +188,12 @@ Ce mode est volontairement borne:
 - pas de publication LinkedIn;
 - pas d'appel OpenAI;
 - GitHub uniquement via `gh` local deja authentifie;
-- pas de push automatique ajoute a ce stade.
+- push automatique borne au projet cree si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
 
 La philosophie devient:
 
-- Project Factory: peut etre auto si Victor l'active;
-- actions destructrices, envoi, publication, push: restent hors auto par defaut.
+- Project Factory: auto par defaut dans le mode confiance de Victor;
+- actions destructrices, envoi et publication: restent hors auto par defaut.
 
 ### 3. Workspace local
 
@@ -221,13 +223,13 @@ Pre-requis:
 
 - compte GitHub connecte localement;
 - session CLI `gh auth login` stockee par GitHub CLI, hors Git;
-- validation humaine avant creation;
-- validation humaine avant push.
+- autonomie active avec `EVA_PROJECT_FACTORY_AUTO_GITHUB=true`;
+- push borne au projet si `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
 
 Decision recommande:
 
 - utiliser `gh repo create` si `gh` est installe;
-- sinon preparer les commandes a lancer manuellement;
+- sinon journaliser l'echec exact et continuer le workspace local;
 - ne jamais stocker le token dans Git.
 
 ### 5. Cursor sans API
@@ -298,7 +300,8 @@ Responsabilites:
 - choisir un chemin de workspace;
 - creer un plan de fichiers;
 - preparer les commandes;
-- creer l'action en attente.
+- creer les actions;
+- executer automatiquement le flux borne si le mode confiance est actif.
 
 Fichiers proposes:
 
@@ -405,19 +408,16 @@ Templates locaux:
 
 ## Plan d'execution recommande
 
-### Phase A - Project Factory en brouillon
-
-Objectif: aucune action systeme.
+### Phase A - Project Factory plan
 
 - endpoint `POST /project-factory/plan`;
 - Eva transforme une idee en brief;
 - endpoint `POST /project-factory/actions`;
-- creation d'actions en attente: workspace, clipboard, Cursor, GitHub CLI;
-- pas encore de dossier cree.
+- creation d'actions workspace, clipboard, Cursor, GitHub CLI.
 
-### Phase B - Creation workspace locale
+### Phase B - Creation workspace locale autonome
 
-Objectif: creer dossiers/fichiers apres validation.
+Objectif: creer dossiers/fichiers directement dans `EVA_PROJECTS_DIR` quand `EVA_PROJECT_FACTORY_AUTO_EXECUTE=true`.
 
 - action `project_workspace_create`;
 - fichiers `README.md`, `PROJECT_BRIEF.md`, `TASKS.md`, `CURSOR_PROMPT.md`;
@@ -434,14 +434,14 @@ Objectif: ouvrir le projet et preparer le prompt.
 - action `cursor_copy_prompt`;
 - pas d'API Cursor.
 
-### Phase D - GitHub
+### Phase D - GitHub autonome borne
 
-Objectif: repo GitHub apres validation.
+Objectif: repo GitHub via `gh` local deja authentifie.
 
 - verifier `gh auth status`;
 - action `github_repo_create`;
 - action `git_push`;
-- jamais automatique sans validation.
+- auto si `EVA_PROJECT_FACTORY_AUTO_GITHUB=true` et `EVA_PROJECT_FACTORY_AUTO_PUSH=true`.
 
 ### Phase E - Telegram project command
 

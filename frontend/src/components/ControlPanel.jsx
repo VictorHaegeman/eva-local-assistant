@@ -38,6 +38,7 @@ import {
   getTools,
   generateSmartBrief,
   connectGmail,
+  openObsidianMemory,
   createGmailReplyDraft,
   createProjectFactoryActions,
   getChatHistory,
@@ -334,6 +335,22 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleOpenObsidian() {
+    setRunningJob("obsidian_open");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await openObsidianMemory();
+      await loadPanel();
+      setJobResult(result.opened ? "Coffre Obsidian Eva ouvert." : "Coffre Obsidian pret.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleGenerateSmartBrief() {
     setRunningJob("smart_brief");
     setJobResult("");
@@ -413,6 +430,14 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           <p>{obsidian.path || "Vault local non configure."}</p>
           <Field label="Fichiers Markdown" value={obsidian.markdown_files || 0} />
           <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button primary"
+              onClick={handleOpenObsidian}
+              disabled={Boolean(runningJob)}
+            >
+              {runningJob === "obsidian_open" ? "Ouverture..." : "Ouvrir le coffre"}
+            </button>
             <button
               type="button"
               className="panel-action-button"

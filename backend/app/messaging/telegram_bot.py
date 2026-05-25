@@ -288,8 +288,8 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             lines.extend(
                 [
                     "",
-                    "Valide chaque etape avec /approve ID.",
-                    "Workspace, Cursor, presse-papiers et GitHub restent derriere validation.",
+                    "Auto-execution desactivee dans .env: passe EVA_PROJECT_FACTORY_AUTO_EXECUTE=true pour lancer sans /approve.",
+                    "Quand le mode confiance est actif, workspace, Cursor, GitHub et agent partent seuls.",
                 ]
             )
             await _send_message(client, chat_id, "\n".join(lines))
