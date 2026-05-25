@@ -153,12 +153,19 @@ function ThinkingPipeline({ prompt }) {
       </div>
       <div className="thinking-steps">
         {thinkingStages.map((stage, index) => (
-          <div
-            className={`thinking-step ${index <= activeStage ? "active" : ""}`}
-            key={stage.label}
-          >
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <strong>{stage.label}</strong>
+          <div className="thinking-step-node" key={stage.label}>
+            <div
+              className={`thinking-step ${index < activeStage ? "done" : ""} ${index === activeStage ? "active" : ""}`}
+            >
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{stage.label}</strong>
+            </div>
+            {index < thinkingStages.length - 1 && (
+              <span
+                className={`thinking-arrow ${index < activeStage ? "done" : ""} ${index === activeStage ? "active" : ""}`}
+                aria-hidden="true"
+              />
+            )}
           </div>
         ))}
       </div>
