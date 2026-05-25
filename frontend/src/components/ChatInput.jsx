@@ -31,6 +31,17 @@ export function ChatInput({ onSend, disabled, voiceReplies, onVoiceRepliesChange
   const SpeechRecognition =
     typeof window !== "undefined" &&
     (window.SpeechRecognition || window.webkitSpeechRecognition);
+  const hasText = Boolean(value.trim());
+  const inputStateLabel = listening
+    ? "Ecoute active"
+    : wakeMode
+      ? "Wake word actif"
+      : disabled
+        ? "Eva traite"
+        : "Canal local";
+  const inputStateDetail =
+    voiceStatus ||
+    (wakeMode ? "Dis Ok Eva, puis ta demande" : "Texte ou voix, transmission locale");
 
   useEffect(() => {
     disabledRef.current = disabled;
@@ -192,41 +203,58 @@ export function ChatInput({ onSend, disabled, voiceReplies, onVoiceRepliesChange
 
   return (
     <footer className="composer-shell">
-      <div className="voice-toolbar">
-        <button
-          type="button"
-          className={`voice-mode-toggle ${wakeMode ? "active" : ""}`}
-          onClick={toggleWakeMode}
-          disabled={disabled || !SpeechRecognition}
-          title="Activer l'ecoute Eva"
-          aria-label="Activer l'ecoute Eva"
-        >
-          <Radio size={15} aria-hidden="true" />
-          {wakeMode ? "Ok Eva actif" : "Wake Eva"}
-        </button>
-        <button
-          type="button"
-          className={`voice-mode-toggle ${voiceReplies ? "active" : ""}`}
-          onClick={() => onVoiceRepliesChange(!voiceReplies)}
-          title="Activer les reponses vocales"
-          aria-label="Activer les reponses vocales"
-        >
-          {voiceReplies ? <Volume2 size={15} aria-hidden="true" /> : <VolumeX size={15} aria-hidden="true" />}
-          Voix Jarvis-like
-        </button>
-        {voiceStatus && <span className="voice-status">{voiceStatus}</span>}
-      </div>
+      <div className={`composer-panel ${listening ? "listening" : ""} ${wakeMode ? "wake" : ""}`}>
+        <div className="composer-topline">
+          <div className="composer-state">
+            <span className="composer-state-dot" aria-hidden="true" />
+            <div>
+              <strong>{inputStateLabel}</strong>
+              <small>{inputStateDetail}</small>
+            </div>
+          </div>
 
-      <div className="composer">
-        <textarea
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={wakeMode ? "Dis Ok Eva, puis ta demande..." : "Transmettre a Eva..."}
-          rows={1}
-          disabled={disabled}
-          aria-label="Message pour Eva"
-        />
+          <div className="voice-toolbar" aria-label="Controle vocal">
+            <button
+              type="button"
+              className={`voice-mode-toggle ${wakeMode ? "active" : ""}`}
+              onClick={toggleWakeMode}
+              disabled={disabled || !SpeechRecognition}
+              title="Activer l'ecoute Eva"
+              aria-label="Activer l'ecoute Eva"
+              aria-pressed={wakeMode}
+            >
+              <Radio size={15} aria-hidden="true" />
+              <span>{wakeMode ? "Ok Eva" : "Wake"}</span>
+            </button>
+            <button
+              type="button"
+              className={`voice-mode-toggle ${voiceReplies ? "active" : ""}`}
+              onClick={() => onVoiceRepliesChange(!voiceReplies)}
+              title="Activer les reponses vocales"
+              aria-label="Activer les reponses vocales"
+              aria-pressed={voiceReplies}
+            >
+              {voiceReplies ? <Volume2 size={15} aria-hidden="true" /> : <VolumeX size={15} aria-hidden="true" />}
+              <span>Voix</span>
+            </button>
+          </div>
+        </div>
+
+        <div className={`composer ${hasText ? "has-text" : ""}`}>
+          <div className="composer-input-wrap">
+            <textarea
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={wakeMode ? "Dis Ok Eva, puis ta demande..." : "Transmettre a Eva..."}
+              rows={1}
+              disabled={disabled}
+              aria-label="Message pour Eva"
+            />
+            <span className="composer-hint">
+              {disabled ? "Eva execute la demande..." : "Entree pour envoyer - Shift + Entree pour une nouvelle ligne"}
+            </span>
+          </div>
         <button
           type="button"
           className={`voice-button ${listening ? "listening" : ""}`}
@@ -246,6 +274,7 @@ export function ChatInput({ onSend, disabled, voiceReplies, onVoiceRepliesChange
         >
           <SendHorizontal size={20} aria-hidden="true" />
         </button>
+        </div>
       </div>
     </footer>
   );
