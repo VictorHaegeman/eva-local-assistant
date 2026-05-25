@@ -42,6 +42,7 @@ from app.files.local_files import (
     ensure_allowed_paths_file,
     list_directory,
     read_text_file,
+    resolve_allowed_path,
     roots_to_dicts,
     search_files,
 )
@@ -209,6 +210,7 @@ from app.terminal.terminal_doctor import (
     launch_terminal_fix,
 )
 from app.tools.registry import list_tools
+from app.tools.rust_indexer import RustIndexerError, rust_indexer_status, scan_path
 from app.web.web_search import WebSearchError, format_web_results, search_web
 
 
@@ -260,6 +262,12 @@ class MemoryEmbeddingRebuildRequest(BaseModel):
 class FileReadRequest(BaseModel):
     root: str = Field(min_length=1, max_length=80)
     path: str = Field(min_length=1, max_length=500)
+
+
+class RustIndexScanRequest(BaseModel):
+    root: str = Field(default="Eva project", min_length=1, max_length=80)
+    path: str = Field(default=".", min_length=1, max_length=500)
+    max_items: int = Field(default=500, ge=1, le=5000)
 
 
 class FileSummaryRequest(FileReadRequest):
@@ -581,6 +589,29 @@ async def agent_modes() -> dict[str, object]:
 async def tools() -> dict[str, object]:
     return {
         "tools": list_tools(),
+    }
+
+
+@app.get("/tools/rust-index/status", dependencies=[Depends(require_sensitive_access)])
+async def rust_index_status() -> dict[str, object]:
+    return rust_indexer_status()
+
+
+@app.post("/tools/rust-index/scan", dependencies=[Depends(require_sensitive_access)])
+async def rust_index_scan(request: RustIndexScanRequest) -> dict[str, object]:
+    try:
+        root, target = resolve_allowed_path(request.root, request.path)
+        result = scan_path(target, max_items=request.max_items)
+    except (LocalFileError, RustIndexerError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "root": {
+            "name": root.name,
+            "path": str(root.path),
+            "description": root.description,
+        },
+        "scan": result,
     }
 
 

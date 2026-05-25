@@ -1714,6 +1714,36 @@ Important: les consignes sur le comportement d'Eva ne sont pas des souvenirs per
 
 Eva ne depend pas de ChatGPT ni de l'API OpenAI. Si un jour Victor veut utiliser ChatGPT web comme outil externe, cela devra rester une option manuelle ou une integration future explicite, pas une dependance de base.
 
+## Sidecar Rust optionnel
+
+Eva reste pilotee par Python/FastAPI, mais un premier composant Rust optionnel est ajoute pour les scans rapides de projets:
+
+```text
+sidecars/eva-rust-indexer
+```
+
+Role:
+
+- parcourir rapidement un workspace local;
+- ignorer `.git`, `.venv`, `node_modules`, `dist`, `build`, `target`;
+- produire un inventaire JSON: fichiers, dossiers, extensions/langages, lisibilite;
+- donner a Eva une vue plus fiable d'un projet avant analyse ou prompt Cursor.
+
+Endpoints:
+
+```text
+GET /tools/rust-index/status
+POST /tools/rust-index/scan
+```
+
+Si Rust n'est pas installe, Eva utilise automatiquement un fallback Python. Pour compiler le sidecar plus tard:
+
+```powershell
+winget install Rustlang.Rustup
+cd sidecars\eva-rust-indexer
+cargo build --release
+```
+
 ## Memoire Obsidian locale
 
 Eva peut utiliser un vault Obsidian local comme memoire longue duree lisible en Markdown.

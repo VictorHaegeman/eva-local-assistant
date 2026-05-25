@@ -65,6 +65,7 @@ data/gmail_token_*.json
 logs/
 EVA_CURSOR_PROMPT.md
 EVA_SELF_IMPROVE_PROMPT.md
+sidecars/**/target/
 
 # OS / editors
 .DS_Store

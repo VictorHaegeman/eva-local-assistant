@@ -79,6 +79,19 @@ SKILLS: tuple[SkillDescriptor, ...] = (
         tool_hints=("project_context", "cursor_prompt"),
     ),
     SkillDescriptor(
+        key="repo_indexing",
+        label="Indexation projet",
+        category="code",
+        policy_level="read_only",
+        trigger_words=("index", "scan", "structure", "arborescence", "fichiers", "langages", "languages"),
+        description="Scanner rapidement un projet et comprendre ses langages/fichiers.",
+        instructions=(
+            "Quand Victor demande une vue projet, un scan de fichiers ou les langages utilises, "
+            "utilise l'indexeur local. Si le sidecar Rust est compile, privilegie-le; sinon le fallback Python suffit."
+        ),
+        tool_hints=("rust_project_indexer", "project_context"),
+    ),
+    SkillDescriptor(
         key="dreamlense_growth",
         label="DreamLense growth",
         category="business",

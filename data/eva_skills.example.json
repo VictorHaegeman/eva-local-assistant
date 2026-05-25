@@ -96,6 +96,38 @@
       "enabled": true
     },
     {
+      "key": "repo_indexing",
+      "label": "Indexation projet rapide",
+      "category": "code",
+      "policy_level": "read_only",
+      "trigger_words": [
+        "index",
+        "scan",
+        "structure",
+        "arborescence",
+        "fichiers",
+        "langages",
+        "languages"
+      ],
+      "description": "Scanner rapidement un projet et produire un inventaire JSON local.",
+      "instructions": "Utilise l'indexeur local pour comprendre les langages, fichiers et dossiers importants. Si le sidecar Rust est compile, il sert de moteur rapide; sinon le fallback Python est acceptable.",
+      "tool_hints": [
+        "rust_project_indexer",
+        "project_context"
+      ],
+      "status": "active",
+      "extension_type": "sidecar",
+      "requires": [
+        "sidecars/eva-rust-indexer",
+        "cargo optionnel pour compiler le binaire Rust"
+      ],
+      "next_steps": [
+        "compiler le sidecar Rust",
+        "brancher le scan dans le panneau Projets"
+      ],
+      "enabled": true
+    },
+    {
       "key": "project_factory_operator",
       "label": "Project Factory autonome",
       "category": "code",

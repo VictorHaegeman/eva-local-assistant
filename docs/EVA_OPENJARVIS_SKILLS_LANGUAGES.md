@@ -17,6 +17,15 @@ OpenJarvis traite chaque skill comme un outil decouvrable par l'agent. Pour Eva,
 - injection des skills utiles dans le prompt systeme;
 - aucune installation automatique de skills externes non auditees.
 
+Implementation ajoutee dans Eva:
+
+- `sidecars/eva-rust-indexer`: CLI Rust optionnel pour scanner vite un projet;
+- `backend/app/tools/rust_indexer.py`: pont Python qui utilise Rust si le binaire existe, sinon fallback Python;
+- `GET /tools/rust-index/status`;
+- `POST /tools/rust-index/scan`;
+- `rust_project_indexer` dans le registre d'outils;
+- `repo_indexing` dans le registre de skills.
+
 Les skills Eva importantes maintenant:
 
 - `operator_planning`: comprendre, choisir, executer, verifier;
@@ -58,6 +67,8 @@ OpenJarvis contient aussi du Rust. Pour Eva, Rust devient rentable seulement pou
 - sidecar desktop robuste.
 
 Decision actuelle: ne pas ajouter Rust juste pour copier OpenJarvis. On garde Python tant que les performances sont suffisantes, puis on cree un sidecar Rust seulement si un bottleneck reel apparait.
+
+Decision mise en oeuvre: ajouter Rust comme sidecar optionnel, sans rendre Eva dependante de Rust. Sur le PC actuel, `cargo` est absent; Eva utilise donc le fallback Python jusqu'a installation de Rustup.
 
 ## Prochaine brique utile
 

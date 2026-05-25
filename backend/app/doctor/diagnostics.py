@@ -16,6 +16,7 @@ from app.memory.obsidian_store import obsidian_status
 from app.memory.profile_store import PROFILE_PATH, ProfileStoreError, load_profile
 from app.security.api_auth import api_security_status
 from app.skills.registry import list_skills
+from app.tools.rust_indexer import rust_indexer_status
 
 
 CheckStatus = Literal["ok", "warning", "error"]
@@ -393,6 +394,30 @@ def _operator_journal_check() -> dict[str, Any]:
     )
 
 
+def _rust_indexer_check() -> dict[str, Any]:
+    status = rust_indexer_status()
+    if status["binary_exists"]:
+        return _check(
+            "rust_project_indexer",
+            "ok",
+            "Sidecar Rust compile et disponible pour l'indexation rapide.",
+            status,
+        )
+    if status["cargo_available"]:
+        return _check(
+            "rust_project_indexer",
+            "warning",
+            "Source Rust presente, compile le sidecar pour accelerer les scans.",
+            status,
+        )
+    return _check(
+        "rust_project_indexer",
+        "warning",
+        "Rust/cargo absent: Eva utilise le fallback Python pour l'indexation.",
+        status,
+    )
+
+
 async def run_doctor() -> dict[str, Any]:
     checks = []
     checks.extend(await _ollama_checks())
@@ -409,6 +434,7 @@ async def run_doctor() -> dict[str, Any]:
     checks.append(_project_factory_check())
     checks.append(_browser_check())
     checks.append(_operator_journal_check())
+    checks.append(_rust_indexer_check())
     checks.append(_api_security_check())
 
     status = _overall_status(checks)

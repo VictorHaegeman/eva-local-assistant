@@ -78,6 +78,13 @@ TOOLS = (
         description="Lecture texte dans les dossiers autorises.",
     ),
     ToolDescriptor(
+        key="rust_project_indexer",
+        label="Rust Project Indexer",
+        category="files",
+        policy_level="read_only",
+        description="Sidecar Rust optionnel pour scanner rapidement les projets et produire un index JSON local.",
+    ),
+    ToolDescriptor(
         key="web_search",
         label="Recherche web",
         category="web",
