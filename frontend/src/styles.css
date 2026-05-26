@@ -4284,3 +4284,169 @@ button.nav-item:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Calm cockpit pass: keep the premium blue Eva mood, remove noisy HUD clutter. */
+body {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(33, 156, 255, 0.11), transparent 34%),
+    radial-gradient(circle at 84% 76%, rgba(115, 214, 255, 0.055), transparent 28%),
+    linear-gradient(135deg, #05070b 0%, #09101a 48%, #05070c 100%);
+  background-size: auto;
+}
+
+.app-shell {
+  background:
+    linear-gradient(90deg, rgba(33, 156, 255, 0.055), transparent 30%),
+    linear-gradient(180deg, rgba(244, 248, 251, 0.025), transparent 42%);
+}
+
+.app-shell::after {
+  opacity: 0.11;
+}
+
+.sidebar::before {
+  opacity: 0.34;
+}
+
+.chat-shell {
+  background:
+    radial-gradient(circle at 48% 31%, rgba(33, 156, 255, 0.075), transparent 34%),
+    linear-gradient(180deg, rgba(7, 12, 19, 0.93), rgba(4, 7, 12, 0.98));
+}
+
+.chat-shell::before,
+.hud-corner,
+.hud-vitals,
+.hud-radar,
+.hud-doctor-alert,
+.hud-decision-strip {
+  display: none !important;
+}
+
+.hud-grid-plane {
+  opacity: 0.08 !important;
+  transform: none !important;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 24%, transparent 76%) !important;
+}
+
+.hud-sweep {
+  opacity: 0.08;
+}
+
+.hud-noise {
+  opacity: 0.045;
+}
+
+.hud-micro-nodes {
+  opacity: 0.16;
+}
+
+.desktop-header {
+  min-height: 64px;
+  background: rgba(5, 9, 15, 0.76);
+}
+
+.messages {
+  padding-top: 24px;
+}
+
+.welcome-deck {
+  grid-template-columns: minmax(240px, 360px) minmax(340px, 520px);
+  gap: clamp(22px, 4vw, 48px);
+  width: min(980px, 100%);
+  min-height: min(560px, calc(100dvh - 230px));
+  padding: 10px;
+}
+
+.welcome-deck::before,
+.welcome-deck::after,
+.welcome-command-panel::after,
+.composer-panel::before {
+  display: none;
+}
+
+.welcome-deck .eva-orb {
+  width: clamp(210px, 20vw, 285px);
+  filter: drop-shadow(0 0 28px rgba(33, 156, 255, 0.14));
+}
+
+.welcome-deck .eva-orb-copy {
+  gap: 4px;
+}
+
+.welcome-deck .eva-orb-copy h1 {
+  font-size: clamp(1.9rem, 3vw, 2.55rem);
+}
+
+.welcome-command-panel {
+  gap: 15px;
+  padding: clamp(18px, 2vw, 24px);
+  background:
+    linear-gradient(135deg, rgba(11, 22, 34, 0.9), rgba(6, 11, 19, 0.92));
+  background-size: auto;
+  border-color: rgba(115, 214, 255, 0.18);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.34),
+    inset 0 0 36px rgba(115, 214, 255, 0.025);
+}
+
+.welcome-copy h1 {
+  font-size: clamp(1.9rem, 3.4vw, 3.05rem);
+  line-height: 1.02;
+}
+
+.welcome-copy p {
+  color: rgba(193, 209, 223, 0.82);
+  font-size: 0.98rem;
+}
+
+.welcome-signal-grid {
+  gap: 8px;
+}
+
+.welcome-signal-grid div,
+.welcome-deck .starter-row button,
+.composer-panel,
+.composer {
+  background:
+    linear-gradient(135deg, rgba(115, 214, 255, 0.055), rgba(255, 255, 255, 0.018)),
+    rgba(8, 14, 23, 0.82);
+  border-color: rgba(115, 214, 255, 0.14);
+}
+
+.welcome-signal-grid div {
+  min-height: 58px;
+}
+
+.welcome-deck .starter-row {
+  gap: 8px;
+}
+
+.welcome-deck .starter-row button {
+  min-height: 48px;
+}
+
+.welcome-safety-line {
+  color: rgba(193, 209, 223, 0.68);
+  font-size: 0.72rem;
+}
+
+.composer-shell {
+  background:
+    linear-gradient(180deg, transparent, rgba(4, 7, 12, 0.96) 38%);
+}
+
+.composer-panel {
+  width: min(960px, 100%);
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.34);
+}
+
+@media (max-width: 820px) {
+  .welcome-deck {
+    grid-template-columns: 1fr;
+    width: 100%;
+    min-height: 0;
+    gap: 14px;
+    padding: 10px 0 16px;
+  }
+}

@@ -230,14 +230,14 @@ export function ChatWindow({ messages, loading, error, onStarterSelect, status }
               <div className="welcome-panel-header">
                 <span>
                   <Radar size={15} aria-hidden="true" />
-                  Eva command deck
+                  Centre Eva
                 </span>
                 <strong>{status?.state === "ready" ? "online" : "sync"}</strong>
               </div>
 
               <div className="welcome-copy">
                 <span>Assistant local de Victor</span>
-                <h1>Que veux-tu piloter ?</h1>
+                <h1>Eva est prete.</h1>
                 <p>{messages[0]?.content}</p>
               </div>
 
