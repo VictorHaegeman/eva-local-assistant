@@ -192,6 +192,11 @@ from app.screen.screen_reader import (
     screen_status,
 )
 from app.screen.visual_action import VisualActionError, analyze_visual_action
+from app.screen.screen_navigator import (
+    ScreenNavigationError,
+    format_screen_navigation_response,
+    navigate_screen,
+)
 from app.screen.screen_watcher import (
     latest_screen_analysis,
     run_screen_watch_once,
@@ -422,6 +427,11 @@ class ScreenAnalyzeRequest(BaseModel):
 class VisualActionRequest(BaseModel):
     instruction: str = Field(min_length=1, max_length=2000)
     execute: bool = True
+
+
+class ScreenNavigationRequest(BaseModel):
+    instruction: str = Field(min_length=1, max_length=3000)
+    max_steps: int = Field(default=4, ge=1, le=8)
 
 
 class GmailReplyDraftRequest(BaseModel):
@@ -1288,6 +1298,19 @@ async def screen_visual_action(request: VisualActionRequest) -> dict[str, object
         return await analyze_visual_action(request.instruction, execute=request.execute)
     except VisualActionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/screen/navigate", dependencies=[Depends(require_sensitive_access)])
+async def screen_navigate(request: ScreenNavigationRequest) -> dict[str, object]:
+    try:
+        result = await navigate_screen(request.instruction, max_steps=request.max_steps)
+    except ScreenNavigationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        **result,
+        "summary": format_screen_navigation_response(result),
+    }
 
 
 @app.post("/terminal/error/analyze", dependencies=[Depends(require_sensitive_access)])

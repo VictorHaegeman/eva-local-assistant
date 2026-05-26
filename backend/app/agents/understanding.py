@@ -184,7 +184,23 @@ def _domain_from_message(
         return "linkedin"
     if _has_any(normalized, ("stitch", "maquette", "design", "interface", "ui ")):
         return "design"
-    if _has_any(normalized, ("clique", "click", "bouton", "appuie", "ecran", "pixels")):
+    if _has_any(
+        normalized,
+        (
+            "clique",
+            "click",
+            "bouton",
+            "appuie",
+            "ecran",
+            "pixels",
+            "navigue sur mon ecran",
+            "pilote mon ecran",
+            "utilise mon ecran",
+            "trouve le bouton",
+            "remplis le champ",
+            "remplis le formulaire",
+        ),
+    ):
         return "screen"
     if _has_any(
         normalized,
@@ -385,7 +401,7 @@ def _required_evidence(domain: PrimaryDomain, outcome: ExpectedOutcome) -> tuple
     if domain == "calendar":
         return ("evenements reels lus via Google Calendar",)
     if domain == "screen":
-        return ("capture ecran locale", "interpretation vision avant clic")
+        return ("capture ecran locale", "interpretation vision avant action", "verification apres navigation")
     if domain == "terminal":
         return ("erreur terminal analysee", "correctif connu si disponible")
     if domain == "project":
@@ -410,7 +426,7 @@ def _tool_preference(domain: PrimaryDomain) -> str:
         "gmail": "gmail_client",
         "calendar": "google_calendar",
         "google_setup": "gmail_auth",
-        "screen": "screen_reader_or_visual_action",
+        "screen": "screen_navigator",
         "terminal": "terminal_doctor",
         "project": "project_factory",
         "cursor": "cursor_bridge",
@@ -443,7 +459,7 @@ def _interpreted_goal(
     if domain == "gmail":
         return "Lire les mails reels pertinents avant d'ouvrir des liens ou de resumer."
     if domain == "screen":
-        return "Observer l'ecran local et identifier l'action UI utile avant tout clic."
+        return "Observer l'ecran local, choisir l'action UI utile, executer puis verifier sans coordonnees manuelles."
     if domain == "browser":
         return "Ouvrir le bon site dans Brave uniquement apres avoir compris le besoin web."
     if domain == "spotify":

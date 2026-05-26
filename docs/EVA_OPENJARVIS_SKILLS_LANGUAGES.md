@@ -30,6 +30,8 @@ Implementation ajoutee dans Eva:
 - `backend/app/cognition/problem_solver.py`: resolveur local qui transforme un blocage ou un echec outil en diagnostic + routes alternatives;
 - le resolveur est aussi branche sur les blocages directs et les exceptions chat/Telegram, pour eviter les reponses brutes du type "Eva ne peut pas repondre";
 - panneau Memoire: statut de la memoire vectorielle locale et bouton de reconstruction des embeddings.
+- `backend/app/screen/screen_navigator.py`: boucle locale inspiree des outils agentiques `observe -> action -> verify`, avec ouverture URL, clic visuel, raccourci et collage;
+- `POST /screen/navigate`: endpoint local pour tester une navigation ecran complete sans donner de coordonnees manuelles.
 
 Les skills Eva importantes maintenant:
 
@@ -38,6 +40,7 @@ Les skills Eva importantes maintenant:
 - `gmail_inbox_operator`: lecture, brouillon, auto-reponse evidente encadree;
 - `project_factory_operator`: workspace, GitHub, Cursor/Codex quand les outils sont disponibles;
 - `screen_autopilot`: vision ecran + action locale;
+- `screen_navigator`: observer l'ecran, choisir une action UI, l'executer, re-capturer et s'arreter si le risque est trop eleve;
 - `reflex_recovery`: plan B si une action echoue.
 - `problem_solver`: ne pas s'arreter sur "impossible", choisir une route alternative sure.
 
@@ -126,6 +129,36 @@ message -> comprehension deterministe -> memoire hybride -> skills candidates
 ```
 
 Ce n'est pas une API cloud. Si un modele manque, Eva doit rester capable de fonctionner en mode degrade: FTS/BM25 + routeur deterministe + outils locaux.
+
+## Navigation ecran locale
+
+Eva a maintenant une brique plus proche du principe "hands" d'OpenJarvis, mais gardee simple et locale:
+
+```text
+instruction Victor
+  -> detection navigation ecran
+  -> ouverture URL evidente si possible
+  -> capture locale
+  -> Ollama vision choisit UNE action JSON
+  -> Eva clique / colle / raccourci / ouvre URL
+  -> nouvelle capture si besoin
+  -> stop si action externe risquee ou confiance faible
+```
+
+Ce que ca change:
+
+- Victor n'a plus besoin de donner `x=... y=...`;
+- Eva peut chercher le bouton/champ le plus probable a l'ecran;
+- les boutons Envoyer/Publier/Payer restent bloques par defaut tant que `EVA_ALLOW_AUTO_EXTERNAL_SEND=false`;
+- la navigation est accessible via le chat, Telegram autorise et `POST /screen/navigate`.
+
+Variables:
+
+```text
+EVA_SCREEN_NAVIGATION_ENABLED=true
+EVA_SCREEN_NAVIGATION_MAX_STEPS=4
+EVA_VISUAL_ACTION_MIN_CONFIDENCE=0.62
+```
 
 ## Memoire Obsidian editable
 

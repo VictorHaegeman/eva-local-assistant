@@ -38,6 +38,11 @@ from app.projects.project_chat import (
     build_cursor_work_session_response,
 )
 from app.screen.visual_action import analyze_visual_action, format_visual_action_response
+from app.screen.screen_navigator import (
+    format_screen_navigation_response,
+    navigate_screen,
+    wants_screen_navigation,
+)
 from app.web.web_search import detect_web_search_query, format_web_results, search_web
 
 
@@ -215,7 +220,7 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
     elif domain == "spotify":
         routes.extend(["spotify", "browser_or_video", "web_search"])
     elif domain in {"desktop", "screen"}:
-        routes.extend(["desktop_control", "screen_read", "web_search"])
+        routes.extend(["screen_read", "desktop_control", "web_search"])
     elif domain == "beeper":
         routes.extend(["beeper_messages", "screen_read"])
     elif domain == "linkedin":
@@ -614,6 +619,21 @@ async def _execute_route_once(
         return RouteExecution(content=content, result=result, selected_route=route)
 
     if route == "desktop_control" or (use_domain_fallback and understanding.primary_domain == "desktop"):
+        if wants_screen_navigation(message):
+            navigation = await navigate_screen(message)
+            content = format_screen_navigation_response(navigation)
+            status = "success" if navigation.get("status") in {"done", "partial"} else "partial"
+            result = ToolResult(
+                tool="screen_navigator",
+                status=status,
+                evidence=(
+                    f"Navigation ecran tentee: {navigation.get('executed_count', 0)} action(s) executee(s).",
+                    f"Statut navigation: {navigation.get('status', 'inconnu')}",
+                ),
+                data={"navigation": navigation},
+                confidence=0.8 if status == "success" else 0.58,
+            )
+            return RouteExecution(content=content, result=verify_result(result), selected_route="screen_read")
         content = execute_desktop_control_from_message(message)
         if not content:
             return RouteExecution(
@@ -681,12 +701,42 @@ async def _execute_route_once(
         return RouteExecution(content=content, result=result, selected_route=route)
 
     if route == "screen_read" or (use_domain_fallback and understanding.primary_domain == "screen"):
+        if wants_screen_navigation(message):
+            navigation = await navigate_screen(message)
+            content = format_screen_navigation_response(navigation)
+            status = "success" if navigation.get("status") in {"done", "partial"} else "partial"
+            result = ToolResult(
+                tool="screen_navigator",
+                status=status,
+                evidence=(
+                    f"Navigation ecran tentee: {navigation.get('executed_count', 0)} action(s) executee(s).",
+                    f"Statut navigation: {navigation.get('status', 'inconnu')}",
+                ),
+                data={"navigation": navigation},
+                confidence=0.8 if status == "success" else 0.58,
+            )
+            return RouteExecution(content=content, result=verify_result(result), selected_route="screen_read")
         visual_result = await analyze_visual_action(message, execute=True)
         content = format_visual_action_response(visual_result)
         result = _success("screen_reader", ("Capture ecran analysee avant action visuelle.",), confidence=0.76)
         return RouteExecution(content=content, result=result, selected_route="screen_read")
 
     if route == "browser_or_video" or (use_domain_fallback and understanding.primary_domain == "browser"):
+        if wants_screen_navigation(message):
+            navigation = await navigate_screen(message)
+            content = format_screen_navigation_response(navigation)
+            status = "success" if navigation.get("status") in {"done", "partial"} else "partial"
+            result = ToolResult(
+                tool="screen_navigator",
+                status=status,
+                evidence=(
+                    f"Navigation navigateur/ecran tentee: {navigation.get('executed_count', 0)} action(s) executee(s).",
+                    f"Statut navigation: {navigation.get('status', 'inconnu')}",
+                ),
+                data={"navigation": navigation},
+                confidence=0.8 if status == "success" else 0.58,
+            )
+            return RouteExecution(content=content, result=verify_result(result), selected_route="screen_read")
         content = open_assisted_browser_from_message(message) or open_browser_from_message(message)
         if not content:
             return RouteExecution(

@@ -226,6 +226,16 @@ def classify_user_intent(message: str) -> UserIntent:
             "capture d'ecran",
             "ce qu'il y a a l'ecran",
             "ce qu il y a a l ecran",
+            "navigue sur mon ecran",
+            "navigue dans l'ecran",
+            "pilote mon ecran",
+            "utilise mon ecran",
+            "regarde l'ecran et",
+            "regarde mon ecran et",
+            "trouve le bouton",
+            "clique sur le bon bouton",
+            "remplis le champ",
+            "remplis le formulaire",
         ),
     ):
         return UserIntent(

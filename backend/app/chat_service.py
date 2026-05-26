@@ -100,6 +100,12 @@ from app.screen.visual_action import (
     format_visual_action_response,
     wants_visual_action,
 )
+from app.screen.screen_navigator import (
+    ScreenNavigationError,
+    format_screen_navigation_response,
+    navigate_screen,
+    wants_screen_navigation,
+)
 from app.screen.screen_watcher import latest_screen_context
 from app.self_improvement.loop import (
     SelfImproveError,
@@ -416,6 +422,19 @@ async def process_chat_messages(
                         "decrire ou copier-coller l'erreur visible pour que je la diagnostique",
                     ),
                 )
+            if wants_screen_navigation(latest_user_message) or wants_visual_action(latest_user_message):
+                navigation_result = await navigate_screen(latest_user_message)
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            f"{intent_context}\n\n"
+                            f"{format_screen_navigation_response(navigation_result)}"
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
             screen_result = await analyze_screen(
                 instruction=latest_user_message,
                 auto_fix=True,
@@ -817,6 +836,16 @@ async def process_chat_messages(
             }
 
         if trusted_actions and wants_visual_action(latest_user_message):
+            if wants_screen_navigation(latest_user_message):
+                navigation_result = await navigate_screen(latest_user_message)
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": format_screen_navigation_response(navigation_result),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
             visual_result = await analyze_visual_action(latest_user_message, execute=True)
             return {
                 "message": {
@@ -906,6 +935,7 @@ async def process_chat_messages(
         DesktopChatError,
         BeeperAssistantError,
         VisualActionError,
+        ScreenNavigationError,
         StitchDesignError,
     ) as exc:
         raise ChatServiceError(str(exc)) from exc

@@ -16,6 +16,7 @@ from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
 from app.integrations.cursor_agent_setup import format_cursor_agent_setup_response, wants_cursor_agent_setup
 from app.projects.project_chat import attach_recent_project_context, infer_project_resolution
+from app.screen.screen_navigator import wants_screen_navigation
 
 
 def _frame(message: str, context: list[dict[str, str]] | None = None):
@@ -186,6 +187,21 @@ def test_cursor_agent_setup_formatter_keeps_blocked_diagnostic_useful() -> None:
     assert "cursor-agent --version" in response
 
 
+def test_screen_navigation_routes_to_screen_without_coordinates() -> None:
+    frame = _frame("regarde mon ecran et clique sur le bon bouton connexion")
+    assert frame.primary_domain == "screen"
+    assert frame.action_plan.route == "screen_read"
+    assert frame.tool_preference == "screen_navigator"
+    assert wants_screen_navigation("regarde mon ecran et clique sur le bon bouton connexion")
+
+
+def test_browser_plus_ui_action_uses_screen_navigation() -> None:
+    frame = _frame("ouvre youtube et clique dans le champ de recherche")
+    assert frame.primary_domain == "screen"
+    assert frame.action_plan.route == "screen_read"
+    assert wants_screen_navigation("ouvre youtube et clique dans le champ de recherche")
+
+
 def test_create_app_routes_to_project_factory_before_browser() -> None:
     frame = _frame("cree une app web pour visualiser mes ventes et lance le projet")
     assert frame.primary_domain == "project"
@@ -271,6 +287,8 @@ if __name__ == "__main__":
     test_cursor_agent_setup_cannot_be_overridden_to_project_work()
     test_cursor_agent_setup_detector_matches_telegram_plain_text()
     test_cursor_agent_setup_formatter_keeps_blocked_diagnostic_useful()
+    test_screen_navigation_routes_to_screen_without_coordinates()
+    test_browser_plus_ui_action_uses_screen_navigation()
     test_create_app_routes_to_project_factory_before_browser()
     test_future_action_claim_is_not_success()
     test_beeper_unverified_response_is_not_useful()

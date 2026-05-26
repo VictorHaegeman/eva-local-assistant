@@ -184,13 +184,14 @@ LOCAL_SKILL_CATALOG: tuple[dict[str, object], ...] = (
         "description": "Utiliser la vision locale pour comprendre l'ecran puis agir sur les boutons visibles.",
         "instructions": (
             "Avant un clic, lis l'ecran, identifie la fenetre active, le bouton cible et le risque. "
+            "Si Victor demande une navigation UI, utilise la boucle screen_navigator: observe, agit, re-capture, verifie. "
             "N'envoie pas de message externe sans validation explicite."
         ),
-        "tool_hints": ["screen_reader", "visual_action", "desktop_automation"],
+        "tool_hints": ["screen_reader", "screen_navigator", "visual_action", "desktop_automation"],
         "status": "experimental",
         "extension_type": "vision_toolflow",
         "requires": ["EVA_SCREEN_ENABLED=true", "modele vision Ollama"],
-        "next_steps": ["ajouter OCR local", "ajouter detection de boutons plus robuste"],
+        "next_steps": ["ajouter OCR local", "ajouter detection de boutons plus robuste", "mesurer les succes par app"],
         "enabled": True,
     },
     {

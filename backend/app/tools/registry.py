@@ -120,6 +120,13 @@ TOOLS = (
         description="Regarde l'ecran avec Ollama vision, trouve un bouton/champ et agit sans coordonnees manuelles.",
     ),
     ToolDescriptor(
+        key="screen_navigator",
+        label="Navigation ecran",
+        category="system",
+        policy_level="draft_only",
+        description="Boucle observer, choisir, cliquer/coller/ouvrir, puis verifier pour naviguer dans l'UI locale.",
+    ),
+    ToolDescriptor(
         key="beeper_assistant",
         label="Beeper",
         category="messaging",
