@@ -134,7 +134,13 @@ def _looks_like_new_project_request(text: str) -> bool:
         "outil",
         "mvp",
     )
-    if _has_any(text, create_markers) and _has_any(text, target_markers):
+    if re.search(
+        r"\b(?:cree|creer|crÃ©e|lance|demarre|prepare|monte|setup|scaffold|initialise)\b",
+        text,
+    ) and re.search(
+        r"\b(?:projet|repo|repository|workspace|application|app|saas|site|outil|mvp)\b",
+        text,
+    ):
         return True
 
     return bool(
@@ -352,6 +358,53 @@ def classify_user_intent(message: str) -> UserIntent:
             ),
         )
 
+    if _looks_like_new_project_request(text):
+        return UserIntent(
+            name="project_factory",
+            confidence=0.92,
+            summary=(
+                "Transformer une idee en workspace local, fichiers projet, prompt Cursor, Git/GitHub "
+                "et lancement agent autonome si disponible."
+            ),
+        )
+
+    project_work_context = _has_project_word(text) and _has_any(
+        text,
+        (
+            "bosser",
+            "travaille",
+            "travailler",
+            "reprends",
+            "reprendre",
+            "continue",
+            "ouvrir",
+            "ouvre",
+            "lance",
+            "switch",
+            "bascule",
+            "retourne",
+            "ameliore",
+            "ameliorer",
+            "optimise",
+            "optimiser",
+            "code",
+            "coder",
+            "prompt",
+            "prompts",
+            "cursor",
+            "codex",
+        ),
+    )
+    if project_work_context:
+        return UserIntent(
+            name="cursor_work",
+            confidence=0.86,
+            summary=(
+                "Identifier le projet local vise, meme avec un nom approximatif, "
+                "puis ouvrir/preparer une session de travail Cursor."
+            ),
+        )
+
     if _has_any(text, ("clique", "click", "appuie", "presse", "touche", "play", "pause")):
         return UserIntent(
             name="desktop_control",
@@ -416,43 +469,6 @@ def classify_user_intent(message: str) -> UserIntent:
             name="gmail_read",
             confidence=0.78,
             summary="Lire les derniers mails Gmail reels via l'API Google.",
-        )
-
-    if _looks_like_new_project_request(text):
-        return UserIntent(
-            name="project_factory",
-            confidence=0.92,
-            summary=(
-                "Transformer une idee en workspace local, fichiers projet, prompt Cursor, Git/GitHub "
-                "et lancement agent autonome si disponible."
-            ),
-        )
-
-    project_work_context = _has_project_word(text) and _has_any(
-        text,
-        (
-            "bosser",
-            "travaille",
-            "travailler",
-            "reprends",
-            "reprendre",
-            "continue",
-            "ouvrir",
-            "ouvre",
-            "lance",
-            "switch",
-            "bascule",
-            "retourne",
-        ),
-    )
-    if project_work_context:
-        return UserIntent(
-            name="cursor_work",
-            confidence=0.82,
-            summary=(
-                "Identifier le projet local vise, meme avec un nom approximatif, "
-                "puis ouvrir/preparer une session de travail Cursor."
-            ),
         )
 
     if _has_any(text, ("cursor", "codex")):

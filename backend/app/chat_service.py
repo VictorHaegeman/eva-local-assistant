@@ -70,6 +70,7 @@ from app.memory.obsidian_store import ObsidianMemoryError, mirror_memory_to_obsi
 from app.memory.obsidian_store import obsidian_status
 from app.projects.project_chat import (
     ProjectStoreError,
+    attach_recent_project_context,
     build_chat_cursor_prompt_response,
     build_cursor_work_session_response,
     build_project_context_for_chat,
@@ -859,11 +860,16 @@ async def process_chat_messages(
 
     try:
         if action_plan.route == "cursor_work" or detect_cursor_prompt_request(latest_user_message):
+            cursor_context_message = attach_recent_project_context(
+                latest_user_message,
+                understanding.context_focus,
+            )
+
             if trusted_actions:
                 return {
                     "message": {
                         "role": "assistant",
-                        "content": build_cursor_work_session_response(latest_user_message),
+                        "content": build_cursor_work_session_response(cursor_context_message),
                     },
                     "saved_memory": None,
                     "pending_action": None,
@@ -872,7 +878,7 @@ async def process_chat_messages(
             return {
                 "message": {
                     "role": "assistant",
-                    "content": build_chat_cursor_prompt_response(latest_user_message),
+                    "content": build_chat_cursor_prompt_response(cursor_context_message),
                 },
                 "saved_memory": None,
                 "pending_action": None,

@@ -30,6 +30,20 @@ def _normalize(value: str) -> str:
     return value.lower().replace("é", "e").replace("è", "e").replace("ê", "e")
 
 
+def attach_recent_project_context(message: str, context_focus: str) -> str:
+    clean_context = " ".join(context_focus.split())
+    if not clean_context:
+        return message
+    clean_context = clean_context.replace("Victor:", "Utilisateur:")
+    clean_context = clean_context.replace("Eva:", "Assistant:")
+
+    return (
+        f"{message}\n\n"
+        "Contexte recent utile pour resoudre le projet cible:\n"
+        f"{clean_context[:2400]}"
+    )
+
+
 def detect_cursor_prompt_request(message: str) -> bool:
     normalized = _normalize(message)
     return any(marker in normalized for marker in CURSOR_MARKERS) and any(

@@ -8,6 +8,7 @@ from app.cognition.critic import criticize_response
 from app.cognition.problem_solver import diagnose_problem, problem_routes_for_result
 from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
+from app.projects.project_chat import attach_recent_project_context, infer_project_resolution
 
 
 def _frame(message: str, context: list[dict[str, str]] | None = None):
@@ -101,6 +102,31 @@ def test_new_project_idea_routes_to_project_factory() -> None:
     assert frame.action_plan.route == "project_factory"
 
 
+def test_f1_project_work_routes_to_cursor_before_browser() -> None:
+    frame = _frame(
+        "Je veux que tu continue de travailler sur le projet de F1, ouvre le et donne "
+        "des prompts a cursor ou alors code toi meme dans le projet pour optimiser "
+        "la partie site web du projet"
+    )
+    assert frame.primary_domain == "cursor"
+    assert frame.action_plan.route == "cursor_work"
+
+
+def test_cursor_followup_resolves_project_from_recent_context() -> None:
+    context_focus = (
+        "Victor: Je veux que tu continues de travailler sur le projet de F1. "
+        "Eva: Je suppose que tu parles de neural-network-F1. "
+        "Session Cursor preparee pour neural-network-F1."
+    )
+    contextual_message = attach_recent_project_context(
+        "Vas-y donne le prompt a cursor et ouvre cursor pour lui le donner",
+        context_focus,
+    )
+    resolution = infer_project_resolution(contextual_message)
+    assert resolution is not None
+    assert resolution.project["name"] == "neural-network-F1"
+
+
 def test_create_app_routes_to_project_factory_before_browser() -> None:
     frame = _frame("cree une app web pour visualiser mes ventes et lance le projet")
     assert frame.primary_domain == "project"
@@ -157,6 +183,8 @@ if __name__ == "__main__":
     test_linkedin_activity_does_not_create_post()
     test_news_does_not_reuse_linkedin_context()
     test_new_project_idea_routes_to_project_factory()
+    test_f1_project_work_routes_to_cursor_before_browser()
+    test_cursor_followup_resolves_project_from_recent_context()
     test_create_app_routes_to_project_factory_before_browser()
     test_future_action_claim_is_not_success()
     test_beeper_unverified_response_is_not_useful()
