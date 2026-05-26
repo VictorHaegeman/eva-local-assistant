@@ -15,6 +15,7 @@ PlanRoute = Literal[
     "gmail_reply_audit",
     "gmail_reply_draft",
     "project_factory",
+    "cursor_agent_setup",
     "cursor_work",
     "local_status",
     "browser_or_video",
@@ -74,6 +75,7 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
         "gmail_reply_audit",
         "gmail_reply_draft",
         "project_factory",
+        "cursor_agent_setup",
         "cursor_work",
         "linkedin_activity",
         "linkedin_browser_post",
@@ -193,6 +195,7 @@ def _policy_for_route(route: PlanRoute) -> ActionPolicyLevel:
         "beeper_messages",
         "linkedin_browser_post",
         "project_factory",
+        "cursor_agent_setup",
     }:
         return "draft_only"
     if route in {"terminal_error", "screen_read", "google_oauth_setup"}:
@@ -210,6 +213,7 @@ def _tool_for_route(route: PlanRoute) -> str:
         "gmail_reply_audit": "gmail_client",
         "gmail_reply_draft": "gmail_client",
         "project_factory": "project_factory",
+        "cursor_agent_setup": "cursor_agent_setup",
         "cursor_work": "cursor_bridge",
         "local_status": "doctor",
         "browser_or_video": "browser_assistant",

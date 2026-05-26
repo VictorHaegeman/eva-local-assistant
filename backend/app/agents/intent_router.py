@@ -13,6 +13,7 @@ IntentName = Literal[
     "gmail_reply_audit",
     "gmail_reply_draft",
     "project_factory",
+    "cursor_agent_setup",
     "cursor_work",
     "local_status",
     "browser_or_video",
@@ -161,6 +162,37 @@ def classify_user_intent(message: str) -> UserIntent:
             summary=(
                 "Donner des nouvelles recentes: chercher l'actualite utile et ne pas reutiliser "
                 "le contexte d'une action precedente."
+            ),
+        )
+
+    cursor_agent_context = _has_any(text, ("cursor-agent", "cursor agent", "agent cursor", "cursor cli"))
+    setup_context = _has_any(
+        text,
+        (
+            "installe",
+            "installer",
+            "install",
+            "setup",
+            "configure",
+            "configurer",
+            "active",
+            "activer",
+            "mettre en place",
+            "pour tous les projets",
+            "tous les projets",
+        ),
+    )
+    if cursor_agent_context and setup_context:
+        return UserIntent(
+            name="cursor_agent_setup",
+            confidence=0.94,
+            summary=(
+                "Installer ou activer Cursor Agent CLI globalement sur le PC pour permettre "
+                "l'execution autonome sur les projets."
+            ),
+            caution=(
+                "Cursor Agent s'installe officiellement via macOS, Linux ou Windows WSL; "
+                "sur Windows natif il faut verifier WSL."
             ),
         )
 

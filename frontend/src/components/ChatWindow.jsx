@@ -1,13 +1,41 @@
 import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, BrainCircuit, FileText, Radar, ShieldCheck, Sparkles } from "lucide-react";
 
 import { EvaOrb } from "./EvaOrb";
 import { MessageBubble } from "./MessageBubble";
 
 
 const starters = [
-  "Prepare mon brief DreamLense.",
-  "Resume le fichier README.md.",
-  "Cree un prompt Cursor pour ameliorer Eva.",
+  {
+    label: "Brief DreamLense",
+    prompt: "Prepare mon brief DreamLense.",
+    icon: FileText,
+  },
+  {
+    label: "Lire README",
+    prompt: "Resume le fichier README.md.",
+    icon: BrainCircuit,
+  },
+  {
+    label: "Prompt Cursor",
+    prompt: "Cree un prompt Cursor pour ameliorer Eva.",
+    icon: Sparkles,
+  },
+];
+
+const deckSignals = [
+  {
+    label: "Memoire",
+    value: "Obsidian + local",
+  },
+  {
+    label: "Actions",
+    value: "PC local",
+  },
+  {
+    label: "Mode",
+    value: "Autonomie guidee",
+  },
 ];
 
 function normalizePrompt(text = "") {
@@ -185,6 +213,7 @@ function ThinkingPipeline({ prompt }) {
 export function ChatWindow({ messages, loading, error, onStarterSelect, status }) {
   const endRef = useRef(null);
   const latestUserPrompt = [...messages].reverse().find((message) => message.role === "user")?.content || "";
+  const isPristine = messages.length === 1 && !loading;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -193,26 +222,58 @@ export function ChatWindow({ messages, loading, error, onStarterSelect, status }
   return (
     <div className="chat-window">
       <div className="messages">
-        {messages.length === 1 && !loading && (
-          <EvaOrb status={status} />
-        )}
+        {isPristine ? (
+          <section className="welcome-deck" aria-label="Console Eva">
+            <EvaOrb status={status} />
 
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
+            <div className="welcome-command-panel">
+              <div className="welcome-panel-header">
+                <span>
+                  <Radar size={15} aria-hidden="true" />
+                  Eva command deck
+                </span>
+                <strong>{status?.state === "ready" ? "online" : "sync"}</strong>
+              </div>
 
-        {messages.length === 1 && !loading && (
-          <div className="starter-row" aria-label="Suggestions de depart">
-            {starters.map((starter) => (
-              <button
-                key={starter}
-                type="button"
-                onClick={() => onStarterSelect(starter)}
-              >
-                {starter}
-              </button>
-            ))}
-          </div>
+              <div className="welcome-copy">
+                <span>Assistant local de Victor</span>
+                <h1>Que veux-tu piloter ?</h1>
+                <p>{messages[0]?.content}</p>
+              </div>
+
+              <div className="welcome-signal-grid">
+                {deckSignals.map((signal) => (
+                  <div key={signal.label}>
+                    <span>{signal.label}</span>
+                    <strong>{signal.value}</strong>
+                  </div>
+                ))}
+              </div>
+
+              <div className="starter-row" aria-label="Suggestions de depart">
+                {starters.map(({ label, prompt, icon: Icon }) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => onStarterSelect(prompt)}
+                  >
+                    <Icon size={16} aria-hidden="true" />
+                    <span>{label}</span>
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+
+              <div className="welcome-safety-line">
+                <ShieldCheck size={15} aria-hidden="true" />
+                <span>Local-first, Ollama, memoire locale, aucune publication sans preuve d'action.</span>
+              </div>
+            </div>
+          </section>
+        ) : (
+          messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))
         )}
 
         {loading && (

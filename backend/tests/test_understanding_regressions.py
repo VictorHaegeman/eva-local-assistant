@@ -11,8 +11,10 @@ from app.cognition.problem_solver import (
     diagnose_problem,
     problem_routes_for_result,
 )
+from app.cognition.structured_interpreter import StructuredInterpretation, _should_accept_interpretation
 from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
+from app.integrations.cursor_agent_setup import format_cursor_agent_setup_response
 from app.projects.project_chat import attach_recent_project_context, infer_project_resolution
 
 
@@ -132,6 +134,50 @@ def test_cursor_followup_resolves_project_from_recent_context() -> None:
     assert resolution.project["name"] == "neural-network-F1"
 
 
+def test_cursor_agent_install_routes_to_setup_not_project() -> None:
+    frame = _frame("Installe cursor agent pour tous les projets")
+    assert frame.primary_domain == "cursor"
+    assert frame.expected_outcome == "execute_local"
+    assert frame.action_plan.route == "cursor_agent_setup"
+
+
+def test_cursor_agent_setup_cannot_be_overridden_to_project_work() -> None:
+    frame = _frame("Installe cursor-agent pour tous les projets")
+    interpretation = StructuredInterpretation(
+        goal="Preparer une session Cursor",
+        domain="cursor",
+        outcome="prepare_prompt",
+        route="cursor_work",
+        confidence=0.99,
+        should_execute=True,
+        needs_clarification=False,
+        clarification_question="",
+        reasoning_summary="Mauvaise route simulee.",
+        candidate_routes=("cursor_work",),
+        risk_level="local_action",
+        evidence_required=("projet cible",),
+    )
+    assert not _should_accept_interpretation(interpretation, frame)
+
+
+def test_cursor_agent_setup_formatter_keeps_blocked_diagnostic_useful() -> None:
+    response = format_cursor_agent_setup_response(
+        {
+            "status": "blocked",
+            "before": {"wsl_available": False},
+            "after": {"installed": False},
+            "install": {
+                "attempted": False,
+                "success": False,
+                "message": "WSL indisponible.",
+            },
+        }
+    )
+    assert "Cursor Agent setup." in response
+    assert "curl https://cursor.com/install -fsS | bash" in response
+    assert "cursor-agent --version" in response
+
+
 def test_create_app_routes_to_project_factory_before_browser() -> None:
     frame = _frame("cree une app web pour visualiser mes ventes et lance le projet")
     assert frame.primary_domain == "project"
@@ -213,6 +259,9 @@ if __name__ == "__main__":
     test_new_project_idea_routes_to_project_factory()
     test_f1_project_work_routes_to_cursor_before_browser()
     test_cursor_followup_resolves_project_from_recent_context()
+    test_cursor_agent_install_routes_to_setup_not_project()
+    test_cursor_agent_setup_cannot_be_overridden_to_project_work()
+    test_cursor_agent_setup_formatter_keeps_blocked_diagnostic_useful()
     test_create_app_routes_to_project_factory_before_browser()
     test_future_action_claim_is_not_success()
     test_beeper_unverified_response_is_not_useful()

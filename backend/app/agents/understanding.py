@@ -152,6 +152,8 @@ def _domain_from_message(
         return "terminal"
     if intent.name == "project_factory":
         return "project"
+    if intent.name == "cursor_agent_setup":
+        return "cursor"
     if intent.name in {"linkedin_activity", "linkedin_browser_post"}:
         return "linkedin"
     context_text = normalize_understanding_text(_recent_context_summary(conversation_context or []))
@@ -216,6 +218,8 @@ def _route_for_understanding(
     outcome: ExpectedOutcome,
     fallback_route: str,
 ) -> PlanRoute:
+    if fallback_route == "cursor_agent_setup":
+        return "cursor_agent_setup"  # type: ignore[return-value]
     if domain == "gmail":
         if outcome == "read_then_audit":
             return "gmail_reply_audit"
@@ -268,6 +272,8 @@ def _expected_outcome(normalized: str, intent: UserIntent, domain: PrimaryDomain
         return "diagnose"
     if intent.name == "project_factory":
         return "create_workspace"
+    if intent.name == "cursor_agent_setup":
+        return "execute_local"
     if intent.name == "cursor_work":
         return "prepare_prompt"
     if intent.name == "linkedin_activity":

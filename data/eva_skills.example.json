@@ -145,6 +145,7 @@
       "tool_hints": [
         "project_factory",
         "cursor_prompt",
+        "cursor_agent_setup",
         "local_command"
       ],
       "status": "active",

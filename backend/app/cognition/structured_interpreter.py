@@ -28,6 +28,7 @@ ALLOWED_ROUTES: tuple[str, ...] = (
     "gmail_reply_audit",
     "gmail_reply_draft",
     "project_factory",
+    "cursor_agent_setup",
     "cursor_work",
     "local_status",
     "browser_or_video",
@@ -85,6 +86,7 @@ ROUTE_DEFAULTS: dict[str, tuple[str, str]] = {
     "gmail_reply_audit": ("gmail", "read_then_audit"),
     "gmail_reply_draft": ("gmail", "draft"),
     "project_factory": ("project", "create_workspace"),
+    "cursor_agent_setup": ("cursor", "execute_local"),
     "cursor_work": ("cursor", "prepare_prompt"),
     "local_status": ("status", "read"),
     "browser_or_video": ("browser", "open"),
@@ -309,6 +311,9 @@ def _should_accept_interpretation(
     if news_context and interpretation.domain not in {"web", "chat"}:
         return False
 
+    if base_frame.action_plan.route == "cursor_agent_setup" and interpretation.route != "cursor_agent_setup":
+        return False
+
     if base_frame.primary_domain == "gmail" and interpretation.route == "cursor_work" and not cursor_context:
         return False
 
@@ -335,7 +340,7 @@ def _should_accept_interpretation(
                 "ameliorer",
             )
         )
-        and interpretation.route not in {"cursor_work", "project_factory"}
+        and interpretation.route not in {"cursor_work", "cursor_agent_setup", "project_factory"}
     ):
         return False
 

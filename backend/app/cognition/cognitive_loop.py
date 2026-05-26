@@ -22,6 +22,10 @@ from app.integrations.beeper_assistant import beeper_response_has_useful_content
 from app.integrations.browser_actions import open_browser_from_message
 from app.integrations.browser_assistant import open_assisted_browser_from_message
 from app.integrations.browser import open_url
+from app.integrations.cursor_agent_setup import (
+    format_cursor_agent_setup_response,
+    setup_cursor_agent,
+)
 from app.integrations.desktop_chat import execute_desktop_control_from_message
 from app.integrations.gmail_chat import build_gmail_chat_response
 from app.integrations.linkedin_assistant import build_linkedin_activity_response, build_linkedin_chat_response
@@ -68,6 +72,7 @@ class RouteExecution:
 
 ACTION_ROUTES = {
     "browser_or_video",
+    "cursor_agent_setup",
     "cursor_work",
     "gmail_read",
     "gmail_reply_audit",
@@ -88,6 +93,7 @@ ROUTE_LABELS = {
     "web_search": "Recherche web",
     "browser_or_video": "Navigateur",
     "cursor_work": "Projet / Cursor",
+    "cursor_agent_setup": "Setup Cursor Agent",
     "gmail_read": "Gmail lecture",
     "gmail_reply_audit": "Audit reponses",
     "gmail_reply_draft": "Brouillon Gmail",
@@ -148,6 +154,7 @@ def _requires_trusted(route: str) -> bool:
     return route in {
         "browser_or_video",
         "cursor_work",
+        "cursor_agent_setup",
         "gmail_read",
         "gmail_reply_audit",
         "gmail_reply_draft",
@@ -171,6 +178,7 @@ def _tool_for_route(route: str, understanding: UnderstandingFrame) -> str:
     return {
         "browser_or_video": "browser_assistant",
         "cursor_work": "cursor_bridge",
+        "cursor_agent_setup": "cursor_agent_setup",
         "gmail_read": "gmail_client",
         "gmail_reply_audit": "gmail_client",
         "gmail_reply_draft": "gmail_client",
@@ -198,7 +206,10 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
     elif domain == "project":
         routes.extend(["project_factory", "cursor_work", "web_search"])
     elif domain == "cursor":
-        routes.extend(["cursor_work", "web_search"])
+        if route == "cursor_agent_setup":
+            routes.extend(["cursor_agent_setup", "web_search"])
+        else:
+            routes.extend(["cursor_work", "web_search"])
     elif domain == "browser":
         routes.extend(["browser_or_video", "web_search"])
     elif domain == "spotify":
@@ -241,7 +252,10 @@ def _route_options(
     elif domain == "project" or selected_route == "project_factory":
         base_options.extend(["project_factory", "cursor_work", "web_search", "generic_chat"])
     elif domain == "cursor" or selected_route == "cursor_work":
-        base_options.extend(["cursor_work", "web_search", "generic_chat"])
+        if selected_route == "cursor_agent_setup":
+            base_options.extend(["web_search", "cursor_work", "generic_chat"])
+        else:
+            base_options.extend(["cursor_work", "web_search", "generic_chat"])
     elif domain == "browser":
         base_options.extend(["browser_or_video", "web_search", "generic_chat"])
     elif domain == "linkedin":
@@ -511,6 +525,36 @@ async def _execute_route_once(
             confidence=0.82,
         )
         return RouteExecution(content=content, result=result, selected_route=route)
+
+    if route == "cursor_agent_setup":
+        result_payload = setup_cursor_agent(auto_install=trusted_actions)
+        content = format_cursor_agent_setup_response(result_payload)
+        status = "success" if result_payload.get("status") == "ready" else "partial"
+        evidence = (
+            ("cursor-agent disponible ou installe via WSL.",)
+            if status == "success"
+            else ("Diagnostic Cursor Agent effectue; installation exploitable absente.",)
+        )
+        result = ToolResult(
+            tool="cursor_agent_setup",
+            status=status,
+            evidence=evidence,
+            data=result_payload,
+            error="" if status == "success" else "cursor-agent indisponible apres tentative d'installation.",
+            next_actions=(
+                "installer ou initialiser WSL",
+                "relancer: installe cursor agent",
+                "verifier avec cursor-agent --version",
+            )
+            if status != "success"
+            else (),
+            confidence=0.88 if status == "success" else 0.64,
+        )
+        return RouteExecution(
+            content=content,
+            result=verify_result(result),
+            selected_route="cursor_agent_setup",
+        )
 
     if route == "cursor_work" or (use_domain_fallback and understanding.primary_domain == "cursor"):
         content = (

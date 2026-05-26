@@ -134,6 +134,13 @@ TOOLS = (
         description="Preparation de prompts Cursor/Codex sans appel OpenAI par Eva.",
     ),
     ToolDescriptor(
+        key="cursor_agent_setup",
+        label="Setup Cursor Agent",
+        category="code",
+        policy_level="draft_only",
+        description="Verifie et installe Cursor Agent CLI via Windows WSL quand Eva est appelee depuis un canal fiable.",
+    ),
+    ToolDescriptor(
         key="project_factory",
         label="Project Factory",
         category="code",

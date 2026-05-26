@@ -259,7 +259,7 @@ LOCAL_SKILL_CATALOG: tuple[dict[str, object], ...] = (
             "Transforme l'idee en brief, cree les fichiers projet autorises, prepare Cursor et garde une trace. "
             "Git push et actions critiques restent soumis aux flags de securite."
         ),
-        "tool_hints": ["project_factory", "cursor_prompt", "local_command"],
+        "tool_hints": ["project_factory", "cursor_prompt", "cursor_agent_setup", "local_command"],
         "status": "active",
         "extension_type": "workflow",
         "requires": ["Git", "GitHub CLI pour creation repo", "Cursor CLI optionnel"],
