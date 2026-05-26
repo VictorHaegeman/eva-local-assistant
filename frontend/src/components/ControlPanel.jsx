@@ -39,6 +39,7 @@ import {
   getTools,
   generateSmartBrief,
   hydrateObsidianMemory,
+  importObsidianMemory,
   rebuildMemoryEmbeddings,
   connectGmail,
   openObsidianMemory,
@@ -373,6 +374,26 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleImportObsidian() {
+    setRunningJob("obsidian_import");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await importObsidianMemory(400);
+      await loadPanel();
+      const embeddingStatus = result.embeddings?.rebuilt ? " Embeddings reconstruits." : "";
+      const failures = result.failed ? ` ${result.failed} ligne(s) ignoree(s).` : "";
+      setJobResult(
+        `${result.imported || 0} souvenir(s) importes depuis ${result.scanned_files || 0} note(s) Obsidian.${failures}${embeddingStatus}`
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleRebuildEmbeddings() {
     setRunningJob("embeddings_rebuild");
     setJobResult("");
@@ -514,7 +535,13 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           </div>
           <p>{obsidian.path || "Vault local non configure."}</p>
           <Field label="Fichiers Markdown" value={obsidian.markdown_files || 0} />
+          <Field label="Notes editables" value={obsidian.importable_notes || 0} />
+          <Field label="Notes Eva" value={obsidian.managed_notes || 0} />
           <Field label="Cerveau Eva" value={obsidian.brain_hydrated ? "rempli" : "a remplir"} />
+          <p>
+            Ecris tes gouts, idees et regles dans Obsidian, puis importe-les: Eva les ajoute a SQLite,
+            les retrouve en FTS/vectoriel et les reinjecte dans ses decisions.
+          </p>
           <div className="panel-actions">
             <button
               type="button"
@@ -531,6 +558,14 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               disabled={Boolean(runningJob)}
             >
               {runningJob === "obsidian_open" ? "Ouverture..." : "Ouvrir le coffre"}
+            </button>
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={handleImportObsidian}
+              disabled={Boolean(runningJob) || !obsidian.exists}
+            >
+              {runningJob === "obsidian_import" ? "Import..." : "Importer notes Obsidian"}
             </button>
             <button
               type="button"

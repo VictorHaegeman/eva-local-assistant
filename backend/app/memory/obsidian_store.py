@@ -4,13 +4,20 @@ import re
 import time
 import hashlib
 import subprocess
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
 from app.config import settings
+from app.memory.embedding_store import EmbeddingStoreError, rebuild_memory_embeddings
+from app.memory.memory_store import (
+    MemoryStoreError,
+    add_memory,
+    list_memories,
+    memory_to_dict as sqlite_memory_to_dict,
+)
 from app.memory.profile_store import ProfileStoreError, load_profile
 from app.projects.project_store import ProjectStoreError, load_projects
 
@@ -36,6 +43,57 @@ DEFAULT_FOLDERS = (
 
 VAULT_INDEX_FILE = "00 - Eva/INDEX"
 MANAGED_MARKER = "<!-- eva:managed -->"
+
+IMPORT_SKIP_ROOTS = {
+    ".obsidian",
+    "00 - Eva",
+    "20 - Memories",
+    "40 - Daily",
+    "70 - Templates",
+}
+
+IMPORT_CATEGORY_BY_ROOT = {
+    "10 - Profile": "identity",
+    "11 - Preferences": "preference",
+    "12 - Creation": "creation",
+    "30 - Projects": "project",
+    "50 - Operating Rules": "operating_rule",
+    "60 - Content": "content",
+    "90 - Inbox": "idea",
+}
+
+SENSITIVE_IMPORT_MARKERS = (
+    "password",
+    "mot de passe",
+    "passwd",
+    "token",
+    "api key",
+    "api_key",
+    "apikey",
+    "secret",
+    "client secret",
+    "cle secrete",
+    "clé secrète",
+    "bearer ",
+    "oauth",
+)
+
+PLACEHOLDER_IMPORT_MARKERS = (
+    "ajoute ici",
+    "a completer",
+    "à compléter",
+    "genere localement",
+    "généré localement",
+    "ce vault obsidian",
+    "template",
+    "{{",
+    "}}",
+    "source=",
+    "ecris ici",
+    "écris ici",
+    "exemples a remplacer",
+    "exemples à remplacer",
+)
 
 
 def _vault_path() -> Path:
@@ -567,6 +625,8 @@ def ensure_obsidian_vault() -> Path:
                     "- [[30 - Projects/Projects|Projets]]",
                     "- [[60 - Content/LinkedIn Ideas|Idees LinkedIn]]",
                     "- [[70 - Templates/Project Brief|Templates]]",
+                    "- [[90 - Inbox/Memory Inbox|Inbox memoire editable]]",
+                    "- [[00 - Eva/Obsidian Memory Guide|Guide memoire Obsidian]]",
                     "- [[50 - Operating Rules/Eva Operating Rules|Regles operatoires Eva]]",
                     "- [[40 - Daily|Journal quotidien]]",
                     "- Ouvre le graphe Obsidian avec `Ctrl+G` si la vue ne s'affiche pas deja.",
@@ -600,6 +660,35 @@ def ensure_obsidian_vault() -> Path:
         _write_generated(vault / "30 - Projects" / "DreamLense.md", _dreamlense_markdown())
         _write_generated(vault / "60 - Content" / "DreamLense Content Angles.md", _content_angles_markdown())
         _write_generated(vault / "60 - Content" / "LinkedIn Ideas.md", _linkedin_ideas_markdown())
+        _write_generated(
+            vault / "00 - Eva" / "Obsidian Memory Guide.md",
+            "\n".join(
+                [
+                    "# Obsidian Memory Guide",
+                    "",
+                    "## Comment rendre Eva plus personnelle",
+                    "",
+                    "1. Ecris une note manuelle dans [[90 - Inbox/Memory Inbox]].",
+                    "2. Ou cree une note dans `11 - Preferences`, `12 - Creation`, `30 - Projects`, `50 - Operating Rules` ou `60 - Content`.",
+                    "3. Dans Eva, ouvre `Memoire` puis clique `Importer notes Obsidian`.",
+                    "4. Eva filtre les secrets, ajoute les souvenirs utiles dans SQLite, puis reconstruit les embeddings locaux si Ollama est disponible.",
+                    "",
+                    "## Format conseille",
+                    "",
+                    "- `#memory/preference J'aime les interfaces sombres, premium, avec un HUD bleu/cyan.`",
+                    "- `#memory/project DreamLense doit garder un ton clair, direct et premium.`",
+                    "- `#memory/operating_rule Eva doit verifier l'action locale avant d'annoncer qu'elle est faite.`",
+                    "- `#memory/content Les posts LinkedIn DreamLense doivent parler du benefice business avant la technologie.`",
+                    "",
+                    "## Regles",
+                    "",
+                    "- Ne mets jamais de mot de passe, token, cle API ou secret dans Obsidian.",
+                    "- Les notes generees par Eva sont lues comme contexte, mais les souvenirs importes viennent surtout de tes notes manuelles.",
+                    "- Une ligne courte et concrete vaut mieux qu'un gros paragraphe vague.",
+                    "",
+                ]
+            ),
+        )
         _write_generated(
             vault / "70 - Templates" / "Project Brief.md",
             _template_markdown(
@@ -751,6 +840,23 @@ Interface sombre, premium, Jarvis-like, avec bleu/cyan.
             "# Ideas Inbox\n\nAjoute ici les idees brutes que Victor veut transformer en projet, post ou tache.\n",
         )
         _write_if_missing(
+            vault / "90 - Inbox" / "Memory Inbox.md",
+            "\n".join(
+                [
+                    "# Memory Inbox",
+                    "",
+                    "Ecris ici les souvenirs que tu veux donner a Eva, puis clique `Importer notes Obsidian` dans le panneau Memoire.",
+                    "",
+                    "Exemples a remplacer:",
+                    "",
+                    "- #memory/preference J'aime les interfaces Jarvis-like, sombres, premium, avec du bleu/cyan.",
+                    "- #memory/project DreamLense doit rester clair, direct, premium et oriente business.",
+                    "- #memory/operating_rule Eva doit lire le contenu reel avant de rediger une reponse.",
+                    "",
+                ]
+            ),
+        )
+        _write_if_missing(
             vault / "50 - Operating Rules" / "Eva Operating Rules.md",
             "\n".join(
                 [
@@ -802,6 +908,267 @@ def _read_note_excerpt(path: Path, max_chars: int = 1000) -> str:
 def _query_has_any(query: str, markers: tuple[str, ...]) -> bool:
     normalized = query.lower()
     return any(marker in normalized for marker in markers)
+
+
+@dataclass(frozen=True)
+class ObsidianMemoryCandidate:
+    content: str
+    category: str
+    note_path: str
+    confidence: float
+
+
+def _normalize_import_text(text: str) -> str:
+    return " ".join(_clean_display_text(text).lower().strip().split())
+
+
+def _note_root(relative_path: Path) -> str:
+    return relative_path.parts[0] if relative_path.parts else ""
+
+
+def _is_managed_note(text: str) -> bool:
+    return text.lstrip().startswith(MANAGED_MARKER)
+
+
+def _is_importable_note(note_path: Path, vault: Path) -> bool:
+    try:
+        relative = note_path.relative_to(vault)
+    except ValueError:
+        return False
+
+    root = _note_root(relative)
+    if root in IMPORT_SKIP_ROOTS:
+        return False
+    if any(part.startswith(".") for part in relative.parts):
+        return False
+    return note_path.suffix.lower() == ".md"
+
+
+def _category_from_note(relative_path: Path, text: str) -> str:
+    tag_match = re.search(r"#(?:memory|memoire)/([a-zA-Z0-9_-]+)", text, flags=re.IGNORECASE)
+    if tag_match:
+        return re.sub(r"[^a-zA-Z0-9_-]", "", tag_match.group(1).lower()) or "obsidian"
+    return IMPORT_CATEGORY_BY_ROOT.get(_note_root(relative_path), "obsidian")
+
+
+def _strip_markdown_memory_line(line: str) -> str:
+    cleaned = line.strip()
+    cleaned = re.sub(r"^[-*+]\s+", "", cleaned)
+    cleaned = re.sub(r"^\d+[.)]\s+", "", cleaned)
+    cleaned = re.sub(r"^\[[ xX]\]\s+", "", cleaned)
+    cleaned = re.sub(r"#(?:memory|memoire)/[a-zA-Z0-9_-]+", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"#(?:eva-memory|memoire-eva|memory|memoire)\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", cleaned)
+    cleaned = re.sub(r"\[\[[^|\]]+\|([^\]]+)\]\]", r"\1", cleaned)
+    cleaned = re.sub(r"\[\[([^\]]+)\]\]", r"\1", cleaned)
+    cleaned = re.sub(r"`([^`]+)`", r"\1", cleaned)
+    cleaned = re.sub(r"\*\*([^*]+)\*\*", r"\1", cleaned)
+    cleaned = re.sub(r"\*([^*]+)\*", r"\1", cleaned)
+    return " ".join(cleaned.split())
+
+
+def _should_import_candidate(text: str) -> bool:
+    normalized = _normalize_import_text(text)
+    if len(text) < 12 or len(text) > 560:
+        return False
+    if normalized.endswith(":"):
+        return False
+    if normalized.startswith(("#", ">", "---")):
+        return False
+    if re.fullmatch(r"https?://\S+", normalized):
+        return False
+    if any(marker in normalized for marker in SENSITIVE_IMPORT_MARKERS):
+        return False
+    if any(marker in normalized for marker in PLACEHOLDER_IMPORT_MARKERS):
+        return False
+    if "| #" in text and "source=" in normalized:
+        return False
+    return True
+
+
+def _prefix_with_note_context(note_path: Path, relative_path: Path, text: str) -> str:
+    root = _note_root(relative_path)
+    if root in {"30 - Projects", "60 - Content"}:
+        note_title = note_path.stem.strip()
+        if note_title and note_title.lower() not in text.lower():
+            return f"{note_title}: {text}"
+    return text
+
+
+def _extract_obsidian_memory_candidates(note_path: Path, vault: Path) -> list[ObsidianMemoryCandidate]:
+    try:
+        relative_path = note_path.relative_to(vault)
+        raw_text = note_path.read_text(encoding="utf-8", errors="replace")
+    except (OSError, ValueError):
+        return []
+
+    if _is_managed_note(raw_text):
+        return []
+
+    candidates: list[ObsidianMemoryCandidate] = []
+    paragraph: list[str] = []
+    in_code_block = False
+
+    def flush_paragraph() -> None:
+        if not paragraph:
+            return
+        raw_candidate = " ".join(paragraph)
+        paragraph.clear()
+        cleaned = _strip_markdown_memory_line(raw_candidate)
+        if not _should_import_candidate(cleaned):
+            return
+        content = _prefix_with_note_context(note_path, relative_path, cleaned)
+        candidates.append(
+            ObsidianMemoryCandidate(
+                content=content,
+                category=_category_from_note(relative_path, raw_candidate),
+                note_path=relative_path.as_posix(),
+                confidence=0.84,
+            )
+        )
+
+    for raw_line in raw_text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("```"):
+            flush_paragraph()
+            in_code_block = not in_code_block
+            continue
+        if in_code_block:
+            continue
+        if not line:
+            flush_paragraph()
+            continue
+        if line.startswith(("# ", "## ", "### ", "#### ", "---")):
+            flush_paragraph()
+            continue
+        if re.match(r"^[-*+]|\d+[.)]\s+", line):
+            flush_paragraph()
+            cleaned = _strip_markdown_memory_line(line)
+            if not _should_import_candidate(cleaned):
+                continue
+            content = _prefix_with_note_context(note_path, relative_path, cleaned)
+            candidates.append(
+                ObsidianMemoryCandidate(
+                    content=content,
+                    category=_category_from_note(relative_path, line),
+                    note_path=relative_path.as_posix(),
+                    confidence=0.88 if "#memory/" in line.lower() or "#memoire/" in line.lower() else 0.8,
+                )
+            )
+            continue
+        paragraph.append(line)
+
+    flush_paragraph()
+    return candidates
+
+
+def _obsidian_note_inventory(vault: Path) -> dict[str, int]:
+    markdown_files = list(vault.rglob("*.md")) if vault.exists() else []
+    managed_notes = 0
+    importable_notes = 0
+    for note_path in markdown_files:
+        try:
+            raw_text = note_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if _is_managed_note(raw_text):
+            managed_notes += 1
+        if _is_importable_note(note_path, vault) and not _is_managed_note(raw_text):
+            importable_notes += 1
+
+    return {
+        "markdown_files": len(markdown_files),
+        "managed_notes": managed_notes,
+        "manual_notes": max(0, len(markdown_files) - managed_notes),
+        "importable_notes": importable_notes,
+    }
+
+
+def import_obsidian_notes_to_memories(limit: int = 200) -> dict[str, Any]:
+    if not settings.eva_obsidian_memory_enabled:
+        return {
+            "enabled": False,
+            "imported": 0,
+            "candidates": 0,
+            "path": str(_vault_path()),
+        }
+
+    vault = ensure_obsidian_vault()
+    safe_limit = min(max(int(limit), 1), 1000)
+    imported: list[dict[str, Any]] = []
+    failures: list[str] = []
+    candidates: list[ObsidianMemoryCandidate] = []
+    scanned_files = 0
+    skipped_files = 0
+
+    try:
+        existing_contents = {
+            _normalize_import_text(memory.content)
+            for memory in list_memories(limit=200)
+        }
+    except MemoryStoreError:
+        existing_contents = set()
+
+    for note_path in sorted(vault.rglob("*.md")):
+        if not _is_importable_note(note_path, vault):
+            skipped_files += 1
+            continue
+        scanned_files += 1
+        extracted = _extract_obsidian_memory_candidates(note_path, vault)
+        for candidate in extracted:
+            if len(candidates) >= safe_limit:
+                break
+            normalized = _normalize_import_text(candidate.content)
+            if normalized in existing_contents:
+                continue
+            candidates.append(candidate)
+            existing_contents.add(normalized)
+        if len(candidates) >= safe_limit:
+            break
+
+    for candidate in candidates:
+        try:
+            memory = add_memory(
+                candidate.content,
+                category=candidate.category,
+                source="obsidian",
+                confidence=candidate.confidence,
+            )
+            imported.append(
+                {
+                    **sqlite_memory_to_dict(memory),
+                    "note_path": candidate.note_path,
+                }
+            )
+        except MemoryStoreError as exc:
+            if len(failures) < 8:
+                failures.append(f"{candidate.note_path}: {exc}")
+
+    embeddings: dict[str, object] = {"rebuilt": False}
+    if imported and settings.eva_embeddings_enabled:
+        try:
+            embeddings = {
+                "rebuilt": True,
+                **rebuild_memory_embeddings(limit=min(1000, max(250, len(imported) + 200))),
+            }
+        except EmbeddingStoreError as exc:
+            embeddings = {
+                "rebuilt": False,
+                "error": str(exc),
+            }
+
+    return {
+        "enabled": True,
+        "path": str(vault),
+        "scanned_files": scanned_files,
+        "skipped_files": skipped_files,
+        "candidates": len(candidates),
+        "imported": len(imported),
+        "failed": len(failures),
+        "failures": failures,
+        "memories": imported[:40],
+        "embeddings": embeddings,
+    }
 
 
 def build_obsidian_prompt_context(query: str, max_chars: int = 6500) -> str:
@@ -869,11 +1236,14 @@ def build_obsidian_prompt_context(query: str, max_chars: int = 6500) -> str:
 
 def hydrate_obsidian_vault() -> dict[str, Any]:
     vault = ensure_obsidian_vault()
-    markdown_files = list(vault.rglob("*.md")) if vault.exists() else []
+    inventory = _obsidian_note_inventory(vault)
     return {
         "hydrated": True,
         "path": str(vault),
-        "markdown_files": len(markdown_files),
+        "markdown_files": inventory["markdown_files"],
+        "manual_notes": inventory["manual_notes"],
+        "managed_notes": inventory["managed_notes"],
+        "importable_notes": inventory["importable_notes"],
         "key_notes": [
             "11 - Preferences/Creative Taste.md",
             "11 - Preferences/Working Preferences.md",
@@ -931,12 +1301,16 @@ def _obsidian_exe_path() -> Path | None:
 
 def obsidian_status() -> dict[str, Any]:
     vault = _vault_path()
-    markdown_files = list(vault.rglob("*.md")) if vault.exists() else []
+    inventory = _obsidian_note_inventory(vault)
     return {
         "enabled": settings.eva_obsidian_memory_enabled,
         "path": str(vault),
         "exists": vault.exists(),
-        "markdown_files": len(markdown_files),
+        "markdown_files": inventory["markdown_files"],
+        "manual_notes": inventory["manual_notes"],
+        "managed_notes": inventory["managed_notes"],
+        "importable_notes": inventory["importable_notes"],
+        "import_supported": True,
         "brain_hydrated": (vault / "12 - Creation" / "Creation DNA.md").exists()
         and (vault / "11 - Preferences" / "Creative Taste.md").exists(),
         "open_uri": obsidian_open_uri(),

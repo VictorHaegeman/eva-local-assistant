@@ -111,6 +111,7 @@ Eva reste gratuite et locale:
 - les clusters servent de boussole;
 - les skillpacks ajoutent des methodes d'action;
 - Obsidian rend le cerveau lisible et editable par Victor.
+- Obsidian est maintenant une source editable: les notes manuelles peuvent etre importees dans SQLite, puis indexees en embeddings locaux.
 
 Flux actuel:
 
@@ -121,3 +122,30 @@ message -> comprehension deterministe -> memoire hybride -> skills candidates
 ```
 
 Ce n'est pas une API cloud. Si un modele manque, Eva doit rester capable de fonctionner en mode degrade: FTS/BM25 + routeur deterministe + outils locaux.
+
+## Memoire Obsidian editable
+
+Le vault Obsidian n'est plus seulement un miroir joli:
+
+```text
+Victor ecrit dans Obsidian
+        -> Eva filtre les notes manuelles
+        -> bloque les secrets/tokens/mots de passe
+        -> ajoute les souvenirs utiles dans SQLite
+        -> reconstruit les embeddings Ollama locaux
+        -> reutilise ces souvenirs dans la boucle cognitive
+```
+
+Notes importantes:
+
+- Les notes generees par Eva avec le marqueur `<!-- eva:managed -->` restent du contexte lisible.
+- Les notes manuelles dans `90 - Inbox`, `11 - Preferences`, `12 - Creation`, `30 - Projects`, `50 - Operating Rules` et `60 - Content` peuvent devenir des souvenirs.
+- Le format conseille est une ligne courte avec un tag:
+
+```text
+- #memory/preference J'aime les interfaces sombres, premium, Jarvis-like, avec du bleu/cyan.
+- #memory/project DreamLense doit parler du benefice business avant la technologie.
+- #memory/operating_rule Eva doit verifier une action locale avant d'annoncer qu'elle est faite.
+```
+
+Dans l'interface Eva: `Memoire` -> `Importer notes Obsidian`.

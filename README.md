@@ -1803,6 +1803,7 @@ Endpoints utiles:
 ```text
 GET /memory/obsidian/status
 POST /memory/obsidian/hydrate
+POST /memory/obsidian/import
 POST /memory/obsidian/sync
 POST /memory/obsidian/open
 ```
@@ -1821,6 +1822,23 @@ Eva ne devient pas plus intelligente par entrainement du modele local. Elle appr
 
 Eva injecte un resume de ces notes Obsidian dans le prompt Ollama quand la demande concerne creation, design, mails, posts, projets ou decisions. Le vault reste local et peut etre edite a la main dans Obsidian.
 
+Depuis le panneau `Memoire`, `Importer notes Obsidian` transforme les notes manuelles en souvenirs SQLite + embeddings locaux. Eva ignore les notes generees avec `<!-- eva:managed -->`, filtre les lignes qui ressemblent a des secrets, puis importe surtout:
+
+- `90 - Inbox/Memory Inbox.md`;
+- `11 - Preferences/`;
+- `12 - Creation/`;
+- `30 - Projects/`;
+- `50 - Operating Rules/`;
+- `60 - Content/`.
+
+Format conseille dans Obsidian:
+
+```text
+- #memory/preference J'aime les interfaces sombres, premium, Jarvis-like, avec du bleu/cyan.
+- #memory/project DreamLense doit parler du benefice business avant la technologie.
+- #memory/operating_rule Eva doit verifier une action locale avant d'annoncer qu'elle est faite.
+```
+
 Le coffre cree par Eva contient:
 
 - `00 - Eva/INDEX.md`: navigation du second cerveau;
@@ -1833,6 +1851,7 @@ Le coffre cree par Eva contient:
 - `50 - Operating Rules/`: regles de comportement d'Eva.
 - `60 - Content/`: angles DreamLense et idees LinkedIn;
 - `70 - Templates/`: templates pour projet, Cursor, email, posts, briefs et frontend.
+- `90 - Inbox/`: inbox editable pour idees et souvenirs a importer.
 
 Depuis le panneau Memoire, le bouton `Ouvrir le coffre` lance Obsidian via le protocole local `obsidian://` si Obsidian est installe sur Windows.
 

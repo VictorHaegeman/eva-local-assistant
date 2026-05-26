@@ -140,6 +140,7 @@ from app.memory.obsidian_store import (
     ObsidianMemoryError,
     ensure_obsidian_vault,
     hydrate_obsidian_vault,
+    import_obsidian_notes_to_memories,
     mirror_memory_to_obsidian,
     open_obsidian_vault,
     obsidian_status,
@@ -257,6 +258,10 @@ class MemoryRouteRequest(BaseModel):
 
 
 class MemoryEmbeddingRebuildRequest(BaseModel):
+    limit: int = Field(default=200, ge=1, le=1000)
+
+
+class ObsidianImportRequest(BaseModel):
     limit: int = Field(default=200, ge=1, le=1000)
 
 
@@ -815,6 +820,14 @@ async def memory_obsidian_sync() -> dict[str, object]:
 async def memory_obsidian_hydrate() -> dict[str, object]:
     try:
         return hydrate_obsidian_vault()
+    except ObsidianMemoryError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/memory/obsidian/import", dependencies=[Depends(require_sensitive_access)])
+async def memory_obsidian_import(request: ObsidianImportRequest) -> dict[str, object]:
+    try:
+        return import_obsidian_notes_to_memories(limit=request.limit)
     except ObsidianMemoryError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

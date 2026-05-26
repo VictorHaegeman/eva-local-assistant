@@ -59,9 +59,22 @@ def init_embedding_store() -> None:
                 connection.execute(
                     "ALTER TABLE memory_embeddings ADD COLUMN cluster_key TEXT NOT NULL DEFAULT 'general'"
                 )
+            _delete_orphan_embeddings(connection)
             connection.commit()
     except sqlite3.Error as exc:
         raise EmbeddingStoreError("Impossible d'initialiser la memoire vectorielle.") from exc
+
+
+def _delete_orphan_embeddings(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        DELETE FROM memory_embeddings
+        WHERE memory_id NOT IN (
+            SELECT id
+            FROM memories
+        )
+        """
+    )
 
 
 def _content_hash(memory: Memory) -> str:
@@ -212,6 +225,7 @@ def search_vector_memories(query: str, limit: int = 8) -> list[VectorMemoryResul
 
 
 def rebuild_memory_embeddings(limit: int = 200) -> dict[str, object]:
+    init_embedding_store()
     memories = list_memories(limit=limit)
     indexed = 0
     failed = 0
@@ -239,6 +253,8 @@ def embedding_status() -> dict[str, object]:
     init_embedding_store()
     try:
         with _connect() as connection:
+            _delete_orphan_embeddings(connection)
+            connection.commit()
             total_rows = connection.execute("SELECT COUNT(*) AS count FROM memories").fetchone()
             embedded_rows = connection.execute(
                 """
