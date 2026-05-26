@@ -140,7 +140,7 @@ class Settings:
     eva_telegram_context_messages: int = _env_int("EVA_TELEGRAM_CONTEXT_MESSAGES", 16)
     eva_reasoning_enabled: bool = _env_bool("EVA_REASONING_ENABLED", True)
     eva_reasoning_min_confidence: float = _env_float("EVA_REASONING_MIN_CONFIDENCE", 0.55)
-    eva_reasoning_max_attempts: int = _env_int("EVA_REASONING_MAX_ATTEMPTS", 3)
+    eva_reasoning_max_attempts: int = _env_int("EVA_REASONING_MAX_ATTEMPTS", 4)
     eva_reasoning_web_fallback_enabled: bool = _env_bool("EVA_REASONING_WEB_FALLBACK_ENABLED", True)
     eva_reasoning_force_structured_trace: bool = _env_bool(
         "EVA_REASONING_FORCE_STRUCTURED_TRACE",

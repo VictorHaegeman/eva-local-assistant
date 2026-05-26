@@ -96,6 +96,20 @@ export async function getMemories() {
   return request("/memories");
 }
 
+export async function getMemoryEmbeddingStatus() {
+  return request("/memory/embeddings/status");
+}
+
+export async function rebuildMemoryEmbeddings(limit = 200) {
+  return request("/memory/embeddings/rebuild", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ limit }),
+  });
+}
+
 
 export async function getChatHistory() {
   return request("/chat/history");

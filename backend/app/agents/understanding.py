@@ -68,6 +68,8 @@ class UnderstandingFrame:
     cognitive_memory_summary: str = ""
     cognitive_memory_clusters: tuple[str, ...] = ()
     cognitive_memory_count: int = 0
+    cognitive_skill_summary: str = ""
+    cognitive_skill_keys: tuple[str, ...] = ()
 
 
 def normalize_understanding_text(text: str) -> str:
@@ -554,6 +556,11 @@ def format_understanding_context(frame: UnderstandingFrame) -> str:
         lines.append(f"- {frame.cognitive_memory_summary}")
         if frame.cognitive_memory_clusters:
             lines.append(f"- Clusters: {', '.join(frame.cognitive_memory_clusters)}")
+    if frame.cognitive_skill_summary:
+        lines.append("Skills candidates:")
+        lines.append(f"- {frame.cognitive_skill_summary}")
+        if frame.cognitive_skill_keys:
+            lines.append(f"- Skills: {', '.join(frame.cognitive_skill_keys)}")
     lines.append(
         "Ne recite pas ce cadre. Utilise-le pour choisir l'outil, lire les bonnes sources, "
         "eviter l'invention et dire clairement ce qui est reellement fait."
@@ -603,4 +610,6 @@ def understanding_to_dict(frame: UnderstandingFrame) -> dict[str, object]:
         "cognitive_memory_summary": frame.cognitive_memory_summary,
         "cognitive_memory_clusters": list(frame.cognitive_memory_clusters),
         "cognitive_memory_count": frame.cognitive_memory_count,
+        "cognitive_skill_summary": frame.cognitive_skill_summary,
+        "cognitive_skill_keys": list(frame.cognitive_skill_keys),
     }

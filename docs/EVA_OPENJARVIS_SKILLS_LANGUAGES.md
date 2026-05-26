@@ -25,6 +25,9 @@ Implementation ajoutee dans Eva:
 - `POST /tools/rust-index/scan`;
 - `rust_project_indexer` dans le registre d'outils;
 - `repo_indexing` dans le registre de skills.
+- `backend/app/cognition/context.py`: les skills candidates sont maintenant selectionnees avant la decision, avec la memoire hybride;
+- `backend/app/cognition/cognitive_loop.py`: la boucle utilise aussi les routes proposees par le second regard Ollama local, puis tente les plans B autorises;
+- panneau Memoire: statut de la memoire vectorielle locale et bouton de reconstruction des embeddings.
 
 Les skills Eva importantes maintenant:
 
@@ -96,3 +99,25 @@ Prochaine evolution utile:
 - ajouter un score d'efficacite par skill depuis le journal operateur;
 - desactiver automatiquement les skills qui provoquent de mauvaises routes;
 - creer une commande locale pour generer une nouvelle skill depuis une correction de Victor.
+
+## Etat actuel du cerveau local
+
+Eva reste gratuite et locale:
+
+- Ollama sert au chat, au second regard JSON et aux embeddings locaux;
+- SQLite garde les souvenirs rapides;
+- FTS/BM25 retrouve les souvenirs par mots-cles;
+- `nomic-embed-text` ajoute la recherche vectorielle locale;
+- les clusters servent de boussole;
+- les skillpacks ajoutent des methodes d'action;
+- Obsidian rend le cerveau lisible et editable par Victor.
+
+Flux actuel:
+
+```text
+message -> comprehension deterministe -> memoire hybride -> skills candidates
+        -> second regard Ollama local -> routes candidates
+        -> boucle cognitive -> outil local -> verification -> reponse
+```
+
+Ce n'est pas une API cloud. Si un modele manque, Eva doit rester capable de fonctionner en mode degrade: FTS/BM25 + routeur deterministe + outils locaux.

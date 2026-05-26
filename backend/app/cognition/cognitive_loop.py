@@ -173,6 +173,10 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
     domain = understanding.primary_domain
     routes: list[str] = [route]
 
+    for candidate in understanding.reasoning_routes:
+        if candidate != "generic_chat":
+            routes.append(candidate)
+
     if domain == "gmail":
         routes.extend(["gmail_read", "gmail_reply_draft"])
     elif domain == "project":
@@ -279,6 +283,16 @@ def _trace_payload(
             }
         )
 
+    if understanding.cognitive_skill_summary:
+        stages.append(
+            {
+                "key": "skills",
+                "label": "Skills",
+                "status": "done",
+                "detail": understanding.cognitive_skill_summary,
+            }
+        )
+
     stages.extend(
         [
             {
@@ -340,6 +354,10 @@ def _trace_payload(
             "summary": understanding.cognitive_memory_summary,
             "clusters": list(understanding.cognitive_memory_clusters),
             "count": understanding.cognitive_memory_count,
+        },
+        "skills": {
+            "summary": understanding.cognitive_skill_summary,
+            "keys": list(understanding.cognitive_skill_keys),
         },
     }
 

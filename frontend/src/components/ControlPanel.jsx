@@ -31,6 +31,7 @@ import {
   getLatestBrief,
   getLinkedInStatus,
   getMemories,
+  getMemoryEmbeddingStatus,
   getObsidianMemoryStatus,
   getProjects,
   getScreenStatus,
@@ -38,6 +39,7 @@ import {
   getTools,
   generateSmartBrief,
   hydrateObsidianMemory,
+  rebuildMemoryEmbeddings,
   connectGmail,
   openObsidianMemory,
   createGmailReplyDraft,
@@ -227,8 +229,12 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
 
   async function fetchPanelData(panelName) {
     if (panelName === "memory") {
-      const [memory, obsidian] = await Promise.all([getMemories(), getObsidianMemoryStatus()]);
-      return { ...memory, obsidian };
+      const [memory, obsidian, embeddings] = await Promise.all([
+        getMemories(),
+        getObsidianMemoryStatus(),
+        getMemoryEmbeddingStatus(),
+      ]);
+      return { ...memory, obsidian, embeddings };
     }
     if (panelName === "chats") return getChatHistory();
     if (panelName === "tools") {
@@ -367,6 +373,23 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleRebuildEmbeddings() {
+    setRunningJob("embeddings_rebuild");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await rebuildMemoryEmbeddings(400);
+      await loadPanel();
+      const errors = (result.errors || []).length ? ` Erreurs: ${result.errors.join(" | ")}` : "";
+      setJobResult(`${result.indexed || 0} souvenirs indexes en vectoriel, ${result.failed || 0} echec(s).${errors}`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleGenerateSmartBrief() {
     setRunningJob("smart_brief");
     setJobResult("");
@@ -447,15 +470,43 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
   function renderMemory() {
     const memories = data?.memories || [];
     const obsidian = data?.obsidian || {};
+    const embeddings = data?.embeddings || {};
+    const embeddingCount = embeddings.embedding_count || 0;
+    const memoryCount = embeddings.memory_count ?? memories.length;
 
     return (
       <>
         <div className="panel-metrics">
           <Metric label="souvenirs locaux" value={memories.length} tone={memories.length ? "ok" : "neutral"} />
-          <Metric label="stockage" value="SQLite" />
+          <Metric
+            label="vecteurs"
+            value={`${embeddingCount}/${memoryCount}`}
+            tone={memoryCount && embeddingCount < memoryCount ? "warning" : "ok"}
+          />
           <Metric label="Obsidian" value={obsidian.enabled ? "on" : "off"} tone={obsidian.enabled ? "ok" : "warning"} />
         </div>
         {jobResult && <div className="panel-success">{jobResult}</div>}
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Memoire vectorielle locale</h3>
+            <StatusPill tone={embeddings.enabled ? "ok" : "warning"}>
+              {embeddings.enabled ? embeddings.model || "active" : "off"}
+            </StatusPill>
+          </div>
+          <p>Eva utilise SQLite + FTS + embeddings Ollama locaux pour retrouver les souvenirs utiles avant de choisir une action.</p>
+          <Field label="Ollama" value={embeddings.ollama_base_url || "local"} />
+          <Field label="Candidats analyses" value={embeddings.candidate_limit || 0} />
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={handleRebuildEmbeddings}
+              disabled={Boolean(runningJob) || !embeddings.enabled}
+            >
+              {runningJob === "embeddings_rebuild" ? "Indexation..." : "Reconstruire les embeddings"}
+            </button>
+          </div>
+        </section>
         <section className="panel-card">
           <div className="panel-card-heading">
             <h3>Vault Obsidian local</h3>
