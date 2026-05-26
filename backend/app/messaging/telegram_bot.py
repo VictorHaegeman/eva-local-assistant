@@ -18,6 +18,12 @@ from app.config import settings
 from app.cognition.problem_solver import build_exception_recovery_response
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
+from app.integrations.cursor_agent_setup import (
+    CursorAgentSetupError,
+    format_cursor_agent_setup_response,
+    setup_cursor_agent,
+    wants_cursor_agent_setup,
+)
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
 from app.integrations.google_setup_chat import (
     build_calendar_events_response,
@@ -143,6 +149,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/idea IDEE - alias de /project\n"
                 "/cursor PROJET + TACHE - ouvrir Cursor et copier le prompt\n"
                 "/codex PROJET + TACHE - alias de /cursor\n"
+                "/cursor-agent - verifier/installer Cursor Agent CLI via WSL\n"
                 "/open SITE - ouvrir un site dans Brave\n"
                 "/google - connecter Google/Gmail/Calendar sur le PC\n"
                 "/calendar - lire les prochains evenements Calendar\n"
@@ -162,6 +169,14 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
 
     if command == "/status":
         await _send_message(client, chat_id, "Eva Telegram est active sur ce PC.")
+        return True
+
+    if command in {"/cursor-agent", "/cursoragent", "/agent"}:
+        try:
+            result = setup_cursor_agent(auto_install=True, open_docs_on_block=True)
+            await _send_message(client, chat_id, format_cursor_agent_setup_response(result))
+        except CursorAgentSetupError as exc:
+            await _send_message(client, chat_id, f"Setup Cursor Agent interrompu: {exc}")
         return True
 
     if command in {"/open", "/ouvre"}:
@@ -364,13 +379,20 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             return
 
     try:
+        if wants_cursor_agent_setup(text):
+            setup_result = setup_cursor_agent(auto_install=True, open_docs_on_block=True)
+            assistant_text = format_cursor_agent_setup_response(setup_result)
+            append_telegram_exchange(chat_id, text, assistant_text)
+            await _send_message(client, chat_id, assistant_text)
+            return
+
         context = load_telegram_context(chat_id)
         result = await process_chat_messages(
             [*context, {"role": "user", "content": text}],
             trusted_actions=True,
             channel="telegram",
         )
-    except ChatServiceError as exc:
+    except (ChatServiceError, CursorAgentSetupError) as exc:
         await _send_message(
             client,
             chat_id,

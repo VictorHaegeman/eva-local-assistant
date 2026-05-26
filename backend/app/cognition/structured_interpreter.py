@@ -421,7 +421,7 @@ def apply_interpretation_to_frame(
         action_plan=action_plan,
         safety_level=safety_level,
         required_evidence=required_evidence,
-        tool_preference=_tool_preference(domain),
+        tool_preference="cursor_agent_setup" if route == "cursor_agent_setup" else _tool_preference(domain),
         clarification_question=clarification_question,
         reasoning_summary=interpretation.reasoning_summary,
         reasoning_confidence=interpretation.confidence,

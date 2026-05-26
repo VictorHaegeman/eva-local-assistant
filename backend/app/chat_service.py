@@ -37,6 +37,12 @@ from app.integrations.browser_assistant import BrowserAssistError, open_assisted
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
 from app.integrations.desktop_chat import DesktopChatError, execute_desktop_control_from_message
+from app.integrations.cursor_agent_setup import (
+    CursorAgentSetupError,
+    format_cursor_agent_setup_response,
+    setup_cursor_agent,
+    wants_cursor_agent_setup,
+)
 from app.integrations.beeper_assistant import (
     BeeperAssistantError,
     beeper_response_has_useful_content,
@@ -461,6 +467,24 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
+        if action_plan.route == "cursor_agent_setup" or wants_cursor_agent_setup(latest_user_message):
+            setup_result = setup_cursor_agent(
+                auto_install=trusted_actions,
+                open_docs_on_block=trusted_actions,
+            )
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": format_cursor_agent_setup_response(setup_result),
+                    "cognitive_trace": build_reasoning_trace(
+                        understanding,
+                        selected_route="cursor_agent_setup",
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         if action_plan.route == "project_factory" or _should_create_project_factory_plan(latest_user_message):
             if not trusted_actions:
                 return _blocked_problem_payload(
@@ -616,7 +640,14 @@ async def process_chat_messages(
                 "saved_memory": None,
                 "pending_action": action_to_dict(pending_action),
             }
-    except (ActionExecutionError, ActionStoreError, ProjectFactoryError, ScreenReaderError, SelfImproveError) as exc:
+    except (
+        ActionExecutionError,
+        ActionStoreError,
+        CursorAgentSetupError,
+        ProjectFactoryError,
+        ScreenReaderError,
+        SelfImproveError,
+    ) as exc:
         raise ChatServiceError(str(exc)) from exc
 
     try:

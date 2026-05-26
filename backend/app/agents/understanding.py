@@ -390,6 +390,8 @@ def _required_evidence(domain: PrimaryDomain, outcome: ExpectedOutcome) -> tuple
         return ("erreur terminal analysee", "correctif connu si disponible")
     if domain == "project":
         return ("brief projet interprete", "workspace et actions verifiables")
+    if domain == "cursor" and outcome == "execute_local":
+        return ("cursor-agent verifie", "installation WSL tentee seulement si session fiable")
     if domain == "browser":
         return ("URL ou intention web interpretee", "Brave ouvert si action fiable")
     if domain == "spotify":
@@ -432,6 +434,8 @@ def _interpreted_goal(
     outcome: ExpectedOutcome,
 ) -> str:
     clean_message = " ".join(message.split())
+    if intent.name == "cursor_agent_setup":
+        return "Installer ou activer Cursor Agent CLI globalement, sans demander de projet cible."
     if domain == "gmail" and outcome == "read_then_audit":
         return "Lire les mails reels lies au sujet demande, puis distinguer ceux deja repondus de ceux a traiter."
     if domain == "gmail" and outcome == "draft":
@@ -528,7 +532,7 @@ def build_understanding_frame(
         requires_context=requires_context,
         context_focus=context_summary,
         required_evidence=_required_evidence(domain, outcome),
-        tool_preference=_tool_preference(domain),
+        tool_preference="cursor_agent_setup" if route == "cursor_agent_setup" else _tool_preference(domain),
         clarification_question=_clarification_question(normalized, domain, outcome, context),
     )
 

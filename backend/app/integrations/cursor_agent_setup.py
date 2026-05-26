@@ -5,6 +5,7 @@ from typing import Any
 
 from app.integrations.browser import open_url
 from app.integrations.cli_tools import find_cursor_agent
+from app.agents.intent_router import normalize_intent_text
 
 
 class CursorAgentSetupError(Exception):
@@ -13,6 +14,27 @@ class CursorAgentSetupError(Exception):
 
 CURSOR_AGENT_DOCS_URL = "https://docs.cursor.com/en/cli/overview"
 CURSOR_AGENT_INSTALL_COMMAND = "curl https://cursor.com/install -fsS | bash"
+CURSOR_AGENT_MARKERS = ("cursor-agent", "cursor agent", "agent cursor", "cursor cli")
+CURSOR_AGENT_SETUP_MARKERS = (
+    "installe",
+    "installer",
+    "install",
+    "setup",
+    "configure",
+    "configurer",
+    "active",
+    "activer",
+    "mettre en place",
+    "pour tous les projets",
+    "tous les projets",
+)
+
+
+def wants_cursor_agent_setup(message: str) -> bool:
+    text = normalize_intent_text(message)
+    return any(marker in text for marker in CURSOR_AGENT_MARKERS) and any(
+        marker in text for marker in CURSOR_AGENT_SETUP_MARKERS
+    )
 
 
 def _run(command: list[str], timeout: float = 30.0) -> subprocess.CompletedProcess[str]:

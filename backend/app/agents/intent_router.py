@@ -165,8 +165,7 @@ def classify_user_intent(message: str) -> UserIntent:
             ),
         )
 
-    cursor_agent_context = _has_any(text, ("cursor-agent", "cursor agent", "agent cursor", "cursor cli"))
-    setup_context = _has_any(
+    if _has_any(text, ("cursor-agent", "cursor agent", "agent cursor", "cursor cli")) and _has_any(
         text,
         (
             "installe",
@@ -181,8 +180,7 @@ def classify_user_intent(message: str) -> UserIntent:
             "pour tous les projets",
             "tous les projets",
         ),
-    )
-    if cursor_agent_context and setup_context:
+    ):
         return UserIntent(
             name="cursor_agent_setup",
             confidence=0.94,

@@ -14,7 +14,7 @@ from app.cognition.problem_solver import (
 from app.cognition.structured_interpreter import StructuredInterpretation, _should_accept_interpretation
 from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
-from app.integrations.cursor_agent_setup import format_cursor_agent_setup_response
+from app.integrations.cursor_agent_setup import format_cursor_agent_setup_response, wants_cursor_agent_setup
 from app.projects.project_chat import attach_recent_project_context, infer_project_resolution
 
 
@@ -139,6 +139,8 @@ def test_cursor_agent_install_routes_to_setup_not_project() -> None:
     assert frame.primary_domain == "cursor"
     assert frame.expected_outcome == "execute_local"
     assert frame.action_plan.route == "cursor_agent_setup"
+    assert frame.tool_preference == "cursor_agent_setup"
+    assert "sans demander de projet cible" in frame.interpreted_goal
 
 
 def test_cursor_agent_setup_cannot_be_overridden_to_project_work() -> None:
@@ -158,6 +160,12 @@ def test_cursor_agent_setup_cannot_be_overridden_to_project_work() -> None:
         evidence_required=("projet cible",),
     )
     assert not _should_accept_interpretation(interpretation, frame)
+
+
+def test_cursor_agent_setup_detector_matches_telegram_plain_text() -> None:
+    assert wants_cursor_agent_setup("Installe cursor agent pour tous les projets")
+    assert wants_cursor_agent_setup("configure cursor-agent")
+    assert not wants_cursor_agent_setup("ouvre le projet F1 dans Cursor")
 
 
 def test_cursor_agent_setup_formatter_keeps_blocked_diagnostic_useful() -> None:
@@ -261,6 +269,7 @@ if __name__ == "__main__":
     test_cursor_followup_resolves_project_from_recent_context()
     test_cursor_agent_install_routes_to_setup_not_project()
     test_cursor_agent_setup_cannot_be_overridden_to_project_work()
+    test_cursor_agent_setup_detector_matches_telegram_plain_text()
     test_cursor_agent_setup_formatter_keeps_blocked_diagnostic_useful()
     test_create_app_routes_to_project_factory_before_browser()
     test_future_action_claim_is_not_success()
