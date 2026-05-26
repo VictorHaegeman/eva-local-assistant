@@ -146,6 +146,8 @@ class Settings:
         "EVA_REASONING_FORCE_STRUCTURED_TRACE",
         True,
     )
+    eva_problem_solver_enabled: bool = _env_bool("EVA_PROBLEM_SOLVER_ENABLED", True)
+    eva_problem_solver_max_cycles: int = _env_int("EVA_PROBLEM_SOLVER_MAX_CYCLES", 6)
     eva_projects_dir: str = os.getenv("EVA_PROJECTS_DIR", r"C:\Users\victo\Desktop\Cursor")
     eva_project_factory_auto_execute: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_EXECUTE", True)
     eva_project_factory_auto_commit: bool = _env_bool("EVA_PROJECT_FACTORY_AUTO_COMMIT", True)

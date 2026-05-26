@@ -5,6 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.agents.understanding import build_understanding_frame
 from app.cognition.critic import criticize_response
+from app.cognition.problem_solver import diagnose_problem, problem_routes_for_result
 from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
 
@@ -124,6 +125,30 @@ def test_beeper_unverified_response_is_not_useful() -> None:
     )
 
 
+def test_problem_solver_turns_browser_failure_into_web_fallback() -> None:
+    frame = _frame("ouvre une carte de Londres")
+    result = ToolResult(
+        tool="browser_assistant",
+        status="failed",
+        error="Aucune destination navigateur fiable n'a ete detectee.",
+    )
+    routes = problem_routes_for_result(result, frame, trusted_actions=True)
+    assert "web_search" in routes
+
+
+def test_problem_solver_permission_block_keeps_safe_fallback() -> None:
+    frame = _frame("ouvre Spotify sur mon PC")
+    result = ToolResult(
+        tool="spotify_assistant",
+        status="blocked",
+        error="Cette action locale demande une session fiable: PC local ou Telegram autorise.",
+    )
+    resolution = diagnose_problem(result, frame, trusted_actions=False)
+    assert resolution.problem_type == "permission"
+    assert resolution.blocked_by_policy
+    assert problem_routes_for_result(result, frame, trusted_actions=False) == ("web_search",)
+
+
 if __name__ == "__main__":
     test_dreamlense_mail_draft_routes_to_gmail()
     test_gmail_followup_does_not_become_cursor()
@@ -135,4 +160,6 @@ if __name__ == "__main__":
     test_create_app_routes_to_project_factory_before_browser()
     test_future_action_claim_is_not_success()
     test_beeper_unverified_response_is_not_useful()
+    test_problem_solver_turns_browser_failure_into_web_fallback()
+    test_problem_solver_permission_block_keeps_safe_fallback()
     print("understanding regressions OK")

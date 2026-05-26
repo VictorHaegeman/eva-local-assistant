@@ -212,6 +212,25 @@ LOCAL_SKILL_CATALOG: tuple[dict[str, object], ...] = (
         "enabled": True,
     },
     {
+        "key": "problem_solver",
+        "label": "Resolveur de problemes",
+        "category": "agents",
+        "policy_level": "read_only",
+        "trigger_words": ["bloque", "impossible", "autorise", "permission", "plan b", "contourne", "resous"],
+        "description": "Transformer un blocage outil ou permission en diagnostic, route alternative et plan de reprise.",
+        "instructions": (
+            "Quand une action echoue ou est bloquee, ne pas s'arreter sur le refus. "
+            "Diagnostiquer la cause, choisir une route alternative sure, tenter ce qui est autorise, "
+            "puis rapporter les preuves et le plan de reprise."
+        ),
+        "tool_hints": ["problem_solver", "web_search", "screen_reader", "operator_journal"],
+        "status": "active",
+        "extension_type": "recovery_loop",
+        "requires": ["EVA_PROBLEM_SOLVER_ENABLED=true"],
+        "next_steps": ["mesurer le taux de recuperation", "apprendre les routes qui marchent le mieux"],
+        "enabled": True,
+    },
+    {
         "key": "telegram_operator",
         "label": "Operateur Telegram",
         "category": "messaging",

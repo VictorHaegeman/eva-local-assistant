@@ -3,6 +3,11 @@ from typing import Any
 
 from app.agents.understanding import UnderstandingFrame
 from app.cognition.critic import critic_report_to_dict, criticize_response
+from app.cognition.problem_solver import (
+    build_problem_solver_response,
+    diagnose_problem,
+    problem_routes_for_result,
+)
 from app.cognition.response_builder import build_blocked_response, build_critic_response
 from app.cognition.retry_policy import fallback_for_result
 from app.cognition.state import (
@@ -151,6 +156,13 @@ def _requires_trusted(route: str) -> bool:
     }
 
 
+def _max_reasoning_attempts() -> int:
+    base = max(1, min(settings.eva_reasoning_max_attempts, 8))
+    if not settings.eva_problem_solver_enabled:
+        return base
+    return max(base, min(max(settings.eva_problem_solver_max_cycles, 1), 8))
+
+
 def _tool_for_route(route: str, understanding: UnderstandingFrame) -> str:
     return {
         "browser_or_video": "browser_assistant",
@@ -207,8 +219,7 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
         if candidate not in unique_routes:
             unique_routes.append(candidate)
 
-    max_attempts = max(1, min(settings.eva_reasoning_max_attempts, 6))
-    return unique_routes[:max_attempts]
+    return unique_routes[:_max_reasoning_attempts()]
 
 
 def _route_options(
@@ -329,6 +340,26 @@ def _trace_payload(
                 "label": "Reessayer",
                 "status": "done" if latest_result and latest_result.ok else "partial",
                 "detail": f"{len(state.tool_results)} pistes tentees",
+            }
+        )
+
+    if latest_result and latest_result.status in {"failed", "blocked"}:
+        resolution = diagnose_problem(latest_result, understanding, state.trusted_actions)
+        stages.append(
+            {
+                "key": "resolver",
+                "label": "Resoudre",
+                "status": "ready",
+                "detail": resolution.summary,
+                "options": [
+                    {
+                        "key": route,
+                        "label": ROUTE_LABELS.get(route, route.replace("_", " ")),
+                        "score": max(32, round(resolution.confidence * 100) - (index * 11)),
+                        "selected": index == 0,
+                    }
+                    for index, route in enumerate(resolution.alternate_routes[:4])
+                ],
             }
         )
 
@@ -642,7 +673,7 @@ async def _execute_route_once(
 
 
 def _failure_summary(state: CognitiveState) -> str:
-    lines = ["Je n'ai pas encore un resultat fiable, donc je ne vais pas inventer."]
+    lines = ["Mode resolution active: aucun resultat final fiable n'est encore prouve."]
     if state.tool_results:
         lines.append("")
         lines.append("Pistes tentees:")
@@ -694,7 +725,15 @@ async def run_cognitive_loop(
 
     last_route = route
     last_critic = None
-    for candidate_route in _route_sequence(str(route), understanding):
+    route_queue = _route_sequence(str(route), understanding)
+    attempted_routes: set[str] = set()
+    max_attempts = _max_reasoning_attempts()
+
+    while route_queue and len(attempted_routes) < max_attempts:
+        candidate_route = route_queue.pop(0)
+        if candidate_route in attempted_routes:
+            continue
+        attempted_routes.add(candidate_route)
         last_route = candidate_route
         try:
             execution = await _execute_route_once(
@@ -711,21 +750,32 @@ async def run_cognitive_loop(
                 fallback_for_result(failed),
             )
             state.add_result(result)
+            if settings.eva_problem_solver_enabled:
+                for fallback_route in problem_routes_for_result(result, understanding, trusted_actions):
+                    if fallback_route not in attempted_routes and fallback_route not in route_queue:
+                        route_queue.append(fallback_route)
             continue
 
         if not execution:
-            state.add_result(
-                _failed(
-                    _tool_for_route(candidate_route, understanding),
-                    "Route non executable par les outils locaux actuels.",
-                    ("essayer une autre route cognitive",),
-                    confidence=0.25,
-                )
+            result = _failed(
+                _tool_for_route(candidate_route, understanding),
+                "Route non executable par les outils locaux actuels.",
+                ("essayer une autre route cognitive",),
+                confidence=0.25,
             )
+            state.add_result(result)
+            if settings.eva_problem_solver_enabled:
+                for fallback_route in problem_routes_for_result(result, understanding, trusted_actions):
+                    if fallback_route not in attempted_routes and fallback_route not in route_queue:
+                        route_queue.append(fallback_route)
             continue
 
         state.add_result(execution.result)
         if not execution.content or not execution.result.ok:
+            if settings.eva_problem_solver_enabled:
+                for fallback_route in problem_routes_for_result(execution.result, understanding, trusted_actions):
+                    if fallback_route not in attempted_routes and fallback_route not in route_queue:
+                        route_queue.append(fallback_route)
             continue
 
         state.handled = True
@@ -759,9 +809,16 @@ async def run_cognitive_loop(
 
     if state.tool_results:
         state.handled = True
+        latest_result = state.tool_results[-1]
+        resolution = diagnose_problem(latest_result, understanding, trusted_actions)
+        content = (
+            build_problem_solver_response(message, state, resolution)
+            if settings.eva_problem_solver_enabled
+            else _failure_summary(state)
+        )
         return CognitiveLoopResult(
             handled=True,
-            message=_assistant_payload(_failure_summary(state), understanding, state, last_route),
+            message=_assistant_payload(content, understanding, state, last_route),
             state=state,
             critic=critic_report_to_dict(last_critic) if last_critic else None,
         )

@@ -562,6 +562,7 @@ backend/app/cognition/
 |-- verifier.py
 |-- critic.py
 |-- retry_policy.py
+|-- problem_solver.py
 |-- response_builder.py
 `-- __init__.py
 ```
@@ -570,6 +571,13 @@ Flux branche dans `backend/app/chat_service.py`:
 
 ```text
 message -> understanding/action_plan -> run_cognitive_loop -> outil verifie -> reponse
+```
+
+Flux ajoute pour les blocages:
+
+```text
+outil failed/blocked -> problem_solver -> diagnostic -> routes alternatives
+                    -> nouvel essai autorise -> reponse avec preuves ou plan de reprise
 ```
 
 Cas couverts par cette premiere tranche:
@@ -586,7 +594,6 @@ Cas couverts par cette premiere tranche:
 Ce n'est pas encore la boucle cognitive complete. Il manque encore:
 
 - task graph multi-etapes;
-- retry automatique plus agressif;
 - evaluation locale avec scenarios;
 - reflection automatique depuis les echecs;
 - migration de toutes les routes anciennes.

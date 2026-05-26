@@ -8,6 +8,7 @@ from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.cognition.cognitive_loop import build_reasoning_trace, run_cognitive_loop
 from app.cognition.context import attach_cognitive_context, build_cognitive_context, format_cognitive_context
+from app.cognition.problem_solver import build_passive_refusal_recovery, looks_like_passive_refusal
 from app.cognition.structured_interpreter import refine_understanding_with_ollama
 from app.config import settings
 from app.files.file_context import detect_file_context
@@ -932,6 +933,8 @@ async def process_chat_messages(
         answer = await ask_ollama(safe_messages, extra_context=extra_context, mode=mode)
         answer = _remove_bad_tool_refusal(answer, latest_user_message)
         answer = guard_ollama_answer(answer, latest_user_message)
+        if settings.eva_problem_solver_enabled and looks_like_passive_refusal(answer):
+            answer = build_passive_refusal_recovery(latest_user_message)
     except OllamaClientError as exc:
         raise ChatServiceError(str(exc)) from exc
 

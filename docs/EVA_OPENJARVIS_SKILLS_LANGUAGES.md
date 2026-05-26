@@ -27,6 +27,7 @@ Implementation ajoutee dans Eva:
 - `repo_indexing` dans le registre de skills.
 - `backend/app/cognition/context.py`: les skills candidates sont maintenant selectionnees avant la decision, avec la memoire hybride;
 - `backend/app/cognition/cognitive_loop.py`: la boucle utilise aussi les routes proposees par le second regard Ollama local, puis tente les plans B autorises;
+- `backend/app/cognition/problem_solver.py`: resolveur local qui transforme un blocage ou un echec outil en diagnostic + routes alternatives;
 - panneau Memoire: statut de la memoire vectorielle locale et bouton de reconstruction des embeddings.
 
 Les skills Eva importantes maintenant:
@@ -37,6 +38,7 @@ Les skills Eva importantes maintenant:
 - `project_factory_operator`: workspace, GitHub, Cursor/Codex quand les outils sont disponibles;
 - `screen_autopilot`: vision ecran + action locale;
 - `reflex_recovery`: plan B si une action echoue.
+- `problem_solver`: ne pas s'arreter sur "impossible", choisir une route alternative sure.
 
 ## Ce qu'on ne reprend pas tel quel
 
@@ -118,7 +120,8 @@ Flux actuel:
 ```text
 message -> comprehension deterministe -> memoire hybride -> skills candidates
         -> second regard Ollama local -> routes candidates
-        -> boucle cognitive -> outil local -> verification -> reponse
+        -> boucle cognitive -> outil local -> verification
+        -> si echec: problem_solver -> plan B autorise -> reponse verifiee
 ```
 
 Ce n'est pas une API cloud. Si un modele manque, Eva doit rester capable de fonctionner en mode degrade: FTS/BM25 + routeur deterministe + outils locaux.

@@ -1725,9 +1725,11 @@ OLLAMA_REASONING_MODEL=llama3.1:8b
 OLLAMA_REASONING_TIMEOUT_SECONDS=24
 EVA_REASONING_ENABLED=true
 EVA_REASONING_MIN_CONFIDENCE=0.55
-EVA_REASONING_MAX_ATTEMPTS=3
+EVA_REASONING_MAX_ATTEMPTS=4
 EVA_REASONING_WEB_FALLBACK_ENABLED=true
 EVA_REASONING_FORCE_STRUCTURED_TRACE=true
+EVA_PROBLEM_SOLVER_ENABLED=true
+EVA_PROBLEM_SOLVER_MAX_CYCLES=6
 ```
 
 Ce que ca change concretement:
@@ -1738,6 +1740,7 @@ Ce que ca change concretement:
 - Ollama fait un second passage structure pour comprendre l'objectif reel;
 - une action locale sure peut etre executee sans te redemander;
 - si une piste echoue, Eva tente une autre piste avant de conclure;
+- si une action est bloquee ou non autorisee, Eva passe par le resolveur: diagnostic, route alternative, version sure, brouillon ou recherche utile;
 - si aucun outil local ne suffit, Eva peut lancer une recherche web gratuite et l'utiliser comme plan B;
 - une action critique reste protegee: envoi, publication, suppression, achat/paiement;
 - meme une reponse simple peut afficher une trace de decision dans le chat;
