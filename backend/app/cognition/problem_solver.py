@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from app.agents.understanding import UnderstandingFrame
-from app.cognition.state import CognitiveState
+from app.cognition.state import CognitiveState, goal_frame_from_understanding
 from app.cognition.tool_result import ToolResult
 
 
@@ -198,6 +198,50 @@ def build_problem_solver_response(
         lines.append("\nEtat: aucune route n'a encore donne une preuve suffisante, donc je garde le diagnostic exploitable.")
 
     return "\n".join(lines)
+
+
+def build_direct_problem_solver_response(
+    message: str,
+    understanding: UnderstandingFrame,
+    tool: str,
+    reason: str,
+    trusted_actions: bool,
+    channel: str = "web",
+    next_actions: tuple[str, ...] = (),
+) -> str:
+    state = CognitiveState(
+        goal=goal_frame_from_understanding(understanding),
+        channel=channel,
+        trusted_actions=trusted_actions,
+    )
+    state.add_result(
+        ToolResult(
+            tool=tool,
+            status="blocked",
+            error=reason,
+            next_actions=next_actions,
+            confidence=0.86,
+        )
+    )
+    resolution = diagnose_problem(state.tool_results[-1], understanding, trusted_actions)
+    return build_problem_solver_response(message, state, resolution)
+
+
+def build_exception_recovery_response(message: str, error: str) -> str:
+    clean_error = " ".join(str(error).split())[:900] or "erreur inconnue"
+    return "\n".join(
+        [
+            "Mode resolution active.",
+            f"Objectif compris: {message}",
+            f"Blocage detecte: {clean_error}",
+            "",
+            "Plan de reprise:",
+            "- reprendre le contexte recent avant de reclasser la demande;",
+            "- chercher un outil local ou une route web gratuite adaptee;",
+            "- si un connecteur manque, expliquer exactement le connecteur ou le flag a activer;",
+            "- garder une trace exploitable au lieu de terminer sur un refus brut.",
+        ]
+    )
 
 
 def build_passive_refusal_recovery(message: str) -> str:

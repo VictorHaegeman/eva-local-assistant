@@ -26,6 +26,7 @@ from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.agents.understanding import build_understanding_frame, understanding_to_dict
 from app.cognition.context import attach_cognitive_context, build_cognitive_context
+from app.cognition.problem_solver import build_exception_recovery_response
 from app.cognition.structured_interpreter import refine_understanding_with_ollama
 from app.agents.operator_journal import (
     OperatorJournalError,
@@ -1769,7 +1770,17 @@ async def chat(chat_request: ChatRequest, http_request: Request) -> ChatResponse
             trusted_actions=trusted_actions,
         )
     except ChatServiceError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        result = {
+            "message": {
+                "role": "assistant",
+                "content": build_exception_recovery_response(
+                    str(safe_messages[-1]["content"]),
+                    str(exc),
+                ),
+            },
+            "saved_memory": None,
+            "pending_action": None,
+        }
 
     try:
         session = append_chat_exchange(

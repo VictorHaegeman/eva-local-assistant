@@ -28,6 +28,7 @@ Implementation ajoutee dans Eva:
 - `backend/app/cognition/context.py`: les skills candidates sont maintenant selectionnees avant la decision, avec la memoire hybride;
 - `backend/app/cognition/cognitive_loop.py`: la boucle utilise aussi les routes proposees par le second regard Ollama local, puis tente les plans B autorises;
 - `backend/app/cognition/problem_solver.py`: resolveur local qui transforme un blocage ou un echec outil en diagnostic + routes alternatives;
+- le resolveur est aussi branche sur les blocages directs et les exceptions chat/Telegram, pour eviter les reponses brutes du type "Eva ne peut pas repondre";
 - panneau Memoire: statut de la memoire vectorielle locale et bouton de reconstruction des embeddings.
 
 Les skills Eva importantes maintenant:

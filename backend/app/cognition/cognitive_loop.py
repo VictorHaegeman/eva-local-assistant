@@ -148,6 +148,10 @@ def _requires_trusted(route: str) -> bool:
     return route in {
         "browser_or_video",
         "cursor_work",
+        "gmail_read",
+        "gmail_reply_audit",
+        "gmail_reply_draft",
+        "screen_read",
         "spotify",
         "desktop_control",
         "beeper_messages",

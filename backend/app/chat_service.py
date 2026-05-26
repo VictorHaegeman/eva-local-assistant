@@ -8,7 +8,11 @@ from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.cognition.cognitive_loop import build_reasoning_trace, run_cognitive_loop
 from app.cognition.context import attach_cognitive_context, build_cognitive_context, format_cognitive_context
-from app.cognition.problem_solver import build_passive_refusal_recovery, looks_like_passive_refusal
+from app.cognition.problem_solver import (
+    build_direct_problem_solver_response,
+    build_passive_refusal_recovery,
+    looks_like_passive_refusal,
+)
 from app.cognition.structured_interpreter import refine_understanding_with_ollama
 from app.config import settings
 from app.files.file_context import detect_file_context
@@ -198,6 +202,39 @@ def _mirror_memory(memory: object) -> None:
         pass
 
 
+def _blocked_problem_payload(
+    message: str,
+    understanding: Any,
+    tool: str,
+    reason: str,
+    trusted_actions: bool,
+    channel: str,
+    next_actions: tuple[str, ...] = (),
+    pending_action: dict[str, object] | None = None,
+) -> dict[str, Any]:
+    content = build_direct_problem_solver_response(
+        message,
+        understanding,
+        tool=tool,
+        reason=reason,
+        trusted_actions=trusted_actions,
+        channel=channel,
+        next_actions=next_actions,
+    )
+    return {
+        "message": {
+            "role": "assistant",
+            "content": content,
+            "cognitive_trace": build_reasoning_trace(
+                understanding,
+                selected_route=str(getattr(understanding, "action_plan").route),
+            ),
+        },
+        "saved_memory": None,
+        "pending_action": pending_action,
+    }
+
+
 def _format_quick_status(message: str) -> str | None:
     normalized = message.lower()
 
@@ -358,17 +395,21 @@ async def process_chat_messages(
 
         if action_plan.route == "screen_read":
             if not trusted_actions:
-                return {
-                    "message": {
-                        "role": "assistant",
-                        "content": (
-                            "Lire l'ecran expose des donnees privees. Je peux le faire depuis "
-                            "le PC local ou Telegram autorise, pas depuis une session non fiable."
-                        ),
-                    },
-                    "saved_memory": None,
-                    "pending_action": None,
-                }
+                return _blocked_problem_payload(
+                    latest_user_message,
+                    understanding,
+                    tool="screen_reader",
+                    reason=(
+                        "Lire l'ecran expose des donnees privees; le canal courant "
+                        "n'est pas marque comme PC local ou Telegram autorise."
+                    ),
+                    trusted_actions=trusted_actions,
+                    channel=channel,
+                    next_actions=(
+                        "relancer depuis le PC local ou Telegram autorise",
+                        "decrire ou copier-coller l'erreur visible pour que je la diagnostique",
+                    ),
+                )
             screen_result = await analyze_screen(
                 instruction=latest_user_message,
                 auto_fix=True,
@@ -422,18 +463,21 @@ async def process_chat_messages(
 
         if action_plan.route == "project_factory" or _should_create_project_factory_plan(latest_user_message):
             if not trusted_actions:
-                return {
-                    "message": {
-                        "role": "assistant",
-                        "content": (
-                            "Cette demande implique des actions locales sur ton PC. "
-                            "Je peux le faire depuis le PC local ou depuis ton Telegram autorise, "
-                            "mais pas depuis une session non fiable du reseau."
-                        ),
-                    },
-                    "saved_memory": None,
-                    "pending_action": None,
-                }
+                return _blocked_problem_payload(
+                    latest_user_message,
+                    understanding,
+                    tool="project_factory",
+                    reason=(
+                        "La creation de workspace/repo demande une session fiable "
+                        "avant de piloter le PC."
+                    ),
+                    trusted_actions=trusted_actions,
+                    channel=channel,
+                    next_actions=(
+                        "preparer un brief et un prompt projet sans toucher au PC",
+                        "relancer depuis Telegram autorise pour executer automatiquement",
+                    ),
+                )
 
             bundle = create_project_factory_actions(latest_user_message)
             plan = bundle["plan"]
@@ -480,17 +524,18 @@ async def process_chat_messages(
 
         if detect_self_improvement_request(latest_user_message):
             if not trusted_actions:
-                return {
-                    "message": {
-                        "role": "assistant",
-                        "content": (
-                            "Modifier ou apprendre durablement le comportement d'Eva demande une session fiable. "
-                            "Refais la demande depuis le PC local ou Telegram autorise."
-                        ),
-                    },
-                    "saved_memory": None,
-                    "pending_action": None,
-                }
+                return _blocked_problem_payload(
+                    latest_user_message,
+                    understanding,
+                    tool="self_improvement",
+                    reason="Modifier durablement le comportement d'Eva demande une session fiable.",
+                    trusted_actions=trusted_actions,
+                    channel=channel,
+                    next_actions=(
+                        "transformer la demande en note Obsidian ou souvenir non executif",
+                        "relancer depuis le PC local ou Telegram autorise pour creer la tache",
+                    ),
+                )
 
             result = execute_self_improvement_loop(
                 latest_user_message,
@@ -509,34 +554,37 @@ async def process_chat_messages(
         pending_action = create_pending_action_from_message(latest_user_message)
         if pending_action:
             if not trusted_actions:
-                return {
-                    "message": {
-                        "role": "assistant",
-                        "content": (
-                            "J'ai detecte une action locale, mais je ne peux pas la creer depuis "
-                            "une session non fiable. Refais la demande depuis le PC local ou Telegram autorise."
-                        ),
-                    },
-                    "saved_memory": None,
-                    "pending_action": None,
-                }
+                return _blocked_problem_payload(
+                    latest_user_message,
+                    understanding,
+                    tool="action_store",
+                    reason="Action locale detectee depuis un canal non fiable.",
+                    trusted_actions=trusted_actions,
+                    channel=channel,
+                    next_actions=(
+                        "preparer le plan d'action sans execution",
+                        "relancer depuis Telegram autorise ou le PC local",
+                    ),
+                )
 
             if settings.eva_auto_execute_actions:
                 try:
                     execution = execute_action(pending_action.id, require_approval=False)
                 except ActionExecutionError as exc:
-                    return {
-                        "message": {
-                            "role": "assistant",
-                            "content": (
-                                f"J'ai detecte l'action #{pending_action.id}, mais elle est protegee: {exc}\n"
-                                "Je ne l'execute pas automatiquement. Reformule avec une action locale moins risquee "
-                                "ou active explicitement le flag correspondant dans .env."
-                            ),
-                        },
-                        "saved_memory": None,
-                        "pending_action": action_to_dict(pending_action),
-                    }
+                    return _blocked_problem_payload(
+                        latest_user_message,
+                        understanding,
+                        tool="action_executor",
+                        reason=f"Action #{pending_action.id} protegee: {exc}",
+                        trusted_actions=trusted_actions,
+                        channel=channel,
+                        next_actions=(
+                            "tenter une version brouillon ou lecture seule",
+                            "creer une action en attente si le risque reste eleve",
+                            "ajuster le flag local seulement si Victor assume ce niveau d'autonomie",
+                        ),
+                        pending_action=action_to_dict(pending_action),
+                    )
                 action_payload = execution.get("action")
                 executed = bool(execution.get("executed"))
                 result_text = ""
@@ -573,17 +621,18 @@ async def process_chat_messages(
 
     try:
         if not trusted_actions and _quick_status_requires_trusted_access(latest_user_message):
-            return {
-                "message": {
-                    "role": "assistant",
-                    "content": (
-                        "Cette demande consulte l'etat local d'Eva. Je peux le faire depuis "
-                        "le PC local ou Telegram autorise, mais pas depuis une session non fiable."
-                    ),
-                },
-                "saved_memory": None,
-                "pending_action": None,
-            }
+            return _blocked_problem_payload(
+                latest_user_message,
+                understanding,
+                tool="local_status",
+                reason="La demande consulte l'etat local d'Eva depuis un canal non fiable.",
+                trusted_actions=trusted_actions,
+                channel=channel,
+                next_actions=(
+                    "donner une explication generale sans exposer l'etat local",
+                    "relancer depuis le PC local ou Telegram autorise pour lire le statut reel",
+                ),
+            )
 
         quick_status = _format_quick_status(latest_user_message)
         if quick_status:
@@ -653,17 +702,18 @@ async def process_chat_messages(
         )
 
         if not trusted_actions and (calendar_requested or gmail_requested):
-            return {
-                "message": {
-                    "role": "assistant",
-                    "content": (
-                        "Gmail et Google Calendar contiennent des donnees privees. Je peux les lire "
-                        "depuis le PC local ou Telegram autorise, mais pas depuis une session non fiable."
-                    ),
-                },
-                "saved_memory": None,
-                "pending_action": None,
-            }
+            return _blocked_problem_payload(
+                latest_user_message,
+                understanding,
+                tool="google_private_data",
+                reason="Gmail et Google Calendar contiennent des donnees privees; le canal courant n'est pas fiable.",
+                trusted_actions=trusted_actions,
+                channel=channel,
+                next_actions=(
+                    "preparer la methode de tri ou de brouillon sans lire les donnees",
+                    "relancer depuis Telegram autorise ou le PC local pour lire les vrais mails",
+                ),
+            )
 
         if calendar_requested and gmail_requested and action_plan.route != "gmail_reply_draft":
             sections = []
@@ -833,17 +883,18 @@ async def process_chat_messages(
         if not trusted_actions and (
             wants_linkedin_browser_post(latest_user_message) or wants_linkedin_activity(latest_user_message)
         ):
-            return {
-                "message": {
-                    "role": "assistant",
-                    "content": (
-                        "LinkedIn contient des donnees de compte. "
-                        "Je peux le faire depuis le PC local ou Telegram autorise."
-                    ),
-                },
-                "saved_memory": None,
-                "pending_action": None,
-            }
+            return _blocked_problem_payload(
+                latest_user_message,
+                understanding,
+                tool="linkedin_assistant",
+                reason="LinkedIn contient des donnees de compte; le canal courant n'est pas fiable.",
+                trusted_actions=trusted_actions,
+                channel=channel,
+                next_actions=(
+                    "preparer un brouillon ou une strategie sans ouvrir le compte",
+                    "relancer depuis Telegram autorise ou le PC local pour naviguer dans Brave",
+                ),
+            )
 
         linkedin_response = await build_linkedin_chat_response(latest_user_message)
         if linkedin_response:

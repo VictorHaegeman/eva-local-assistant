@@ -5,7 +5,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.agents.understanding import build_understanding_frame
 from app.cognition.critic import criticize_response
-from app.cognition.problem_solver import diagnose_problem, problem_routes_for_result
+from app.cognition.problem_solver import (
+    build_direct_problem_solver_response,
+    build_exception_recovery_response,
+    diagnose_problem,
+    problem_routes_for_result,
+)
 from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
 from app.projects.project_chat import attach_recent_project_context, infer_project_resolution
@@ -175,6 +180,29 @@ def test_problem_solver_permission_block_keeps_safe_fallback() -> None:
     assert problem_routes_for_result(result, frame, trusted_actions=False) == ("web_search",)
 
 
+def test_direct_problem_solver_replaces_permission_refusal() -> None:
+    frame = _frame("lis mon ecran et corrige l'erreur visible")
+    response = build_direct_problem_solver_response(
+        "lis mon ecran et corrige l'erreur visible",
+        frame,
+        tool="screen_reader",
+        reason="Lecture ecran depuis un canal non fiable.",
+        trusted_actions=False,
+        next_actions=("relancer depuis Telegram autorise",),
+    )
+    assert response.startswith("Mode resolution active.")
+    assert "Eva ne peut pas" not in response
+
+
+def test_exception_recovery_does_not_end_as_raw_error() -> None:
+    response = build_exception_recovery_response(
+        "ouvre mon projet F1",
+        "Projet introuvable",
+    )
+    assert response.startswith("Mode resolution active.")
+    assert "Eva ne peut pas repondre" not in response
+
+
 if __name__ == "__main__":
     test_dreamlense_mail_draft_routes_to_gmail()
     test_gmail_followup_does_not_become_cursor()
@@ -190,4 +218,6 @@ if __name__ == "__main__":
     test_beeper_unverified_response_is_not_useful()
     test_problem_solver_turns_browser_failure_into_web_fallback()
     test_problem_solver_permission_block_keeps_safe_fallback()
+    test_direct_problem_solver_replaces_permission_refusal()
+    test_exception_recovery_does_not_end_as_raw_error()
     print("understanding regressions OK")

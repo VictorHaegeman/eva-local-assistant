@@ -15,6 +15,7 @@ from app.actions.executor import ActionExecutionError, execute_action
 from app.agents.operator_journal import OperatorJournalError, record_operator_tick
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.cognition.problem_solver import build_exception_recovery_response
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
 from app.integrations.spotify_assistant import SpotifyAssistError, open_spotify_from_message
@@ -370,7 +371,11 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             channel="telegram",
         )
     except ChatServiceError as exc:
-        await _send_message(client, chat_id, f"Eva ne peut pas repondre: {exc}")
+        await _send_message(
+            client,
+            chat_id,
+            build_exception_recovery_response(text, str(exc)),
+        )
         return
 
     pending_action = result.get("pending_action")
