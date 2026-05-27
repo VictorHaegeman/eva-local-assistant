@@ -1218,6 +1218,21 @@ button.nav-item:hover {
   filter: drop-shadow(0 0 36px rgba(33, 156, 255, 0.16));
 }
 
+.eva-orb-canvas {
+  position: absolute;
+  inset: -13%;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.eva-orb-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .eva-orb::before,
 .eva-orb::after {
   content: "";
@@ -1228,6 +1243,7 @@ button.nav-item:hover {
 
 .eva-orb::before {
   inset: 9%;
+  z-index: 2;
   border: 1px solid rgba(115, 214, 255, 0.18);
   box-shadow:
     inset 0 0 42px rgba(115, 214, 255, 0.08),
@@ -1236,6 +1252,7 @@ button.nav-item:hover {
 
 .eva-orb::after {
   inset: 26%;
+  z-index: 1;
   background:
     radial-gradient(circle, rgba(244, 248, 251, 0.14), transparent 8%),
     radial-gradient(circle, rgba(115, 214, 255, 0.22), transparent 64%);
@@ -1244,6 +1261,7 @@ button.nav-item:hover {
 
 .eva-orb-ring {
   position: absolute;
+  z-index: 3;
   inset: 0;
   border-radius: 50%;
   border: 1px solid transparent;
@@ -1320,6 +1338,7 @@ button.nav-item:hover {
 
 .eva-orb-axis {
   position: absolute;
+  z-index: 3;
   left: 50%;
   top: 50%;
   width: 72%;
@@ -1341,7 +1360,7 @@ button.nav-item:hover {
 
 .eva-orb-core {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   display: grid;
   place-items: center;
   width: 36%;
@@ -1367,7 +1386,7 @@ button.nav-item:hover {
   position: absolute;
   left: 50%;
   bottom: 8%;
-  z-index: 3;
+  z-index: 5;
   display: inline-grid;
   grid-template-columns: auto auto;
   gap: 8px;
