@@ -1735,6 +1735,9 @@ EVA_PROBLEM_SOLVER_MAX_CYCLES=6
 Ce que ca change concretement:
 
 - Eva ne se contente plus du premier routeur par mots-cles;
+- chaque message passe par une interpretation locale avant toute recherche web ou action;
+- les demandes sur les donnees/personnelles locales de Victor (`mes mails`, `mon PC`, `mon ecran`, `mon compte`, `Brave`, `Cursor`, `Beeper`, `Spotify`, `LinkedIn`) ne sont pas transformees en recherche web sauf demande explicite d'Internet;
+- les fautes courantes autour de `mail/email/gmail` restent routees vers Gmail;
 - la memoire locale sert avant l'action, pas seulement pendant la reponse;
 - Eva choisit les clusters utiles avant d'appeler le modele ou un outil;
 - Ollama fait un second passage structure pour comprendre l'objectif reel;

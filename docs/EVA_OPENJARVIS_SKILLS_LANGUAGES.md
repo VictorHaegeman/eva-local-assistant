@@ -29,6 +29,7 @@ Implementation ajoutee dans Eva:
 - `backend/app/cognition/cognitive_loop.py`: la boucle utilise aussi les routes proposees par le second regard Ollama local, puis tente les plans B autorises;
 - `backend/app/cognition/problem_solver.py`: resolveur local qui transforme un blocage ou un echec outil en diagnostic + routes alternatives;
 - `backend/app/cognition/problem_store.py`: journal local SQLite des blocages, outils echoues, routes alternatives et plans de reprise;
+- `backend/app/cognition/structured_interpreter.py`: garde-fou anti-mauvais routage pour empecher `mes mails`, `mon PC`, `mon ecran`, `Brave`, `Cursor`, `Beeper`, `Spotify` ou `LinkedIn` de partir en recherche web par erreur;
 - `GET /resolver/status`: statut local du resolveur affiche dans le panneau `Resolver`;
 - le resolveur est aussi branche sur les blocages directs et les exceptions chat/Telegram, pour eviter les reponses brutes du type "Eva ne peut pas repondre";
 - panneau Memoire: statut de la memoire vectorielle locale et bouton de reconstruction des embeddings.

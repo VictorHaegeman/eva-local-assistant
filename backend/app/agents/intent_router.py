@@ -49,7 +49,7 @@ def _has_any(text: str, markers: tuple[str, ...]) -> bool:
 
 
 def _has_mail_word(text: str) -> bool:
-    return bool(re.search(r"\b(?:mail|mails|email|emails|e-mail|e-mails)\b", text))
+    return bool(re.search(r"\b(?:mail|mails|mial|mials|meil|meils|email|emails|emial|emials|e-mail|e-mails|gmail)\b", text))
 
 
 def _has_project_word(text: str) -> bool:
@@ -77,6 +77,8 @@ def _has_reply_audit_context(text: str) -> bool:
         return True
     if re.search(r"\b(?:mails?|emails?)\b.{0,80}\ba\b.{0,20}\b(?:traiter|repondre)\b", text):
         return True
+    if re.search(r"\b(?:mails?|emails?)\b.{0,90}\b(?:qui sont|auxquels?|que je dois)\b.{0,30}\b(?:repondre|traiter)\b", text):
+        return True
     return _has_any(
         text,
         (
@@ -92,6 +94,10 @@ def _has_reply_audit_context(text: str) -> bool:
             "que je n'ai pas repondu",
             "auxquels j'ai pas encore repondu",
             "auxquels je n'ai pas encore repondu",
+            "qui sont a repondre",
+            "qui sont a traiter",
+            "mails a repondre",
+            "mail a repondre",
         ),
     )
 
@@ -231,6 +237,32 @@ def classify_user_intent(message: str) -> UserIntent:
             name="terminal_error",
             confidence=0.95,
             summary="Diagnostiquer une erreur terminal et appliquer un correctif connu si possible.",
+        )
+
+    if _has_any(
+        text,
+        (
+            "eteins mon pc",
+            "eteint mon pc",
+            "eteindre mon pc",
+            "arrete mon pc",
+            "arrette mon pc",
+            "shutdown mon pc",
+            "shutdown pc",
+            "redemarre mon pc",
+            "restart mon pc",
+            "mets mon pc en veille",
+            "met mon pc en veille",
+        ),
+    ):
+        return UserIntent(
+            name="desktop_control",
+            confidence=0.92,
+            summary=(
+                "Interpreter une demande d'alimentation PC comme action locale Windows, "
+                "pas comme recherche web."
+            ),
+            caution="Extinction/redemarrage/veille sont des actions systeme critiques a traiter par politique locale.",
         )
 
     if _has_any(

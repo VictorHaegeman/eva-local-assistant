@@ -91,6 +91,27 @@ ACTION_ROUTES = {
     "web_search",
 }
 
+PRIVATE_OR_LOCAL_DOMAINS = {
+    "gmail",
+    "calendar",
+    "google_setup",
+    "screen",
+    "desktop",
+    "beeper",
+    "linkedin",
+    "spotify",
+    "cursor",
+}
+
+EXPLICIT_WEB_MARKERS = (
+    "cherche sur internet",
+    "recherche internet",
+    "va sur internet",
+    "trouve sur internet",
+    "cherche web",
+    "recherche web",
+)
+
 
 ROUTE_LABELS = {
     "map_preview": "Carte integree",
@@ -179,6 +200,17 @@ def _max_reasoning_attempts() -> int:
     return max(base, min(max(settings.eva_problem_solver_max_cycles, 1), 8))
 
 
+def _allows_web_fallback(understanding: UnderstandingFrame) -> bool:
+    normalized = understanding.normalized_message
+    if understanding.primary_domain == "web":
+        return True
+    if any(marker in normalized for marker in EXPLICIT_WEB_MARKERS):
+        return True
+    if understanding.primary_domain in PRIVATE_OR_LOCAL_DOMAINS:
+        return False
+    return understanding.primary_domain in {"browser", "project"}
+
+
 def _tool_for_route(route: str, understanding: UnderstandingFrame) -> str:
     return {
         "browser_or_video": "browser_assistant",
@@ -231,8 +263,11 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
     elif domain == "web":
         routes.extend(["web_search", "browser_or_video"])
 
-    if settings.eva_reasoning_web_fallback_enabled and "web_search" not in routes:
+    if settings.eva_reasoning_web_fallback_enabled and _allows_web_fallback(understanding) and "web_search" not in routes:
         routes.append("web_search")
+
+    if not _allows_web_fallback(understanding):
+        routes = [candidate for candidate in routes if candidate != "web_search"]
 
     unique_routes: list[str] = []
     for candidate in routes:
@@ -756,6 +791,17 @@ async def _execute_route_once(
         return RouteExecution(content=content, result=result, selected_route=route)
 
     if route == "web_search" or (use_domain_fallback and understanding.primary_domain == "web"):
+        if not _allows_web_fallback(understanding):
+            return RouteExecution(
+                content="",
+                result=_failed(
+                    "web_search",
+                    "Recherche web refusee: la demande concerne les donnees locales/personnelles de Victor.",
+                    ("utiliser l'outil local adapte", "si l'outil local echoue, afficher le diagnostic resolver"),
+                    confidence=0.2,
+                ),
+                selected_route="web_search",
+            )
         query = detect_web_search_query(message) or message
         web_results = await search_web(query)
         content = format_web_results(query, web_results)

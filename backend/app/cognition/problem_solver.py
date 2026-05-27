@@ -37,11 +37,17 @@ def _draft_route_for_domain(domain: str) -> tuple[str, ...]:
     if domain == "gmail":
         return ("gmail_reply_draft", "gmail_read")
     if domain == "linkedin":
-        return ("linkedin_browser_post", "web_search")
+        return ("linkedin_activity", "linkedin_browser_post", "browser_or_video")
     if domain in {"project", "cursor"}:
-        return ("cursor_work", "project_factory", "web_search")
+        return ("cursor_work", "project_factory")
     if domain in {"desktop", "screen"}:
         return ("screen_read", "desktop_control")
+    if domain == "spotify":
+        return ("spotify", "browser_or_video")
+    if domain == "beeper":
+        return ("beeper_messages", "screen_read")
+    if domain == "calendar":
+        return ("calendar_read",)
     if domain == "browser":
         return ("web_search",)
     return ("web_search",)
@@ -49,7 +55,7 @@ def _draft_route_for_domain(domain: str) -> tuple[str, ...]:
 
 def _tool_recovery_routes(tool: str, domain: str) -> tuple[str, ...]:
     if tool == "gmail_client":
-        return ("gmail_read", "web_search")
+        return ("gmail_reply_audit", "gmail_read", "gmail_reply_draft")
     if tool == "browser_assistant":
         return ("web_search", "screen_read")
     if tool == "cursor_bridge":
@@ -57,15 +63,15 @@ def _tool_recovery_routes(tool: str, domain: str) -> tuple[str, ...]:
     if tool == "project_factory":
         return ("cursor_work", "web_search")
     if tool == "spotify_assistant":
-        return ("browser_or_video", "web_search")
+        return ("spotify", "browser_or_video")
     if tool == "desktop_automation":
-        return ("screen_read", "browser_or_video", "web_search")
+        return ("screen_read", "desktop_control")
     if tool == "screen_reader":
-        return ("desktop_control", "web_search")
+        return ("desktop_control", "screen_read")
     if tool == "beeper_assistant":
         return ("screen_read", "desktop_control")
     if tool in {"linkedin_assistant", "linkedin_activity"}:
-        return ("web_search", "browser_or_video")
+        return ("linkedin_activity", "browser_or_video")
     return _draft_route_for_domain(domain)
 
 
@@ -79,15 +85,20 @@ def diagnose_problem(
 
     if result.status == "blocked":
         if "session fiable" in normalized_error or "telegram autorise" in normalized_error:
+            permission_routes = (
+                ("web_search",)
+                if domain in {"browser", "web"}
+                else _draft_route_for_domain(domain)
+            )
             return ProblemResolution(
                 problem_type="permission",
                 summary=(
                     "Le canal courant n'est pas marque comme session fiable pour piloter le PC. "
                     "Eva bascule donc en mode preparation et recherche de chemin alternatif."
                 ),
-                alternate_routes=("web_search",),
+                alternate_routes=permission_routes,
                 safe_actions=(
-                    "chercher une alternative web gratuite uniquement si elle aide la demande",
+                    "utiliser uniquement une route alternative coherente avec le domaine demande",
                     "preparer les etapes exactes a executer depuis Telegram autorise ou le PC local",
                     "journaliser le blocage dans le resolver pour reprendre ensuite",
                 ),

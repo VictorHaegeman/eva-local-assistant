@@ -26,7 +26,7 @@ def _normalize(value: str) -> str:
 
 
 def _has_gmail_context(normalized: str) -> bool:
-    return bool(re.search(r"\b(?:mail|mails|email|emails|gmail)\b", normalized)) or any(
+    return bool(re.search(r"\b(?:mail|mails|mial|mials|meil|meils|email|emails|emial|emials|gmail)\b", normalized)) or any(
         marker in normalized
         for marker in (
             "gmail",

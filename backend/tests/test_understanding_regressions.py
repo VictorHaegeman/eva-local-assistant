@@ -64,6 +64,13 @@ def test_unanswered_gmail_routes_to_reply_audit_not_web() -> None:
     assert frame.action_plan.route == "gmail_reply_audit"
 
 
+def test_typo_dreamlense_mail_audit_routes_to_gmail_not_web() -> None:
+    frame = _frame("J'ai des mails concernant DreamLense qui sont a repondre ?")
+    assert frame.primary_domain == "gmail"
+    assert frame.expected_outcome == "read_then_audit"
+    assert frame.action_plan.route == "gmail_reply_audit"
+
+
 def test_unanswered_gmail_cannot_be_overridden_to_web_search() -> None:
     frame = _frame("c'est quoi mes derniers mails auxquels j'ai pas encore repondu")
     interpretation = StructuredInterpretation(
@@ -81,6 +88,33 @@ def test_unanswered_gmail_cannot_be_overridden_to_web_search() -> None:
         evidence_required=("resultats web",),
     )
     assert not _should_accept_interpretation(interpretation, frame)
+
+
+def test_private_local_request_cannot_be_overridden_to_web_search() -> None:
+    frame = _frame("Eteint mon pc")
+    interpretation = StructuredInterpretation(
+        goal="Chercher comment eteindre un PC",
+        domain="web",
+        outcome="search",
+        route="web_search",
+        confidence=0.99,
+        should_execute=True,
+        needs_clarification=False,
+        clarification_question="",
+        reasoning_summary="Mauvaise route simulee.",
+        candidate_routes=("web_search",),
+        risk_level="read_only",
+        evidence_required=("resultats web",),
+    )
+    assert not _should_accept_interpretation(interpretation, frame)
+
+
+def test_power_request_routes_to_desktop_control_not_web() -> None:
+    frame = _frame("Eteint mon pc")
+    assert frame.primary_domain == "desktop"
+    assert frame.expected_outcome == "execute_local"
+    assert frame.action_plan.route == "desktop_control"
+    assert frame.safety_level == "critical"
 
 
 def test_reponse_does_not_match_repo() -> None:
@@ -273,7 +307,7 @@ def test_problem_solver_permission_block_keeps_safe_fallback() -> None:
     resolution = diagnose_problem(result, frame, trusted_actions=False)
     assert resolution.problem_type == "permission"
     assert resolution.blocked_by_policy
-    assert problem_routes_for_result(result, frame, trusted_actions=False) == ("web_search",)
+    assert problem_routes_for_result(result, frame, trusted_actions=False) == ()
 
 
 def test_direct_problem_solver_replaces_permission_refusal() -> None:
@@ -303,7 +337,10 @@ if __name__ == "__main__":
     test_dreamlense_mail_draft_routes_to_gmail()
     test_gmail_followup_does_not_become_cursor()
     test_unanswered_gmail_routes_to_reply_audit_not_web()
+    test_typo_dreamlense_mail_audit_routes_to_gmail_not_web()
     test_unanswered_gmail_cannot_be_overridden_to_web_search()
+    test_private_local_request_cannot_be_overridden_to_web_search()
+    test_power_request_routes_to_desktop_control_not_web()
     test_reponse_does_not_match_repo()
     test_linkedin_post_routes_to_linkedin_operator()
     test_linkedin_activity_does_not_create_post()

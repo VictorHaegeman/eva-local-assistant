@@ -167,6 +167,10 @@ def _domain_from_message(
         return "cursor"
     if intent.name == "local_status":
         return "status"
+    if intent.name == "desktop_control":
+        if _has_any(normalized, ("clique", "click", "bouton", "champ", "formulaire", "ecran", "pixels")):
+            return "screen"
+        return "desktop"
 
     if _is_followup(normalized, conversation_context or []):
         if _has_any(context_text, ("gmail", "mail", "email", "inbox", "expediteur", "objet")):
@@ -377,6 +381,12 @@ def _safety_level(domain: PrimaryDomain, outcome: ExpectedOutcome, normalized: s
             "push",
             "supprime",
             "delete",
+            "eteins",
+            "eteint",
+            "eteindre",
+            "redemarre",
+            "shutdown",
+            "restart",
             "paiement",
             "achat",
         ),

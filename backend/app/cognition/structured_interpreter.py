@@ -118,6 +118,37 @@ DOMAIN_ROUTE_FALLBACK: dict[str, str] = {
 }
 
 
+EXPLICIT_WEB_MARKERS = (
+    "cherche sur internet",
+    "recherche internet",
+    "va sur internet",
+    "trouve sur internet",
+    "cherche web",
+    "recherche web",
+)
+
+PRIVATE_LOCAL_MARKERS = (
+    "mes mails",
+    "mes emails",
+    "mon mail",
+    "mon email",
+    "gmail",
+    "mon compte",
+    "mes messages",
+    "mon pc",
+    "mon ordinateur",
+    "mon ecran",
+    "ma fenetre",
+    "mon navigateur",
+    "brave",
+    "cursor",
+    "codex",
+    "beeper",
+    "linkedin",
+    "spotify",
+)
+
+
 @dataclass(frozen=True)
 class StructuredInterpretation:
     goal: str
@@ -243,6 +274,8 @@ Tu transformes la demande de Victor en JSON operationnel pour un assistant local
 Principes:
 - comprendre l'objectif reel avant de repondre;
 - ne pas demander de precision si une interpretation raisonnable et sure existe;
+- ne jamais transformer une demande sur les mails, le compte, le PC, l'ecran, Brave, Cursor, Spotify, Beeper ou LinkedIn de Victor en simple recherche web;
+- utiliser web_search seulement si Victor demande explicitement Internet/actualites ou si le domaine reel est public;
 - executer les actions locales sures si la session est fiable;
 - demander confirmation seulement pour envoyer, publier, supprimer, git push, achat/paiement ou action irreversible;
 - ne jamais inventer qu'une action a ete faite;
@@ -299,7 +332,9 @@ def _should_accept_interpretation(
     base_frame: UnderstandingFrame,
 ) -> bool:
     normalized = base_frame.normalized_message
-    mail_context = bool(re.search(r"\b(?:mail|mails|email|emails|gmail)\b", normalized))
+    explicit_web_request = any(marker in normalized for marker in EXPLICIT_WEB_MARKERS) or has_news_context(normalized)
+    private_or_local_context = any(marker in normalized for marker in PRIVATE_LOCAL_MARKERS)
+    mail_context = bool(re.search(r"\b(?:mail|mails|mial|mials|meil|meils|email|emails|emial|emials|gmail)\b", normalized))
     private_mail_context = mail_context and any(
         marker in normalized
         for marker in (
@@ -333,6 +368,17 @@ def _should_accept_interpretation(
         return False
 
     if private_mail_context and interpretation.route == "web_search":
+        return False
+
+    if private_or_local_context and not explicit_web_request and interpretation.route == "web_search":
+        return False
+
+    if (
+        base_frame.primary_domain
+        in {"gmail", "calendar", "google_setup", "screen", "desktop", "beeper", "linkedin", "spotify", "cursor"}
+        and not explicit_web_request
+        and interpretation.domain == "web"
+    ):
         return False
 
     if base_frame.primary_domain == "gmail" and interpretation.domain == "web":

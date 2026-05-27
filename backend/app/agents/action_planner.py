@@ -77,6 +77,7 @@ def _route_from_message(message: str, intent: UserIntent) -> PlanRoute:
         "project_factory",
         "cursor_agent_setup",
         "cursor_work",
+        "desktop_control",
         "linkedin_activity",
         "linkedin_browser_post",
         "web_search",
