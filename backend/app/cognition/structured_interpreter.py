@@ -300,6 +300,18 @@ def _should_accept_interpretation(
 ) -> bool:
     normalized = base_frame.normalized_message
     mail_context = bool(re.search(r"\b(?:mail|mails|email|emails|gmail)\b", normalized))
+    private_mail_context = mail_context and any(
+        marker in normalized
+        for marker in (
+            "mes ",
+            "mon ",
+            "mails auxquels",
+            "emails auxquels",
+            "inbox",
+            "boite mail",
+            "boite email",
+        )
+    )
     cursor_context = any(marker in normalized for marker in ("cursor", "codex", "projet", "workspace")) or bool(
         re.search(r"\brepo(?:sitory)?\b", normalized)
     )
@@ -318,6 +330,12 @@ def _should_accept_interpretation(
         return False
 
     if mail_context and interpretation.route == "cursor_work" and not cursor_context:
+        return False
+
+    if private_mail_context and interpretation.route == "web_search":
+        return False
+
+    if base_frame.primary_domain == "gmail" and interpretation.domain == "web":
         return False
 
     if (

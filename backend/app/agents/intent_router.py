@@ -57,20 +57,41 @@ def _has_project_word(text: str) -> bool:
 
 
 def _has_reply_context(text: str) -> bool:
+    if re.search(r"\b(?:reponds?|repondre|reponse|brouillon|redige|ecris|ecrit|prepare)\b", text):
+        return True
     return _has_any(
         text,
         (
-            "repond",
-            "reponse",
-            "brouillon",
-            "redige",
-            "ecris",
-            "ecrit",
-            "prepare",
             "pret a etre envoye",
             "pret a envoyer",
             "a approuver",
             "bouton repondre",
+        ),
+    )
+
+
+def _has_reply_audit_context(text: str) -> bool:
+    if re.search(r"\b(?:pas|jamais)\b.{0,40}\brepondu\b", text):
+        return True
+    if re.search(r"\b(?:non|sans)\b.{0,20}\b(?:repondu|reponse)\b", text):
+        return True
+    if re.search(r"\b(?:mails?|emails?)\b.{0,80}\ba\b.{0,20}\b(?:traiter|repondre)\b", text):
+        return True
+    return _has_any(
+        text,
+        (
+            "pas repondu",
+            "pas encore repondu",
+            "non repondu",
+            "non-repondu",
+            "sans reponse",
+            "sans repondre",
+            "a repondre",
+            "a traiter",
+            "que j'ai pas repondu",
+            "que je n'ai pas repondu",
+            "auxquels j'ai pas encore repondu",
+            "auxquels je n'ai pas encore repondu",
         ),
     )
 
@@ -249,19 +270,7 @@ def classify_user_intent(message: str) -> UserIntent:
         text,
         ("gmail", "mes mails", "mes emails", "boite mail", "dernier mail", "dernier email", "le mail", "ce mail", "au mail", "mails"),
     )
-    reply_audit_context = _has_any(
-        text,
-        (
-            "pas repondu",
-            "non repondu",
-            "sans reponse",
-            "sans repondre",
-            "a repondre",
-            "a traiter",
-            "que j'ai pas repondu",
-            "que je n'ai pas repondu",
-        ),
-    )
+    reply_audit_context = _has_reply_audit_context(text)
     if gmail_context and reply_audit_context:
         return UserIntent(
             name="gmail_reply_audit",

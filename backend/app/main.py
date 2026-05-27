@@ -145,6 +145,7 @@ from app.memory.obsidian_store import (
     mirror_memory_to_obsidian,
     open_obsidian_vault,
     obsidian_status,
+    seed_obsidian_memory_vault,
     sync_memories_to_obsidian,
 )
 from app.memory.profile_store import ProfileStoreError, ensure_profile_file, load_profile
@@ -269,6 +270,13 @@ class MemoryEmbeddingRebuildRequest(BaseModel):
 
 class ObsidianImportRequest(BaseModel):
     limit: int = Field(default=200, ge=1, le=1000)
+    rebuild_embeddings: bool = False
+
+
+class ObsidianSeedRequest(BaseModel):
+    import_to_sqlite: bool = True
+    limit: int = Field(default=500, ge=1, le=1000)
+    rebuild_embeddings: bool = False
 
 
 class FileReadRequest(BaseModel):
@@ -838,7 +846,22 @@ async def memory_obsidian_hydrate() -> dict[str, object]:
 @app.post("/memory/obsidian/import", dependencies=[Depends(require_sensitive_access)])
 async def memory_obsidian_import(request: ObsidianImportRequest) -> dict[str, object]:
     try:
-        return import_obsidian_notes_to_memories(limit=request.limit)
+        return import_obsidian_notes_to_memories(
+            limit=request.limit,
+            rebuild_index=request.rebuild_embeddings,
+        )
+    except ObsidianMemoryError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/memory/obsidian/seed", dependencies=[Depends(require_sensitive_access)])
+async def memory_obsidian_seed(request: ObsidianSeedRequest) -> dict[str, object]:
+    try:
+        return seed_obsidian_memory_vault(
+            import_to_sqlite=request.import_to_sqlite,
+            limit=request.limit,
+            rebuild_index=request.rebuild_embeddings,
+        )
     except ObsidianMemoryError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

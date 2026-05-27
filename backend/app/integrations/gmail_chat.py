@@ -26,7 +26,7 @@ def _normalize(value: str) -> str:
 
 
 def _has_gmail_context(normalized: str) -> bool:
-    return any(
+    return bool(re.search(r"\b(?:mail|mails|email|emails|gmail)\b", normalized)) or any(
         marker in normalized
         for marker in (
             "gmail",
@@ -178,29 +178,27 @@ def wants_gmail_reply_draft(message: str) -> bool:
     if _has_reply_audit_context(normalized):
         return False
 
-    reply_markers = (
-        "repond",
-        "reponse",
-        "brouillon",
-        "redige",
-        "ecris",
-        "ecrit",
-        "prepare",
-        "pret a etre envoye",
-        "pret a envoyer",
-        "a approuver",
-        "bouton repondre",
-        "direct dans mes mails",
-        "dans mes mails",
-    )
     has_strong_context = _has_gmail_context(normalized)
-    has_weak_reply_context = "mail" in normalized and any(
-        marker in normalized for marker in ("repond", "reponse", "brouillon")
+    has_reply_verb = bool(
+        re.search(r"\b(?:reponds?|repondre|reponse|brouillon|redige|ecris|ecrit|prepare)\b", normalized)
+    ) or any(
+        marker in normalized
+        for marker in (
+            "pret a etre envoye",
+            "pret a envoyer",
+            "a approuver",
+            "bouton repondre",
+            "direct dans mes mails",
+            "dans mes mails",
+        )
+    )
+    has_weak_reply_context = "mail" in normalized and bool(
+        re.search(r"\b(?:reponds?|repondre|reponse|brouillon)\b", normalized)
     )
     if not has_strong_context and not has_weak_reply_context:
         return False
 
-    return any(marker in normalized for marker in reply_markers)
+    return has_reply_verb
 
 
 def wants_gmail_auto_reply(message: str) -> bool:
@@ -224,17 +222,27 @@ def wants_gmail_auto_reply(message: str) -> bool:
 
 
 def _has_reply_audit_context(normalized: str) -> bool:
+    if re.search(r"\b(?:pas|jamais)\b.{0,40}\brepondu\b", normalized):
+        return True
+    if re.search(r"\b(?:non|sans)\b.{0,20}\b(?:repondu|reponse)\b", normalized):
+        return True
+    if re.search(r"\b(?:mails?|emails?)\b.{0,80}\ba\b.{0,20}\b(?:traiter|repondre)\b", normalized):
+        return True
     return any(
         marker in normalized
         for marker in (
             "pas repondu",
+            "pas encore repondu",
             "non repondu",
+            "non-repondu",
             "sans reponse",
             "sans repondre",
             "a repondre",
             "a traiter",
             "que j'ai pas repondu",
             "que je n'ai pas repondu",
+            "auxquels j'ai pas encore repondu",
+            "auxquels je n'ai pas encore repondu",
         )
     )
 
@@ -536,53 +544,72 @@ def _thread_has_victor_reply(original: GmailMessage) -> bool:
 
 
 def build_gmail_reply_audit_response(message: str) -> str:
-    topic = _extract_topic_from_message(message) or "ta demande"
-    messages = _list_topic_messages(topic)
+    topic = _extract_topic_from_message(message)
+    if topic:
+        messages = _list_topic_messages(topic)
+        search_label = f"Sujet recherche: {topic}."
+    else:
+        messages = list_gmail_messages(query="in:inbox newer_than:30d", max_results=20)
+        search_label = "Sujet recherche: inbox recente, vrais mails auxquels Victor n'a pas encore repondu."
+
     if not messages:
         return (
             "Interpretation Eva: tu veux que je lise les mails reels et que je verifie les fils sans reponse.\n\n"
-            f"Source: Gmail API.\nJe n'ai trouve aucun mail recent lie a {topic}."
+            f"Source: Gmail API.\nJe n'ai trouve aucun mail recent a auditer."
         )
 
-    unanswered: list[GmailMessage] = []
+    unanswered: list[tuple[GmailMessage, object]] = []
     answered: list[GmailMessage] = []
-    checked: list[tuple[GmailMessage, bool]] = []
+    noise: list[tuple[GmailMessage, object]] = []
+    checked: list[tuple[GmailMessage, bool, object]] = []
     for shallow_message in messages:
         full_message = get_gmail_message(shallow_message.id)
+        classification = classify_email(full_message, include_body=True)
+        if classification.is_noise:
+            noise.append((full_message, classification))
+            continue
         replied = _thread_has_victor_reply(full_message)
-        checked.append((full_message, replied))
+        checked.append((full_message, replied, classification))
         if replied:
             answered.append(full_message)
         else:
-            unanswered.append(full_message)
+            unanswered.append((full_message, classification))
 
     lines = [
-        "Interpretation Eva: tu veux un audit Gmail, pas une configuration OAuth ni un brouillon automatique.",
-        f"Source: Gmail API. Sujet recherche: {topic}.",
+        "Interpretation Eva: tu veux un audit Gmail reel, pas une recherche web.",
+        f"Source: Gmail API. {search_label}",
         f"Mails verifies: {len(checked)}. Sans reponse detectee: {len(unanswered)}.",
+        f"Mis de cote comme pubs/newsletters/notifications faibles: {len(noise)}.",
         "",
     ]
 
     if unanswered:
         lines.append("A traiter:")
-        for index, item in enumerate(unanswered[:5], start=1):
+        for index, (item, classification) in enumerate(unanswered[:7], start=1):
             lines.append(
                 f"{index}. {item.subject}\n"
                 f"   De: {item.sender}\n"
                 f"   Date: {item.date}\n"
+                f"   Priorite: {classification.category} ({classification.importance_score}/100) - {classification.reason}\n"
                 f"   ID: {item.id}\n"
                 f"   Extrait: {item.snippet}"
             )
         lines.append("")
-        lines.append("Tu peux me dire: `reponds au mail ID ...` ou `ouvre le premier mail DreamLense`.")
+        lines.append("Prochaine action logique: ouvrir le premier mail utile ou preparer un brouillon sur celui que tu choisis.")
     else:
-        lines.append("Je n'ai pas detecte de mail DreamLense recent sans reponse de ta part.")
+        lines.append("Je n'ai pas detecte de mail utile recent sans reponse de ta part.")
 
     if answered:
         lines.append("")
         lines.append("Deja repondu:")
         for item in answered[:5]:
             lines.append(f"- {item.subject} ({item.date})")
+
+    if noise:
+        lines.append("")
+        lines.append("Ignore pour l'instant:")
+        for item, classification in noise[:5]:
+            lines.append(f"- {item.subject} ({classification.category}, {classification.importance_score}/100) - {item.sender}")
 
     return "\n".join(lines)
 

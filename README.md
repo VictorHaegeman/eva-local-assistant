@@ -1806,6 +1806,7 @@ Endpoints utiles:
 ```text
 GET /memory/obsidian/status
 POST /memory/obsidian/hydrate
+POST /memory/obsidian/seed
 POST /memory/obsidian/import
 POST /memory/obsidian/sync
 POST /memory/obsidian/open
@@ -1822,6 +1823,19 @@ Eva ne devient pas plus intelligente par entrainement du modele local. Elle appr
 - angles DreamLense;
 - idees LinkedIn;
 - templates projet, Cursor, email, LinkedIn, brief et frontend.
+
+`/memory/obsidian/seed` nourrit le coffre avec des notes importables plus concretes:
+
+- gouts UX de Victor;
+- preferences de travail;
+- vision produit Eva;
+- regles d'autonomie;
+- recovery quand une action echoue;
+- memoire DreamLense;
+- strategie LinkedIn;
+- backlog d'apprentissage.
+
+Ces notes restent locales dans `data/obsidian_vault`. Le bouton `Nourrir la memoire` du panneau Memoire les cree si elles n'existent pas encore, puis importe les lignes `#memory/...` dans SQLite. La reconstruction des embeddings reste separee via `Reconstruire les embeddings` pour eviter de bloquer l'interface si Ollama est lent.
 
 Eva injecte un resume de ces notes Obsidian dans le prompt Ollama quand la demande concerne creation, design, mails, posts, projets ou decisions. Le vault reste local et peut etre edite a la main dans Obsidian.
 

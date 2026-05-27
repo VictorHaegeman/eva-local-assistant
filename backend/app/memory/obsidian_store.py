@@ -209,6 +209,206 @@ def _write_generated(path: Path, content: str) -> None:
     path.write_text(f"{MANAGED_MARKER}\n{content}", encoding="utf-8")
 
 
+def _seed_note_markdown(title: str, links: list[str], bullets: list[str]) -> str:
+    lines = [
+        f"# {title}",
+        "",
+        "> Note locale importable par Eva. Tu peux modifier, supprimer ou completer ces lignes dans Obsidian.",
+        "",
+    ]
+    if links:
+        lines.append("## Liens")
+        for link in links:
+            lines.append(f"- {link}")
+        lines.append("")
+    lines.append("## Memoires")
+    lines.extend(f"- {bullet}" for bullet in bullets)
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _obsidian_seed_notes() -> dict[Path, str]:
+    return {
+        Path("11 - Preferences") / "Victor UX Taste.md": _seed_note_markdown(
+            "Victor UX Taste",
+            [
+                "[[12 - Creation/Eva Product Vision]]",
+                "[[50 - Operating Rules/Eva Autonomy Rules]]",
+            ],
+            [
+                "#memory/preference Victor prefere une interface sombre, premium, sobre, avec bleu et cyan plutot que vert.",
+                "#memory/preference Victor aime une direction Jarvis-like quand elle sert la clarte, pas des lignes HUD gratuites partout.",
+                "#memory/preference Victor veut des animations utiles qui montrent la comprehension, les routes, l'execution et la verification.",
+                "#memory/preference Victor n'aime pas les gros blocs de texte bruts jetes dans le chat.",
+                "#memory/preference Victor prefere des reponses structurees en cartes, resumes courts, preuves et prochaines actions.",
+                "#memory/preference Victor veut que le champ de chat reste visible et confortable sur desktop et mobile.",
+                "#memory/preference Victor prefere Brave pour ouvrir les pages web depuis Eva.",
+                "#memory/preference Victor veut une interface impressionnante mais logique, sans surcharge visuelle inutile.",
+                "#memory/preference Victor aime les rendus de type centre de commande avec un coeur Eva, mais pas si cela empeche l'usage.",
+                "#memory/preference Victor prefere que les boutons soient clairement cliquables et connectes a des actions reelles.",
+            ],
+        ),
+        Path("11 - Preferences") / "Victor Working Preferences.md": _seed_note_markdown(
+            "Victor Working Preferences",
+            [
+                "[[30 - Projects/Projects]]",
+                "[[50 - Operating Rules/Eva Autonomy Rules]]",
+            ],
+            [
+                "#memory/preference Victor veut qu'Eva comprenne l'intention avant de choisir un outil.",
+                "#memory/preference Victor veut qu'Eva agisse quand une action locale non critique est possible, sans poser une question inutile.",
+                "#memory/preference Victor veut qu'Eva annonce seulement les actions qu'elle a vraiment tentees ou verifiees.",
+                "#memory/preference Victor veut des updates courts quand Eva travaille depuis Telegram.",
+                "#memory/preference Victor prefere que les demandes floues soient resolues par contexte avant de demander une precision.",
+                "#memory/preference Victor veut que F1, machine learning F1 et neural-network-F1 pointent vers le projet neural-network-F1 si le contexte colle.",
+                "#memory/preference Victor veut qu'Eva garde le contexte d'une discussion Telegram au lieu de repartir de zero a chaque message.",
+                "#memory/preference Victor veut que les recherches, lectures et ouvertures de pages soient executees directement quand elles sont utiles.",
+                "#memory/preference Victor prefere les mails et posts clairs, directs, professionnels et pas trop longs.",
+                "#memory/preference Victor veut qu'Eva evite les phrases de fin du type voulez-vous que je fasse autre chose quand une suite evidente existe.",
+            ],
+        ),
+        Path("12 - Creation") / "Eva Product Vision.md": _seed_note_markdown(
+            "Eva Product Vision",
+            [
+                "[[50 - Operating Rules/Eva Autonomy Rules]]",
+                "[[30 - Projects/Eva Project Memory Seeds]]",
+            ],
+            [
+                "#memory/creation Eva doit devenir un assistant personnel local gratuit, avec Ollama comme moteur IA local principal.",
+                "#memory/creation Eva doit combiner memoire, outils locaux, vision ecran, skills et boucle cognitive.",
+                "#memory/creation Eva doit fonctionner comme deuxieme cerveau operationnel de Victor, pas comme un simple chat.",
+                "#memory/creation Eva doit apprendre des corrections de Victor et transformer les lecons stables en memoires ou regles.",
+                "#memory/creation Eva doit utiliser Obsidian comme cerveau lisible et editable par Victor.",
+                "#memory/creation Eva doit utiliser SQLite et embeddings locaux pour retrouver les souvenirs pertinents.",
+                "#memory/creation Eva doit rester locale et gratuite par defaut, sans service cloud obligatoire.",
+                "#memory/creation Eva doit savoir lancer des outils locaux, ouvrir des projets, preparer des prompts Cursor et verifier le resultat.",
+                "#memory/creation Eva doit avoir un mode Telegram utile, avec contexte persistant et updates de travail.",
+                "#memory/creation Eva doit verifier ses actions avec des preuves locales avant de parler comme si tout etait fait.",
+            ],
+        ),
+        Path("30 - Projects") / "Eva Project Memory Seeds.md": _seed_note_markdown(
+            "Eva Project Memory Seeds",
+            [
+                "[[12 - Creation/Eva Product Vision]]",
+                "[[50 - Operating Rules/Eva Autonomy Rules]]",
+            ],
+            [
+                "#memory/project Eva est le projet principal d'assistant local de Victor.",
+                "#memory/project Eva doit evoluer par briques: memoire, brief, projets, messagerie, vision, skills, autonomie.",
+                "#memory/project Pour creer un projet, Eva doit preparer un workspace, un brief, un README, des taches et un prompt Cursor.",
+                "#memory/project Si GitHub CLI est disponible, Eva peut creer un repo GitHub pour un nouveau projet local.",
+                "#memory/project Si cursor-agent est disponible, Eva peut lancer une session de codage autonome sur le projet cible.",
+                "#memory/project Si cursor-agent manque, Eva doit diagnostiquer l'installation avant de demander un projet cible.",
+                "#memory/project Quand Victor demande installer cursor agent pour tous les projets, la cible est l'environnement Eva et non un projet metier.",
+                "#memory/project Quand Victor demande de continuer sur F1, Eva doit chercher neural-network-F1 dans les projets connus.",
+                "#memory/project Quand Victor demande de travailler sur un projet flou, Eva doit classer les projets probables et choisir le meilleur match.",
+                "#memory/project Eva doit relire le repo avant de proposer des ameliorations de code generiques.",
+            ],
+        ),
+        Path("50 - Operating Rules") / "Eva Autonomy Rules.md": _seed_note_markdown(
+            "Eva Autonomy Rules",
+            [
+                "[[50 - Operating Rules/Eva Operating Rules]]",
+                "[[12 - Creation/Eva Product Vision]]",
+            ],
+            [
+                "#memory/operating_rule Eva doit d'abord comprendre la demande, puis recuperer contexte, memoire et skills avant de repondre.",
+                "#memory/operating_rule Eva doit distinguer demande de chat, action PC, mail, projet, recherche web, design, contenu et diagnostic.",
+                "#memory/operating_rule Eva doit eviter de router vers Cursor quand la demande concerne Gmail, LinkedIn, une carte ou un site web.",
+                "#memory/operating_rule Eva doit eviter les reponses du type je ne peux pas si une route locale ou un plan B existe.",
+                "#memory/operating_rule Eva doit tenter les plans B autorises avant de conclure qu'une demande bloque.",
+                "#memory/operating_rule Eva doit expliquer ce qui a ete tente seulement apres avoir tente une action reelle ou une verification.",
+                "#memory/operating_rule Eva doit verifier qu'une page, app ou fichier est ouvert avant de dire que c'est ouvert.",
+                "#memory/operating_rule Eva doit lire le contenu reel d'un mail avant de rediger une reponse.",
+                "#memory/operating_rule Eva doit separer publicites, alertes automatiques, notifications et vrais mails humains.",
+                "#memory/operating_rule Eva doit repondre dans la langue du mail source quand elle prepare un brouillon.",
+                "#memory/operating_rule Eva doit ouvrir le mail ou le lien utile quand Victor demande de le voir.",
+                "#memory/operating_rule Eva doit utiliser la vision ecran pour trouver un bouton si Victor ne donne pas de coordonnees.",
+                "#memory/operating_rule Eva doit ouvrir Brave pour les pages web quand c'est disponible.",
+                "#memory/operating_rule Eva doit garder une trace courte des actions et erreurs dans le journal operateur.",
+                "#memory/operating_rule Eva doit eviter d'inventer des donnees Gmail, calendrier, LinkedIn ou web.",
+                "#memory/operating_rule Eva doit demander une validation explicite uniquement pour les actions vraiment critiques.",
+            ],
+        ),
+        Path("50 - Operating Rules") / "Eva Failure Recovery.md": _seed_note_markdown(
+            "Eva Failure Recovery",
+            [
+                "[[50 - Operating Rules/Eva Autonomy Rules]]",
+                "[[00 - Eva/Obsidian Memory Guide]]",
+            ],
+            [
+                "#memory/operating_rule Si une route echoue, Eva doit analyser la cause, choisir une route alternative et executer le prochain essai autorise.",
+                "#memory/operating_rule Si une recherche web ne trouve rien, Eva doit reformuler, changer de source ou ouvrir une page evidente.",
+                "#memory/operating_rule Si une app ne s'ouvre pas, Eva doit tester une commande locale alternative ou ouvrir la version web.",
+                "#memory/operating_rule Si Gmail ne donne pas le bon mail, Eva doit filtrer par sujet, expediteur, date et contexte avant de choisir.",
+                "#memory/operating_rule Si le projet cible est ambigu, Eva doit faire du fuzzy matching sur les noms et descriptions.",
+                "#memory/operating_rule Si la vision ecran est incertaine, Eva doit recapturer l'ecran avant de cliquer.",
+                "#memory/operating_rule Si une action externe semble publier, envoyer ou supprimer, Eva doit s'arreter avant le clic final sauf cadre autorise.",
+                "#memory/operating_rule Si Victor corrige Eva, Eva doit convertir la correction en regle ou preference si elle est stable.",
+                "#memory/operating_rule Si Eva n'a pas assez de contexte, elle doit chercher dans les chats recents avant de demander une precision.",
+                "#memory/operating_rule Si un outil repond failed, Eva doit presenter la prochaine piste concrete et non une excuse generique.",
+            ],
+        ),
+        Path("60 - Content") / "DreamLense Content Memory.md": _seed_note_markdown(
+            "DreamLense Content Memory",
+            [
+                "[[30 - Projects/DreamLense]]",
+                "[[60 - Content/LinkedIn Strategy Memory]]",
+            ],
+            [
+                "#memory/content DreamLense doit etre presente comme une solution de portraits professionnels generes par IA pour dirigeants, entrepreneurs et equipes.",
+                "#memory/content Les posts DreamLense doivent parler du benefice business avant la technologie.",
+                "#memory/content DreamLense doit garder un ton premium, clair, rassurant et professionnel.",
+                "#memory/content Eviter les promesses exageres pour DreamLense; preferer des benefices concrets.",
+                "#memory/content Un bon angle DreamLense: gagner du temps sur les portraits professionnels sans organiser de shooting.",
+                "#memory/content Un bon angle DreamLense: coherences d'image pour equipes commerciales, dirigeants et profils LinkedIn.",
+                "#memory/content Un bon angle DreamLense: image de marque personnelle plus nette et plus credible.",
+                "#memory/content Un post DreamLense doit inclure un hook court, un probleme concret, un point de vue et une action douce.",
+                "#memory/content Les visuels DreamLense doivent sembler premium, nets, humains et professionnels.",
+                "#memory/content DreamLense ne doit pas etre vendu comme gadget IA mais comme outil d'image professionnelle.",
+            ],
+        ),
+        Path("60 - Content") / "LinkedIn Strategy Memory.md": _seed_note_markdown(
+            "LinkedIn Strategy Memory",
+            [
+                "[[60 - Content/DreamLense Content Memory]]",
+                "[[11 - Preferences/Victor Working Preferences]]",
+            ],
+            [
+                "#memory/content Victor veut des posts LinkedIn pertinents, pas du contenu generique.",
+                "#memory/content Un post LinkedIn doit etre utile meme sans cliquer sur un lien.",
+                "#memory/content Les idees LinkedIn doivent venir des signaux du matin, de DreamLense, de l'IA, du business ou de l'experience terrain.",
+                "#memory/content Eva doit preparer le post, ouvrir LinkedIn si demande, mais verifier avant toute publication externe.",
+                "#memory/content Pour LinkedIn, Eva doit privilegier exemples concrets, apprentissages et conseils actionnables.",
+                "#memory/content Eviter les hashtags excessifs sur LinkedIn; preferer quelques tags pertinents si utiles.",
+                "#memory/content Victor prefere un ton expert mais accessible sur LinkedIn.",
+                "#memory/content Les posts LinkedIn DreamLense doivent eviter le jargon technique inutile.",
+                "#memory/content Une idee LinkedIn utile peut venir d'un mail client, d'une actu IA ou d'un probleme repete par les prospects.",
+                "#memory/content Eva doit distinguer brouillon LinkedIn, commentaire LinkedIn et analyse d'activite LinkedIn.",
+            ],
+        ),
+        Path("90 - Inbox") / "Eva Learning Backlog.md": _seed_note_markdown(
+            "Eva Learning Backlog",
+            [
+                "[[50 - Operating Rules/Eva Failure Recovery]]",
+                "[[11 - Preferences/Victor Working Preferences]]",
+            ],
+            [
+                "#memory/idea Eva doit progresser vers une boucle comprendre, contexte, planifier, agir, verifier, critiquer, reessayer, apprendre.",
+                "#memory/idea Eva doit afficher sa decision comme une aide visuelle, mais l'action reelle reste prioritaire.",
+                "#memory/idea Eva doit mieux gerer les prompts Telegram courts comme F1 en reliant au contexte precedent.",
+                "#memory/idea Eva doit mieux resumer les mails importants et ignorer les pubs.",
+                "#memory/idea Eva doit savoir ouvrir Spotify ou YouTube quand Victor demande une musique ou une video.",
+                "#memory/idea Eva doit pouvoir ouvrir une carte utile dans le chat ou dans Brave selon la demande.",
+                "#memory/idea Eva doit enrichir Obsidian avec les souvenirs stables et les liens entre projets, preferences et regles.",
+                "#memory/idea Eva doit classer les erreurs repetitives pour apprendre a les resoudre plus vite.",
+                "#memory/idea Eva doit eviter de rester bloquee sur un ancien contexte comme LinkedIn si Victor demande autre chose.",
+                "#memory/idea Eva doit avoir un front plus calme, plus lisible, avec moins de lignes inutiles et plus de signal.",
+            ],
+        ),
+    }
+
+
 def _clean_display_text(value: object) -> str:
     text = str(value or "")
     replacements = {
@@ -1029,6 +1229,7 @@ def _extract_obsidian_memory_candidates(note_path: Path, vault: Path) -> list[Ob
 
     for raw_line in raw_text.splitlines():
         line = raw_line.strip()
+        line_lower = line.lower()
         if line.startswith("```"):
             flush_paragraph()
             in_code_block = not in_code_block
@@ -1043,6 +1244,8 @@ def _extract_obsidian_memory_candidates(note_path: Path, vault: Path) -> list[Ob
             continue
         if re.match(r"^[-*+]|\d+[.)]\s+", line):
             flush_paragraph()
+            if "[[" in line and "#memory/" not in line_lower and "#memoire/" not in line_lower:
+                continue
             cleaned = _strip_markdown_memory_line(line)
             if not _should_import_candidate(cleaned):
                 continue
@@ -1084,7 +1287,7 @@ def _obsidian_note_inventory(vault: Path) -> dict[str, int]:
     }
 
 
-def import_obsidian_notes_to_memories(limit: int = 200) -> dict[str, Any]:
+def import_obsidian_notes_to_memories(limit: int = 200, rebuild_index: bool = False) -> dict[str, Any]:
     if not settings.eva_obsidian_memory_enabled:
         return {
             "enabled": False,
@@ -1145,7 +1348,7 @@ def import_obsidian_notes_to_memories(limit: int = 200) -> dict[str, Any]:
                 failures.append(f"{candidate.note_path}: {exc}")
 
     embeddings: dict[str, object] = {"rebuilt": False}
-    if imported and settings.eva_embeddings_enabled:
+    if imported and rebuild_index and settings.eva_embeddings_enabled:
         try:
             embeddings = {
                 "rebuilt": True,
@@ -1168,6 +1371,56 @@ def import_obsidian_notes_to_memories(limit: int = 200) -> dict[str, Any]:
         "failures": failures,
         "memories": imported[:40],
         "embeddings": embeddings,
+    }
+
+
+def seed_obsidian_memory_vault(
+    import_to_sqlite: bool = True,
+    limit: int = 500,
+    rebuild_index: bool = False,
+) -> dict[str, Any]:
+    if not settings.eva_obsidian_memory_enabled:
+        return {
+            "enabled": False,
+            "seeded": 0,
+            "existing": 0,
+            "path": str(_vault_path()),
+        }
+
+    vault = ensure_obsidian_vault()
+    seeded: list[str] = []
+    existing: list[str] = []
+    errors: list[str] = []
+
+    for relative_path, content in _obsidian_seed_notes().items():
+        note_path = vault / relative_path
+        try:
+            if note_path.exists():
+                existing.append(relative_path.as_posix())
+                continue
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(content, encoding="utf-8")
+            seeded.append(relative_path.as_posix())
+        except OSError as exc:
+            if len(errors) < 8:
+                errors.append(f"{relative_path.as_posix()}: {exc}")
+
+    inventory = _obsidian_note_inventory(vault)
+    import_result: dict[str, Any] | None = None
+    if import_to_sqlite:
+        import_result = import_obsidian_notes_to_memories(limit=limit, rebuild_index=rebuild_index)
+
+    return {
+        "enabled": True,
+        "path": str(vault),
+        "seeded": len(seeded),
+        "existing": len(existing),
+        "errors": errors,
+        "notes": seeded,
+        "existing_notes": existing,
+        "markdown_files": inventory["markdown_files"],
+        "importable_notes": inventory["importable_notes"],
+        "import": import_result,
     }
 
 

@@ -186,3 +186,31 @@ Notes importantes:
 ```
 
 Dans l'interface Eva: `Memoire` -> `Importer notes Obsidian`.
+
+Nouvelle action utile: `Memoire` -> `Nourrir la memoire`.
+
+Cette action cree des notes locales importables dans Obsidian, sans les pousser sur GitHub:
+
+- preferences UX de Victor;
+- preferences de travail;
+- vision produit Eva;
+- regles d'autonomie;
+- recovery quand un outil echoue;
+- memoire DreamLense;
+- strategie LinkedIn;
+- backlog d'apprentissage.
+
+Puis Eva importe ces lignes dans SQLite. Les embeddings peuvent etre reconstruits juste apres depuis le panneau Memoire, et les clusters deviennent plus riches pour le routage.
+
+Endpoint local:
+
+```text
+POST /memory/obsidian/seed
+{
+  "import_to_sqlite": true,
+  "limit": 500,
+  "rebuild_embeddings": false
+}
+```
+
+Par defaut, le seed evite de reconstruire les embeddings dans la meme requete pour ne pas bloquer l'interface si Ollama est lent. Utilise ensuite `Memoire` -> `Reconstruire les embeddings`.

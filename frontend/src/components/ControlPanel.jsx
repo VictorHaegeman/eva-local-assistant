@@ -49,6 +49,7 @@ import {
   planProjectFactory,
   runGmailAutoReply,
   runHeartbeat,
+  seedObsidianMemory,
   syncObsidianMemory,
 } from "../api";
 
@@ -394,6 +395,27 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleSeedObsidian() {
+    setRunningJob("obsidian_seed");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await seedObsidianMemory(700, true);
+      await loadPanel();
+      const imported = result.import?.imported || 0;
+      const vectors = result.import?.embeddings?.rebuilt ? " Embeddings reconstruits." : "";
+      const existing = result.existing ? ` ${result.existing} note(s) deja presentes.` : "";
+      setJobResult(
+        `${result.seeded || 0} note(s) de base ajoutee(s), ${imported} souvenir(s) importes depuis Obsidian.${existing}${vectors}`
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleRebuildEmbeddings() {
     setRunningJob("embeddings_rebuild");
     setJobResult("");
@@ -550,6 +572,14 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               disabled={Boolean(runningJob)}
             >
               {runningJob === "obsidian_hydrate" ? "Remplissage..." : "Remplir le cerveau"}
+            </button>
+            <button
+              type="button"
+              className="panel-action-button primary"
+              onClick={handleSeedObsidian}
+              disabled={Boolean(runningJob)}
+            >
+              {runningJob === "obsidian_seed" ? "Nourrissage..." : "Nourrir la memoire"}
             </button>
             <button
               type="button"

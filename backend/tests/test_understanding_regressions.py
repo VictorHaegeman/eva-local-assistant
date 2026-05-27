@@ -57,6 +57,32 @@ def test_gmail_followup_does_not_become_cursor() -> None:
     assert frame.action_plan.route == "gmail_reply_draft"
 
 
+def test_unanswered_gmail_routes_to_reply_audit_not_web() -> None:
+    frame = _frame("c'est quoi mes derniers mails auxquels j'ai pas encore repondu")
+    assert frame.primary_domain == "gmail"
+    assert frame.expected_outcome == "read_then_audit"
+    assert frame.action_plan.route == "gmail_reply_audit"
+
+
+def test_unanswered_gmail_cannot_be_overridden_to_web_search() -> None:
+    frame = _frame("c'est quoi mes derniers mails auxquels j'ai pas encore repondu")
+    interpretation = StructuredInterpretation(
+        goal="Chercher comment trouver des mails non repondus",
+        domain="web",
+        outcome="search",
+        route="web_search",
+        confidence=0.99,
+        should_execute=True,
+        needs_clarification=False,
+        clarification_question="",
+        reasoning_summary="Mauvaise route simulee.",
+        candidate_routes=("web_search",),
+        risk_level="read_only",
+        evidence_required=("resultats web",),
+    )
+    assert not _should_accept_interpretation(interpretation, frame)
+
+
 def test_reponse_does_not_match_repo() -> None:
     frame = _frame("prepare une reponse claire et courte")
     assert frame.action_plan.route != "cursor_work"
@@ -276,6 +302,8 @@ def test_exception_recovery_does_not_end_as_raw_error() -> None:
 if __name__ == "__main__":
     test_dreamlense_mail_draft_routes_to_gmail()
     test_gmail_followup_does_not_become_cursor()
+    test_unanswered_gmail_routes_to_reply_audit_not_web()
+    test_unanswered_gmail_cannot_be_overridden_to_web_search()
     test_reponse_does_not_match_repo()
     test_linkedin_post_routes_to_linkedin_operator()
     test_linkedin_activity_does_not_create_post()

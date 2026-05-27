@@ -140,13 +140,28 @@ export async function hydrateObsidianMemory() {
 }
 
 
-export async function importObsidianMemory(limit = 200) {
+export async function importObsidianMemory(limit = 200, rebuildEmbeddings = false) {
   return request("/memory/obsidian/import", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ limit }),
+    body: JSON.stringify({ limit, rebuild_embeddings: rebuildEmbeddings }),
+  });
+}
+
+
+export async function seedObsidianMemory(limit = 500, importToSqlite = true, rebuildEmbeddings = false) {
+  return request("/memory/obsidian/seed", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      limit,
+      import_to_sqlite: importToSqlite,
+      rebuild_embeddings: rebuildEmbeddings,
+    }),
   });
 }
 
