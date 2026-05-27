@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from app.agents.understanding import UnderstandingFrame
+from app.cognition.problem_store import record_problem_event
 from app.cognition.state import CognitiveState, goal_frame_from_understanding
 from app.cognition.tool_result import ToolResult
 
@@ -81,14 +82,14 @@ def diagnose_problem(
             return ProblemResolution(
                 problem_type="permission",
                 summary=(
-                    "La demande demande une action locale, mais le canal courant n'est pas marque "
-                    "comme suffisamment fiable pour piloter le PC."
+                    "Le canal courant n'est pas marque comme session fiable pour piloter le PC. "
+                    "Eva bascule donc en mode preparation et recherche de chemin alternatif."
                 ),
                 alternate_routes=("web_search",),
                 safe_actions=(
-                    "chercher une alternative web gratuite si cela peut aider",
+                    "chercher une alternative web gratuite uniquement si elle aide la demande",
                     "preparer les etapes exactes a executer depuis Telegram autorise ou le PC local",
-                    "garder une trace dans la reponse au lieu d'abandonner",
+                    "journaliser le blocage dans le resolver pour reprendre ensuite",
                 ),
                 blocked_by_policy=True,
                 confidence=0.86,
@@ -96,12 +97,12 @@ def diagnose_problem(
 
         return ProblemResolution(
             problem_type="safety",
-            summary="La politique locale bloque l'action brute, donc Eva doit tenter une version sure.",
+            summary="La politique locale bloque l'action brute; Eva tente une version sure ou un brouillon verifiable.",
             alternate_routes=_draft_route_for_domain(domain),
             safe_actions=(
                 "remplacer l'action critique par un brouillon ou une preparation",
                 "donner une preuve locale si un outil a quand meme avance",
-                "ne pas inventer que l'action finale est faite",
+                "s'arreter avant l'action irreversible si aucune preuve ne permet de continuer proprement",
             ),
             blocked_by_policy=True,
             confidence=0.82,
@@ -167,22 +168,41 @@ def build_problem_solver_response(
     state: CognitiveState,
     resolution: ProblemResolution,
 ) -> str:
+    latest_result = state.tool_results[-1] if state.tool_results else None
+    event = None
+    if latest_result:
+        event = record_problem_event(
+            message=message,
+            domain=state.goal.domain,
+            expected_outcome=state.goal.expected_outcome,
+            problem_type=resolution.problem_type,
+            summary=resolution.summary,
+            tool=latest_result.tool,
+            status=latest_result.status,
+            error=latest_result.error,
+            alternate_routes=resolution.alternate_routes,
+            safe_actions=resolution.safe_actions,
+            trusted_actions=state.trusted_actions,
+        )
+
     lines = [
-        "Mode resolution active.",
+        "Resolver Eva active.",
         f"Objectif compris: {state.goal.goal or message}",
         f"Diagnostic: {resolution.summary}",
     ]
+    if event:
+        lines.append(f"Trace locale: resolver #{event.id}")
 
     if state.tool_results:
         lines.append("")
-        lines.append("Pistes tentees:")
+        lines.append("Ce que j'ai deja tente:")
         for result in state.tool_results[-5:]:
             detail = result.error or (result.evidence[0] if result.evidence else "aucune preuve locale")
             lines.append(f"- {result.tool}: {result.status} - {detail}")
 
     if resolution.safe_actions:
         lines.append("")
-        lines.append("Plan de reprise:")
+        lines.append("Plan de reprise autonome:")
         lines.extend(f"- {action}" for action in resolution.safe_actions)
 
     if resolution.alternate_routes:
@@ -191,11 +211,11 @@ def build_problem_solver_response(
 
     if resolution.blocked_by_policy:
         lines.append(
-            "\nGarde-fou: je peux contourner par une preparation, un brouillon, une recherche ou une action locale sure; "
-            "je ne dois pas maquiller une action critique non executee."
+            "\nGarde-fou: Eva contourne par preparation, brouillon, lecture ou action locale sure; "
+            "elle ne maquille pas une action critique non executee."
         )
     else:
-        lines.append("\nEtat: aucune route n'a encore donne une preuve suffisante, donc je garde le diagnostic exploitable.")
+        lines.append("\nEtat: aucune route n'a encore donne une preuve suffisante; le resolver garde la reprise exploitable.")
 
     return "\n".join(lines)
 
@@ -231,7 +251,7 @@ def build_exception_recovery_response(message: str, error: str) -> str:
     clean_error = " ".join(str(error).split())[:900] or "erreur inconnue"
     return "\n".join(
         [
-            "Mode resolution active.",
+            "Resolver Eva active.",
             f"Objectif compris: {message}",
             f"Blocage detecte: {clean_error}",
             "",
@@ -247,7 +267,7 @@ def build_exception_recovery_response(message: str, error: str) -> str:
 def build_passive_refusal_recovery(message: str) -> str:
     return "\n".join(
         [
-            "Mode resolution active.",
+            "Resolver Eva active.",
             f"Objectif compris: {message}",
             "Diagnostic: la reponse brute ressemblait a un refus passif, donc elle est remplacee.",
             "",

@@ -76,6 +76,11 @@ export async function getAutonomy() {
 }
 
 
+export async function getResolverStatus(limit = 20) {
+  return request(`/resolver/status?limit=${encodeURIComponent(limit)}`);
+}
+
+
 export async function getScreenStatus() {
   return request("/screen/status");
 }

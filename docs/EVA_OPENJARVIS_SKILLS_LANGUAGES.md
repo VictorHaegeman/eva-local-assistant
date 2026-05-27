@@ -28,6 +28,8 @@ Implementation ajoutee dans Eva:
 - `backend/app/cognition/context.py`: les skills candidates sont maintenant selectionnees avant la decision, avec la memoire hybride;
 - `backend/app/cognition/cognitive_loop.py`: la boucle utilise aussi les routes proposees par le second regard Ollama local, puis tente les plans B autorises;
 - `backend/app/cognition/problem_solver.py`: resolveur local qui transforme un blocage ou un echec outil en diagnostic + routes alternatives;
+- `backend/app/cognition/problem_store.py`: journal local SQLite des blocages, outils echoues, routes alternatives et plans de reprise;
+- `GET /resolver/status`: statut local du resolveur affiche dans le panneau `Resolver`;
 - le resolveur est aussi branche sur les blocages directs et les exceptions chat/Telegram, pour eviter les reponses brutes du type "Eva ne peut pas repondre";
 - panneau Memoire: statut de la memoire vectorielle locale et bouton de reconstruction des embeddings.
 - `backend/app/screen/screen_navigator.py`: boucle locale inspiree des outils agentiques `observe -> action -> verify`, avec ouverture URL, clic visuel, raccourci et collage;
@@ -43,6 +45,8 @@ Les skills Eva importantes maintenant:
 - `screen_navigator`: observer l'ecran, choisir une action UI, l'executer, re-capturer et s'arreter si le risque est trop eleve;
 - `reflex_recovery`: plan B si une action echoue.
 - `problem_solver`: ne pas s'arreter sur "impossible", choisir une route alternative sure.
+
+Regle importante: le resolveur pousse Eva a tenter des plans B, mais pas a mentir. Si une action critique reste bloquee, Eva doit fournir un brouillon, une preparation, une preuve locale ou une piste de reprise, sans annoncer une execution qui n'a pas eu lieu.
 
 ## Ce qu'on ne reprend pas tel quel
 

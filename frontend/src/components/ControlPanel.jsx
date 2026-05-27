@@ -13,6 +13,7 @@ import {
   Network,
   Play,
   RefreshCw,
+  Route,
   Rocket,
   ShieldCheck,
   Terminal,
@@ -34,6 +35,7 @@ import {
   getMemoryEmbeddingStatus,
   getObsidianMemoryStatus,
   getProjects,
+  getResolverStatus,
   getScreenStatus,
   getSkills,
   getTools,
@@ -126,6 +128,12 @@ const panelMeta = {
     kicker: "Reflexes",
     title: "Actions en attente",
     description: "Les actions sensibles restent bloquees jusqu'a validation humaine.",
+  },
+  resolver: {
+    icon: Route,
+    kicker: "Resolver",
+    title: "Resolution de problemes",
+    description: "Les blocages deviennent diagnostics, plans B et traces locales exploitables.",
   },
   ollama: {
     icon: Cpu,
@@ -265,6 +273,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panelName === "brief") return getLatestBrief();
     if (panelName === "projectFactory") return { ready: true };
     if (panelName === "actions") return getActions("pending");
+    if (panelName === "resolver") return getResolverStatus(30);
     if (panelName === "ollama") {
       const [health, diagnostic] = await Promise.all([getHealth(), getDoctor()]);
       return { health, diagnostic };
@@ -1225,6 +1234,67 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     );
   }
 
+  function renderResolver() {
+    const recent = data?.recent || [];
+    const byType = data?.by_type || {};
+    const topType = Object.entries(byType)[0];
+
+    return (
+      <>
+        <div className="panel-metrics">
+          <Metric label="traces" value={data?.total || 0} tone={data?.total ? "warning" : "ok"} />
+          <Metric label="dernier type" value={topType?.[0] || "clean"} tone={topType ? "warning" : "ok"} />
+          <Metric label="mode" value={data?.enabled ? "actif" : "off"} tone={data?.enabled ? "ok" : "warning"} />
+        </div>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Regle de conduite</h3>
+            <StatusPill tone="ok">anti-refus passif</StatusPill>
+          </div>
+          <p>{data?.policy || "Eva journalise les blocages et cherche une route alternative sure."}</p>
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={() => onPrompt("Teste le resolver: ouvre une app locale, et si ca bloque trouve une autre route sure puis explique les pistes tentees.")}
+            >
+              Tester le resolver
+            </button>
+            <button
+              type="button"
+              className="panel-action-button secondary"
+              onClick={() => onPrompt("Regarde les derniers blocages Eva et propose comment les rendre plus autonomes.")}
+            >
+              Analyser les blocages
+            </button>
+          </div>
+        </section>
+        {recent.length ? (
+          <div className="panel-list">
+            {recent.map((event) => (
+              <div key={event.id} className="panel-row resolver-row">
+                <div>
+                  <strong>#{event.id} {event.problem_type} / {event.tool}</strong>
+                  <span>{event.summary}</span>
+                  {event.error && <span className="panel-row-note">{event.error}</span>}
+                  {event.alternate_routes?.length ? (
+                    <span className="panel-row-note">Plan B: {event.alternate_routes.join(" -> ")}</span>
+                  ) : null}
+                </div>
+                <div className="panel-row-actions">
+                  <StatusPill tone={statusClass(event.status)}>{event.status}</StatusPill>
+                  <StatusPill>{event.domain}</StatusPill>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState>Aucun blocage journalise. Le resolver est pret.</EmptyState>
+        )}
+      </>
+    );
+  }
+
   function renderOllama() {
     const diagnostic = data?.diagnostic || doctor;
     const modelCheck = diagnostic?.checks?.find((check) => check.name === "ollama_model_available");
@@ -1290,6 +1360,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panel === "brief") return renderBrief();
     if (panel === "projectFactory") return renderProjectFactory();
     if (panel === "actions") return renderActions();
+    if (panel === "resolver") return renderResolver();
     if (panel === "ollama") return renderOllama();
     return renderDoctor();
   }

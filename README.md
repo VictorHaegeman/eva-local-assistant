@@ -1752,6 +1752,37 @@ Important: les consignes sur le comportement d'Eva ne sont pas des souvenirs per
 
 Eva ne depend pas de ChatGPT ni de l'API OpenAI. Si un jour Victor veut utiliser ChatGPT web comme outil externe, cela devra rester une option manuelle ou une integration future explicite, pas une dependance de base.
 
+## Resolveur de problemes
+
+Eva a maintenant une brique locale de resolution de problemes:
+
+```text
+outil bloque ou echec
+-> diagnostic
+-> journal local
+-> routes alternatives sures
+-> nouvelle tentative si possible
+-> reponse avec preuves et prochaine piste exploitable
+```
+
+Objectif: eviter les reponses passives du type "je ne peux pas faire ca". Si une action locale echoue, Eva doit dire ce qu'elle a compris, ce qu'elle a tente, pourquoi ca bloque et quelle route sure elle peut essayer ensuite.
+
+Le resolveur ne desactive pas les garde-fous critiques. Eva peut preparer, ouvrir, lire, brouillonner, chercher, diagnostiquer ou proposer une route alternative; elle ne doit pas pretendre avoir publie, envoye, supprime, paye ou pousse du code si l'action n'a pas ete reellement faite ou si elle reste protegee.
+
+Trace locale:
+
+```text
+data/eva_problem_resolver.sqlite
+```
+
+Endpoint:
+
+```text
+GET /resolver/status
+```
+
+Le panneau `Resolver` dans l'interface affiche les derniers blocages, les outils qui ont echoue et les plans B proposes. Cette base reste locale et ignoree par Git via `data/*`.
+
 ## Sidecar Rust optionnel
 
 Eva reste pilotee par Python/FastAPI, mais un premier composant Rust optionnel est ajoute pour les scans rapides de projets:

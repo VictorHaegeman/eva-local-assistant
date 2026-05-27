@@ -27,6 +27,11 @@ from app.config import settings
 from app.agents.understanding import build_understanding_frame, understanding_to_dict
 from app.cognition.context import attach_cognitive_context, build_cognitive_context
 from app.cognition.problem_solver import build_exception_recovery_response
+from app.cognition.problem_store import (
+    ProblemStoreError,
+    init_problem_store,
+    problem_resolver_status,
+)
 from app.cognition.structured_interpreter import refine_understanding_with_ollama
 from app.agents.operator_journal import (
     OperatorJournalError,
@@ -494,6 +499,7 @@ init_brief_store()
 init_task_store()
 init_action_store()
 init_chat_history_store()
+init_problem_store()
 init_operator_journal()
 
 telegram_task: asyncio.Task[None] | None = None
@@ -715,6 +721,14 @@ async def operator_journal_ticks(limit: int = Query(default=50, ge=1, le=200)) -
     return {
         "ticks": [operator_tick_to_dict(tick) for tick in ticks],
     }
+
+
+@app.get("/resolver/status", dependencies=[Depends(require_sensitive_access)])
+async def resolver_status(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, object]:
+    try:
+        return problem_resolver_status(limit=limit)
+    except ProblemStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/profile", dependencies=[Depends(require_sensitive_access)])

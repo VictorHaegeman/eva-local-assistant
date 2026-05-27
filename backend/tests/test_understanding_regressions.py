@@ -286,7 +286,7 @@ def test_direct_problem_solver_replaces_permission_refusal() -> None:
         trusted_actions=False,
         next_actions=("relancer depuis Telegram autorise",),
     )
-    assert response.startswith("Mode resolution active.")
+    assert response.startswith("Resolver Eva active.")
     assert "Eva ne peut pas" not in response
 
 
@@ -295,7 +295,7 @@ def test_exception_recovery_does_not_end_as_raw_error() -> None:
         "ouvre mon projet F1",
         "Projet introuvable",
     )
-    assert response.startswith("Mode resolution active.")
+    assert response.startswith("Resolver Eva active.")
     assert "Eva ne peut pas repondre" not in response
 
 

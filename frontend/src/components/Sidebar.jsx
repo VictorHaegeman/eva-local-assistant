@@ -13,6 +13,7 @@ import {
   Network,
   Newspaper,
   Rocket,
+  Route,
   RotateCcw,
   ShieldCheck,
   Sparkles,
@@ -115,6 +116,11 @@ const operationItems = [
     icon: Terminal,
     label: "Actions",
     panel: "actions",
+  },
+  {
+    icon: Route,
+    label: "Resolver",
+    panel: "resolver",
   },
   {
     icon: Cpu,
