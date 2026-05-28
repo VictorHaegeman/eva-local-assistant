@@ -4,11 +4,14 @@ from typing import Any
 
 from app.integrations.gmail_client import (
     GMAIL_SCOPES,
+    GOOGLE_REAUTH_ERROR,
     GmailIntegrationError,
     _google_imports,
     gmail_credentials_path,
     gmail_token_path,
     google_token_scope_status,
+    is_google_reauth_error,
+    quarantine_gmail_token,
 )
 
 
@@ -65,10 +68,17 @@ def _calendar_service() -> Any:
     credentials = Credentials.from_authorized_user_file(str(token_file), GMAIL_SCOPES)
 
     if credentials.expired and credentials.refresh_token:
-        credentials.refresh(Request())
-        token_file.write_text(credentials.to_json(), encoding="utf-8")
+        try:
+            credentials.refresh(Request())
+            token_file.write_text(credentials.to_json(), encoding="utf-8")
+        except Exception as exc:
+            if is_google_reauth_error(exc):
+                quarantine_gmail_token(str(exc))
+                raise GmailIntegrationError(GOOGLE_REAUTH_ERROR) from exc
+            raise GmailIntegrationError(f"Impossible de rafraichir le token Google: {exc}") from exc
 
     if not credentials.valid:
+        quarantine_gmail_token("credentials.valid=false")
         raise GmailIntegrationError("Token Google invalide. Relance la connexion Google.")
 
     return build("calendar", "v3", credentials=credentials)

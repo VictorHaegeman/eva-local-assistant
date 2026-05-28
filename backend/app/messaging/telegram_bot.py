@@ -201,7 +201,11 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
         return True
 
     if command in {"/google", "/gmail", "/gmailconnect", "/gmail-connect"}:
-        await _send_message(client, chat_id, build_google_setup_response(trusted_actions=True))
+        await _send_message(
+            client,
+            chat_id,
+            build_google_setup_response(trusted_actions=True, force_reconnect=True),
+        )
         return True
 
     if command in {"/calendar", "/agenda"}:

@@ -1,6 +1,8 @@
 import base64
+import shutil
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from email.message import EmailMessage
 from email.utils import parseaddr
 from pathlib import Path
@@ -45,6 +47,26 @@ GMAIL_SCOPES = [
     GMAIL_SEND_SCOPE,
     CALENDAR_READONLY_SCOPE,
 ]
+GOOGLE_REAUTH_ERROR = (
+    "Connexion Google expiree ou revoquee. Eva doit reconnecter Gmail/Calendar avant de lire les donnees reelles. "
+    "Ouvre le panneau Gmail puis clique Reconnecter scopes, ou envoie /google depuis Telegram."
+)
+
+
+def is_google_reauth_error(error: object) -> bool:
+    normalized = " ".join(str(error).lower().split())
+    return any(
+        marker in normalized
+        for marker in (
+            "invalid_grant",
+            "token has been expired or revoked",
+            "token has been expired",
+            "token expired",
+            "revoked",
+            "invalid credentials",
+            "invalid_token",
+        )
+    )
 
 
 def _resolve_local_path(path_value: str) -> Path:
@@ -60,6 +82,29 @@ def gmail_credentials_path() -> Path:
 
 def gmail_token_path() -> Path:
     return _resolve_local_path(settings.eva_gmail_token_path)
+
+
+def quarantine_gmail_token(reason: str = "") -> Path | None:
+    token_file = gmail_token_path()
+    if not token_file.exists():
+        return None
+
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_path = token_file.with_name(f"{token_file.stem}_invalid_{stamp}{token_file.suffix}")
+    try:
+        shutil.move(str(token_file), str(backup_path))
+    except OSError:
+        return None
+
+    if reason:
+        try:
+            backup_path.with_suffix(f"{backup_path.suffix}.reason.txt").write_text(
+                str(reason)[:1200],
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
+    return backup_path
 
 
 def gmail_status() -> dict[str, object]:
@@ -170,18 +215,45 @@ def _gmail_service() -> Any:
         )
 
     Request, Credentials, build = _google_imports()
-    credentials = Credentials.from_authorized_user_file(str(token_file), GMAIL_SCOPES)
+    try:
+        credentials = Credentials.from_authorized_user_file(str(token_file), GMAIL_SCOPES)
+    except Exception as exc:
+        quarantine_gmail_token(str(exc))
+        raise GmailIntegrationError(
+            "Token Google local illisible. Eva a mis l'ancien token de cote. "
+            "Reconnecte Gmail depuis le panneau Gmail ou avec /google sur Telegram."
+        ) from exc
 
     if credentials.expired and credentials.refresh_token:
-        credentials.refresh(Request())
-        token_file.write_text(credentials.to_json(), encoding="utf-8")
+        try:
+            credentials.refresh(Request())
+            token_file.write_text(credentials.to_json(), encoding="utf-8")
+        except Exception as exc:
+            if is_google_reauth_error(exc):
+                quarantine_gmail_token(str(exc))
+                raise GmailIntegrationError(GOOGLE_REAUTH_ERROR) from exc
+            raise GmailIntegrationError(f"Impossible de rafraichir le token Google: {exc}") from exc
 
     if not credentials.valid:
+        quarantine_gmail_token("credentials.valid=false")
         raise GmailIntegrationError(
-            "Token Gmail invalide. Relance: cd backend puis python -m app.integrations.gmail_auth"
+            "Token Google invalide. Eva a mis l'ancien token de cote. "
+            "Reconnecte Gmail depuis le panneau Gmail ou avec /google sur Telegram."
         )
 
     return build("gmail", "v1", credentials=credentials)
+
+
+def _execute_gmail_request(request: Any, action_label: str) -> dict[str, Any]:
+    try:
+        response = request.execute()
+    except Exception as exc:
+        if is_google_reauth_error(exc):
+            quarantine_gmail_token(str(exc))
+            raise GmailIntegrationError(GOOGLE_REAUTH_ERROR) from exc
+        raise GmailIntegrationError(f"Gmail indisponible pendant {action_label}: {exc}") from exc
+
+    return response if isinstance(response, dict) else {}
 
 
 def _header(headers: list[dict[str, str]], name: str) -> str:
@@ -307,11 +379,9 @@ def list_gmail_messages(query: str = "in:inbox newer_than:14d", max_results: int
     service = _gmail_service()
     safe_limit = min(max(max_results, 1), 25)
 
-    response = (
-        service.users()
-        .messages()
-        .list(userId="me", q=query, maxResults=safe_limit)
-        .execute()
+    response = _execute_gmail_request(
+        service.users().messages().list(userId="me", q=query, maxResults=safe_limit),
+        "la liste des mails",
     )
     message_refs = response.get("messages", [])
     if not isinstance(message_refs, list):
@@ -322,11 +392,9 @@ def list_gmail_messages(query: str = "in:inbox newer_than:14d", max_results: int
         message_id = str(message_ref.get("id", ""))
         if not message_id:
             continue
-        message_payload = (
-            service.users()
-            .messages()
-            .get(userId="me", id=message_id, format="metadata")
-            .execute()
+        message_payload = _execute_gmail_request(
+            service.users().messages().get(userId="me", id=message_id, format="metadata"),
+            "la lecture des entetes Gmail",
         )
         messages.append(_message_from_payload(message_payload, include_body=False))
 
@@ -339,11 +407,9 @@ def get_gmail_message(message_id: str) -> GmailMessage:
         raise GmailIntegrationError("ID Gmail vide.")
 
     service = _gmail_service()
-    payload = (
-        service.users()
-        .messages()
-        .get(userId="me", id=clean_id, format="full")
-        .execute()
+    payload = _execute_gmail_request(
+        service.users().messages().get(userId="me", id=clean_id, format="full"),
+        "la lecture du mail",
     )
     return _message_from_payload(payload, include_body=True)
 
@@ -354,7 +420,10 @@ def get_gmail_thread_messages(thread_id: str) -> list[GmailMessage]:
         raise GmailIntegrationError("ID de fil Gmail vide.")
 
     service = _gmail_service()
-    payload = service.users().threads().get(userId="me", id=clean_id, format="full").execute()
+    payload = _execute_gmail_request(
+        service.users().threads().get(userId="me", id=clean_id, format="full"),
+        "la lecture du fil Gmail",
+    )
     raw_messages = payload.get("messages", [])
     if not isinstance(raw_messages, list):
         return []
@@ -395,7 +464,7 @@ def create_gmail_reply_draft(
     if not recipient:
         raise GmailIntegrationError("Impossible de creer le brouillon: destinataire introuvable.")
 
-    profile = service.users().getProfile(userId="me").execute()
+    profile = _execute_gmail_request(service.users().getProfile(userId="me"), "le profil Gmail")
     from_email = str(profile.get("emailAddress", "")).strip()
 
     email = EmailMessage()
@@ -418,7 +487,10 @@ def create_gmail_reply_draft(
             "threadId": original.thread_id,
         }
     }
-    draft = service.users().drafts().create(userId="me", body=request_body).execute()
+    draft = _execute_gmail_request(
+        service.users().drafts().create(userId="me", body=request_body),
+        "la creation du brouillon Gmail",
+    )
     draft_id = str(draft.get("id", ""))
     draft_message = draft.get("message", {})
     draft_message_id = str(draft_message.get("id", "")) if isinstance(draft_message, dict) else ""
@@ -461,7 +533,7 @@ def send_gmail_reply(
     if not recipient:
         raise GmailIntegrationError("Envoi impossible: destinataire introuvable.")
 
-    profile = service.users().getProfile(userId="me").execute()
+    profile = _execute_gmail_request(service.users().getProfile(userId="me"), "le profil Gmail")
     from_email = str(profile.get("emailAddress", "")).strip()
 
     email = EmailMessage()
@@ -482,7 +554,10 @@ def send_gmail_reply(
         "raw": _encode_raw_message(email),
         "threadId": original.thread_id,
     }
-    sent = service.users().messages().send(userId="me", body=request_body).execute()
+    sent = _execute_gmail_request(
+        service.users().messages().send(userId="me", body=request_body),
+        "l'envoi Gmail",
+    )
     sent_message_id = str(sent.get("id", ""))
     thread_id = str(sent.get("threadId", original.thread_id))
     thread_url = f"https://mail.google.com/mail/u/0/#all/{thread_id or original.thread_id}"

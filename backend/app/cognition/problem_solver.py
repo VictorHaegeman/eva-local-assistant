@@ -4,6 +4,7 @@ from app.agents.understanding import UnderstandingFrame
 from app.cognition.problem_store import record_problem_event
 from app.cognition.state import CognitiveState, goal_frame_from_understanding
 from app.cognition.tool_result import ToolResult
+from app.integrations.gmail_client import is_google_reauth_error
 
 
 PASSIVE_REFUSAL_MARKERS = (
@@ -196,37 +197,54 @@ def build_problem_solver_response(
             trusted_actions=state.trusted_actions,
         )
 
-    lines = [
-        "Resolver Eva active.",
-        f"Objectif compris: {state.goal.goal or message}",
-        f"Diagnostic: {resolution.summary}",
-    ]
-    if event:
-        lines.append(f"Trace locale: resolver #{event.id}")
+    if latest_result and latest_result.tool == "gmail_client" and is_google_reauth_error(latest_result.error):
+        lines = [
+            "Je n'ai pas pu lire tes mails reels pour l'instant.",
+            "",
+            "La connexion Google locale a expire ou a ete revoquee. Le token Gmail/Calendar doit etre regenere avant qu'Eva puisse relire Gmail.",
+            "",
+            "Je ne vais pas remplacer ca par une recherche web ni inventer des mails.",
+            "",
+            "Action a faire:",
+            "- depuis Eva: panneau Gmail > Reconnecter scopes;",
+            "- depuis Telegram: envoie /google;",
+            "- valide le compte Google dans la fenetre ouverte sur le PC, puis renvoie ta demande.",
+        ]
+        return "\n".join(lines)
 
+    latest_tool = latest_result.tool if latest_result else "outil local"
+    latest_status = latest_result.status if latest_result else "bloque"
+    public_blocker = resolution.summary
+    if latest_result and latest_result.error:
+        public_blocker = _public_error_summary(latest_result)
+
+    lines = [
+        "Je n'ai pas encore un resultat fiable.",
+        "",
+        f"Objectif compris: {state.goal.goal or message}",
+        f"Blocage: {public_blocker}",
+    ]
     if state.tool_results:
         lines.append("")
-        lines.append("Ce que j'ai deja tente:")
-        for result in state.tool_results[-5:]:
-            detail = result.error or (result.evidence[0] if result.evidence else "aucune preuve locale")
-            lines.append(f"- {result.tool}: {result.status} - {detail}")
+        lines.append(f"Dernier essai: {_tool_label(latest_tool)} ({latest_status}).")
 
     if resolution.safe_actions:
         lines.append("")
-        lines.append("Plan de reprise autonome:")
-        lines.extend(f"- {action}" for action in resolution.safe_actions)
+        lines.append("Prochaine reprise:")
+        lines.append(f"- {_public_next_action(resolution)}")
 
     if resolution.alternate_routes:
-        routes = ", ".join(route.replace("_", " ") for route in resolution.alternate_routes[:4])
-        lines.append(f"\nRoutes alternatives candidates: {routes}.")
+        routes = ", ".join(_route_label(route) for route in resolution.alternate_routes[:3])
+        lines.append(f"- Routes possibles: {routes}.")
 
     if resolution.blocked_by_policy:
         lines.append(
-            "\nGarde-fou: Eva contourne par preparation, brouillon, lecture ou action locale sure; "
-            "elle ne maquille pas une action critique non executee."
+            ""
+            "Garde-fou: je peux preparer, lire ou creer un brouillon, mais je ne maquille pas une action critique non executee."
         )
     else:
-        lines.append("\nEtat: aucune route n'a encore donne une preuve suffisante; le resolver garde la reprise exploitable.")
+        lines.append("")
+        lines.append("Je garde le contexte et je reprendrai par une route plus adaptee au prochain essai.")
 
     return "\n".join(lines)
 
@@ -260,11 +278,21 @@ def build_direct_problem_solver_response(
 
 def build_exception_recovery_response(message: str, error: str) -> str:
     clean_error = " ".join(str(error).split())[:900] or "erreur inconnue"
+    if is_google_reauth_error(clean_error):
+        return "\n".join(
+            [
+                "Je n'ai pas pu acceder a Google pour l'instant.",
+                "",
+                "La connexion Gmail/Calendar locale a expire ou a ete revoquee. Eva doit reconnecter Google avant de lire tes mails reels.",
+                "",
+                "Action a faire: envoie /google depuis Telegram ou clique Reconnecter scopes dans le panneau Gmail.",
+            ]
+        )
     return "\n".join(
         [
-            "Resolver Eva active.",
+            "Je n'ai pas encore un resultat fiable.",
             f"Objectif compris: {message}",
-            f"Blocage detecte: {clean_error}",
+            f"Blocage detecte: {_public_error_text(clean_error)}",
             "",
             "Plan de reprise:",
             "- reprendre le contexte recent avant de reclasser la demande;",
@@ -278,9 +306,9 @@ def build_exception_recovery_response(message: str, error: str) -> str:
 def build_passive_refusal_recovery(message: str) -> str:
     return "\n".join(
         [
-            "Resolver Eva active.",
+            "Je reprends au lieu de bloquer.",
             f"Objectif compris: {message}",
-            "Diagnostic: la reponse brute ressemblait a un refus passif, donc elle est remplacee.",
+            "La reponse brute ressemblait a un refus passif, donc elle est remplacee par une reprise d'action.",
             "",
             "Plan de reprise:",
             "- reclasser l'intention avec la memoire et les skills;",
@@ -288,3 +316,65 @@ def build_passive_refusal_recovery(message: str) -> str:
             "- si l'action finale est critique, produire une preparation verifiable au lieu d'abandonner.",
         ]
     )
+
+
+def _public_error_text(error: str) -> str:
+    if is_google_reauth_error(error):
+        return "connexion Google expiree ou revoquee"
+    clean = " ".join(str(error).split())
+    if not clean:
+        return "preuve locale absente"
+    if len(clean) > 180:
+        return f"{clean[:177]}..."
+    return clean
+
+
+def _public_error_summary(result: ToolResult) -> str:
+    if result.tool == "gmail_client" and is_google_reauth_error(result.error):
+        return "connexion Google a refaire avant de lire Gmail"
+    if result.status == "blocked":
+        return "action locale bloquee par la politique de securite"
+    if result.status == "failed":
+        return f"{_tool_label(result.tool)} n'a pas donne de preuve fiable"
+    return _public_error_text(result.error)
+
+
+def _tool_label(tool: str) -> str:
+    return {
+        "gmail_client": "Gmail",
+        "browser_assistant": "navigateur",
+        "cursor_bridge": "Cursor",
+        "project_factory": "Project Factory",
+        "spotify_assistant": "Spotify",
+        "desktop_automation": "controle PC",
+        "screen_reader": "lecture ecran",
+        "beeper_assistant": "Beeper",
+        "linkedin_assistant": "LinkedIn",
+        "linkedin_activity": "LinkedIn",
+        "web_search": "recherche web",
+    }.get(tool, tool.replace("_", " "))
+
+
+def _route_label(route: str) -> str:
+    return {
+        "gmail_reply_audit": "audit Gmail",
+        "gmail_read": "lecture Gmail",
+        "gmail_reply_draft": "brouillon Gmail",
+        "web_search": "recherche web",
+        "screen_read": "lecture ecran",
+        "desktop_control": "controle PC",
+        "browser_or_video": "navigateur",
+        "cursor_work": "Cursor",
+        "project_factory": "Project Factory",
+        "linkedin_activity": "LinkedIn",
+    }.get(route, route.replace("_", " "))
+
+
+def _public_next_action(resolution: ProblemResolution) -> str:
+    if resolution.problem_type == "permission":
+        return "reprendre par une route sure ou depuis un canal autorise"
+    if resolution.problem_type == "tool_failure":
+        return "essayer une autre route locale coherente avec la demande"
+    if resolution.problem_type == "safety":
+        return "preparer une version brouillon ou reversible"
+    return "chercher une preuve locale supplementaire avant de conclure"

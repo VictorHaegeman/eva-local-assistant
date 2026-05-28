@@ -468,7 +468,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
 
     try {
       const status = data?.status || {};
-      const needsScopeReconnect = Boolean(status.token_exists && !status.token_has_required_scopes);
+      const needsScopeReconnect = Boolean(status.token_exists);
       const result = await connectGmail(needsScopeReconnect);
       setJobResult(result.message || "Flux OAuth Gmail lance.");
       await loadPanel();

@@ -320,8 +320,9 @@ def test_direct_problem_solver_replaces_permission_refusal() -> None:
         trusted_actions=False,
         next_actions=("relancer depuis Telegram autorise",),
     )
-    assert response.startswith("Resolver Eva active.")
+    assert response.startswith("Je n'ai pas encore un resultat fiable.")
     assert "Eva ne peut pas" not in response
+    assert "Ce que j'ai deja tente" not in response
 
 
 def test_exception_recovery_does_not_end_as_raw_error() -> None:
@@ -329,8 +330,18 @@ def test_exception_recovery_does_not_end_as_raw_error() -> None:
         "ouvre mon projet F1",
         "Projet introuvable",
     )
-    assert response.startswith("Resolver Eva active.")
+    assert response.startswith("Je n'ai pas encore un resultat fiable.")
     assert "Eva ne peut pas repondre" not in response
+
+
+def test_google_invalid_grant_gets_reauth_message_not_raw_trace() -> None:
+    response = build_exception_recovery_response(
+        "lis mes mails DreamLense",
+        "invalid_grant: Token has been expired or revoked.",
+    )
+    assert response.startswith("Je n'ai pas pu acceder a Google")
+    assert "invalid_grant" not in response
+    assert "recherche web" not in response.lower()
 
 
 if __name__ == "__main__":
@@ -361,4 +372,5 @@ if __name__ == "__main__":
     test_problem_solver_permission_block_keeps_safe_fallback()
     test_direct_problem_solver_replaces_permission_refusal()
     test_exception_recovery_does_not_end_as_raw_error()
+    test_google_invalid_grant_gets_reauth_message_not_raw_trace()
     print("understanding regressions OK")

@@ -28,6 +28,7 @@ from app.integrations.cursor_agent_setup import (
 )
 from app.integrations.desktop_chat import execute_desktop_control_from_message
 from app.integrations.gmail_chat import build_gmail_chat_response
+from app.integrations.gmail_client import is_google_reauth_error
 from app.integrations.linkedin_assistant import build_linkedin_activity_response, build_linkedin_chat_response
 from app.integrations.map_preview import build_map_preview_from_message
 from app.integrations.spotify_assistant import open_spotify_from_message
@@ -131,6 +132,19 @@ ROUTE_LABELS = {
     "project_factory": "Project Factory",
     "generic_chat": "Reponse directe",
 }
+
+
+def _public_trace_error(result: ToolResult) -> str:
+    if result.tool == "gmail_client" and is_google_reauth_error(result.error):
+        return "Connexion Google a reconnecter"
+    if result.status == "blocked":
+        return "Action bloquee par la politique locale"
+    if result.status == "failed":
+        return "Aucune preuve fiable"
+    clean = " ".join((result.error or "").split())
+    if not clean:
+        return ""
+    return clean[:140]
 
 
 def _blocked(tool: str, reason: str, next_actions: tuple[str, ...] = ()) -> ToolResult:
@@ -434,7 +448,7 @@ def _trace_payload(
                 "tool": result.tool,
                 "status": result.status,
                 "evidence": list(result.evidence[:2]),
-                "error": result.error,
+                "error": _public_trace_error(result),
                 "next_actions": list(result.next_actions[:3]),
             }
             for result in state.tool_results

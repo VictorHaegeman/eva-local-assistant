@@ -207,6 +207,15 @@ def _should_create_project_factory_plan(message: str) -> bool:
     )
 
 
+def _wants_force_google_reconnect(message: str) -> bool:
+    normalized = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", message.lower())
+        if not unicodedata.combining(char)
+    )
+    return any(marker in normalized for marker in ("reconnect", "regenere", "regenerer", "nouveau token", "invalid_grant"))
+
+
 def _mirror_memory(memory: object) -> None:
     try:
         mirror_memory_to_obsidian(memory)
@@ -480,6 +489,7 @@ async def process_chat_messages(
                     "content": build_google_setup_response(
                         trusted_actions=trusted_actions,
                         intent_context=intent_context,
+                        force_reconnect=_wants_force_google_reconnect(latest_user_message),
                     ),
                 },
                 "saved_memory": None,
@@ -801,6 +811,7 @@ async def process_chat_messages(
                     "content": build_google_setup_response(
                         trusted_actions=trusted_actions,
                         intent_context=intent_context,
+                        force_reconnect=_wants_force_google_reconnect(latest_user_message),
                     ),
                 },
                 "saved_memory": None,

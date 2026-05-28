@@ -88,6 +88,7 @@ def build_calendar_events_response(days: int = 7) -> str:
 def build_google_setup_response(
     trusted_actions: bool = False,
     intent_context: str = "",
+    force_reconnect: bool = False,
 ) -> str:
     gmail = gmail_status()
     calendar = calendar_status()
@@ -169,7 +170,9 @@ def build_google_setup_response(
         )
 
     try:
-        result = start_gmail_oauth_flow(force_reconnect=not gmail["token_has_required_scopes"])
+        result = start_gmail_oauth_flow(
+            force_reconnect=force_reconnect or not gmail["token_has_required_scopes"]
+        )
     except GmailAuthLaunchError as exc:
         lines.extend(["", f"Je n'ai pas pu lancer OAuth: {exc}"])
         return "\n".join(lines)
