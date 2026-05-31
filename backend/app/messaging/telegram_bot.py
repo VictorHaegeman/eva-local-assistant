@@ -15,6 +15,7 @@ from app.actions.executor import ActionExecutionError, execute_action
 from app.agents.operator_journal import OperatorJournalError, record_operator_tick
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
+from app.cognition.output_sanitizer import sanitize_assistant_output
 from app.cognition.problem_solver import build_exception_recovery_response
 from app.integrations.browser_assistant import BrowserAssistError, open_assisted_browser_from_message
 from app.integrations.browser_actions import BrowserActionError, open_browser_from_message
@@ -67,6 +68,51 @@ class TelegramBotError(Exception):
     """Raised when the Telegram bridge cannot run."""
 
 
+RAW_INTERNAL_MARKERS = (
+    "resolver eva active",
+    "trace locale:",
+    "ce que j'ai deja tente",
+    "ce que j’ai deja tente",
+    "plan de reprise autonome",
+    "routes alternatives candidates",
+    "gmail_client failed",
+    "invalid_grant",
+)
+
+
+def _looks_like_raw_internal_dump(text: str) -> bool:
+    normalized = " ".join(text.lower().split())
+    return any(marker in normalized for marker in RAW_INTERNAL_MARKERS)
+
+
+def _sanitize_outgoing_text(text: str) -> str:
+    if not _looks_like_raw_internal_dump(text):
+        return text
+
+    normalized = " ".join(text.lower().split())
+    if "invalid_grant" in normalized or "token has been expired or revoked" in normalized:
+        return "\n".join(
+            [
+                "Je n'ai pas pu lire tes mails reels pour l'instant.",
+                "",
+                "La connexion Google locale a expire ou a ete revoquee. Je dois reconnecter Gmail/Calendar avant de relire tes mails.",
+                "",
+                "Je ne remplace pas ca par une recherche web et je n'invente pas de mails.",
+                "",
+                "Action: envoie /google, valide Google sur le PC, puis renvoie ta demande.",
+            ]
+        )
+
+    return "\n".join(
+        [
+            "Je n'ai pas encore un resultat fiable.",
+            "",
+            "Je garde la demande en contexte et je dois changer de route au lieu d'exposer mon diagnostic interne.",
+            "Relance-moi avec la meme intention, ou envoie /jobs si tu veux voir les taches autonomes en cours.",
+        ]
+    )
+
+
 def telegram_config_status() -> dict[str, object]:
     return {
         "enabled": settings.eva_telegram_enabled,
@@ -102,6 +148,7 @@ def _is_allowed_chat(chat_id: int) -> bool:
 
 
 async def _send_message(client: httpx.AsyncClient, chat_id: int, text: str) -> None:
+    text = sanitize_assistant_output(text, channel="telegram")
     chunks = [
         text[index : index + MAX_TELEGRAM_MESSAGE]
         for index in range(0, len(text), MAX_TELEGRAM_MESSAGE)
@@ -465,7 +512,11 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
     if isinstance(pending_action, dict):
         suffix = f"\n\nAction en attente: #{pending_action.get('id')} - /approve {pending_action.get('id')}"
 
-    assistant_text = str(result["message"]["content"])
+    assistant_text = sanitize_assistant_output(
+        str(result["message"]["content"]),
+        user_message=text,
+        channel="telegram",
+    )
     append_telegram_exchange(chat_id, text, assistant_text)
     try:
         append_chat_exchange(

@@ -26,6 +26,7 @@ from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.agents.understanding import build_understanding_frame, understanding_to_dict
 from app.cognition.context import attach_cognitive_context, build_cognitive_context
+from app.cognition.output_sanitizer import sanitize_assistant_output
 from app.cognition.problem_solver import build_exception_recovery_response
 from app.cognition.problem_store import (
     ProblemStoreError,
@@ -1930,6 +1931,12 @@ async def chat(chat_request: ChatRequest, http_request: Request) -> ChatResponse
             "saved_memory": None,
             "pending_action": None,
         }
+
+    result["message"]["content"] = sanitize_assistant_output(
+        str(result["message"]["content"]),
+        user_message=str(safe_messages[-1]["content"]),
+        channel="web",
+    )
 
     try:
         session = append_chat_exchange(

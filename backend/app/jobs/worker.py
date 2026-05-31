@@ -4,6 +4,7 @@ from typing import Any
 import httpx
 
 from app.agents.operator_journal import OperatorJournalError, record_operator_tick
+from app.cognition.output_sanitizer import sanitize_assistant_output
 from app.config import settings
 from app.jobs.job_store import (
     acquire_next_job,
@@ -54,6 +55,11 @@ async def _execute_chat_job(job: dict[str, Any]) -> dict[str, Any]:
         channel="job",
     )
     assistant_text = str(result.get("message", {}).get("content", "")).strip()
+    assistant_text = sanitize_assistant_output(
+        assistant_text,
+        user_message=instruction,
+        channel="job",
+    )
     if not assistant_text:
         raise JobWorkerError("Eva n'a pas produit de reponse exploitable pour ce job.")
 

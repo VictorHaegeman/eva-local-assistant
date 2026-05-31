@@ -121,6 +121,18 @@ def diagnose_problem(
         )
 
     if result.status == "failed":
+        if domain in {"gmail", "calendar", "beeper", "linkedin", "desktop", "screen", "spotify", "cursor", "project"}:
+            safe_actions = (
+                "essayer une autre route locale coherente avec la demande",
+                "garder le contexte de la demande et le dernier outil tente",
+                "ne pas remplacer une donnee personnelle locale par une recherche web generique",
+            )
+        else:
+            safe_actions = (
+                "essayer une route alternative non critique",
+                "utiliser la recherche web gratuite si l'outil local echoue",
+                "rapporter les pistes tentees et le meilleur plan de reprise",
+            )
         return ProblemResolution(
             problem_type="tool_failure",
             summary=(
@@ -128,11 +140,7 @@ def diagnose_problem(
                 "Eva doit changer de route au lieu de repondre passivement."
             ),
             alternate_routes=_tool_recovery_routes(result.tool, domain),
-            safe_actions=(
-                "essayer une route alternative non critique",
-                "utiliser la recherche web gratuite si l'outil local echoue",
-                "rapporter les pistes tentees et le meilleur plan de reprise",
-            ),
+            safe_actions=safe_actions,
             confidence=0.74,
         )
 
