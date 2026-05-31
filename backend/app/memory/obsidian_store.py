@@ -38,6 +38,7 @@ DEFAULT_FOLDERS = (
     "50 - Operating Rules",
     "60 - Content",
     "70 - Templates",
+    "80 - Learning",
     "90 - Inbox",
 )
 
@@ -59,6 +60,7 @@ IMPORT_CATEGORY_BY_ROOT = {
     "30 - Projects": "project",
     "50 - Operating Rules": "operating_rule",
     "60 - Content": "content",
+    "80 - Learning": "learning",
     "90 - Inbox": "idea",
 }
 
@@ -385,6 +387,24 @@ def _obsidian_seed_notes() -> dict[Path, str]:
                 "#memory/content Les posts LinkedIn DreamLense doivent eviter le jargon technique inutile.",
                 "#memory/content Une idee LinkedIn utile peut venir d'un mail client, d'une actu IA ou d'un probleme repete par les prospects.",
                 "#memory/content Eva doit distinguer brouillon LinkedIn, commentaire LinkedIn et analyse d'activite LinkedIn.",
+            ],
+        ),
+        Path("80 - Learning") / "Eva Learning Loop.md": _seed_note_markdown(
+            "Eva Learning Loop",
+            [
+                "[[20 - Memories/operating_rule]]",
+                "[[50 - Operating Rules/Eva Failure Recovery]]",
+                "[[90 - Inbox/Eva Learning Backlog]]",
+            ],
+            [
+                "#memory/learning Eva doit apprendre par consolidation locale: extraire les lecons stables, les classer, les ajouter a SQLite, les miroir dans Obsidian, puis reconstruire les embeddings.",
+                "#memory/learning Eva ne doit pas entrainer un nouveau modele sans dataset controle; elle doit utiliser embeddings, clusters, retrieval et reflexion locale.",
+                "#memory/learning Eva doit convertir les erreurs repetees en regles courtes, pas stocker les conversations brutes.",
+                "#memory/learning Eva doit garder les secrets hors Obsidian, hors SQLite et hors Git.",
+                "#memory/learning Eva doit enrichir les clusters utiles: Victor, DreamLense, Gmail, projets code, design, screen navigation, messages et recovery.",
+                "#memory/learning Eva doit privilegier les souvenirs actionnables: ce que Victor aime, ce qu'il refuse, les erreurs a ne pas refaire et les workflows qui marchent.",
+                "#memory/learning Eva doit reconstruire les embeddings apres un gros enrichissement, mais pas a chaque message pour garder le chat rapide.",
+                "#memory/learning Eva doit exposer les apprentissages dans Obsidian pour que Victor puisse corriger le cerveau local.",
             ],
         ),
         Path("90 - Inbox") / "Eva Learning Backlog.md": _seed_note_markdown(
@@ -1508,6 +1528,7 @@ def hydrate_obsidian_vault() -> dict[str, Any]:
             "70 - Templates/Email Reply.md",
             "70 - Templates/LinkedIn Post.md",
             "70 - Templates/Frontend Brief.md",
+            "80 - Learning/Eva Learning Loop.md",
         ],
     }
 

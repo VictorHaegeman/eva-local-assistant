@@ -454,9 +454,36 @@ GET /memory/clusters
 POST /memory/route
 GET /memory/embeddings/status
 POST /memory/embeddings/rebuild
+GET /memory/learning/status
+POST /memory/learning/consolidate
 ```
 
 Si `nomic-embed-text` n'est pas installe, Eva ne plante pas: elle retombe sur la recherche FTS5/BM25 locale.
+
+## Boucle d'apprentissage locale
+
+Eva ne s'entraine pas comme un nouveau modele neuronal. La version utile pour un assistant personnel local est une boucle de consolidation:
+
+1. lire les derniers ticks operateur et corrections de Victor;
+2. extraire uniquement les lecons stables et non sensibles;
+3. classer chaque lecon dans un cluster memoire;
+4. l'ajouter a SQLite, puis la miroir dans Obsidian;
+5. reconstruire les embeddings Ollama quand on veut renforcer la recherche vectorielle.
+
+La boucle tourne legerement au fil de l'eau apres les echanges, sans bloquer le chat. Le bouton `Apprendre des echanges` du panneau `Memoire` lance une consolidation plus forte et cree un rapport dans:
+
+```text
+data/obsidian_vault/80 - Learning/
+```
+
+Variables utiles:
+
+```env
+EVA_MEMORY_LEARNING_ENABLED=true
+EVA_MEMORY_LEARNING_RECENT_TICKS=120
+```
+
+Cette approche rend Eva plus intelligente par contexte, retrieval, clusters et feedback loop locale, sans API payante et sans stocker de secrets.
 
 ## Couche de comprehension
 
@@ -1883,6 +1910,8 @@ POST /memory/obsidian/seed
 POST /memory/obsidian/import
 POST /memory/obsidian/sync
 POST /memory/obsidian/open
+GET /memory/learning/status
+POST /memory/learning/consolidate
 ```
 
 Eva ne devient pas plus intelligente par entrainement du modele local. Elle apprend au sens assistant personnel: elle conserve des informations non sensibles, les reinjecte dans le contexte Ollama, et les miroir dans Obsidian pour que Victor puisse les relire, corriger ou enrichir.
@@ -1907,6 +1936,7 @@ Eva ne devient pas plus intelligente par entrainement du modele local. Elle appr
 - memoire DreamLense;
 - strategie LinkedIn;
 - backlog d'apprentissage.
+- boucle d'apprentissage locale dans `80 - Learning/`.
 
 Ces notes restent locales dans `data/obsidian_vault`. Le bouton `Nourrir la memoire` du panneau Memoire les cree si elles n'existent pas encore, puis importe les lignes `#memory/...` dans SQLite. La reconstruction des embeddings reste separee via `Reconstruire les embeddings` pour eviter de bloquer l'interface si Ollama est lent.
 

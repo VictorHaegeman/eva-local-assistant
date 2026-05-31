@@ -144,6 +144,7 @@ from app.memory.embedding_store import (
     embedding_status,
     rebuild_memory_embeddings,
 )
+from app.memory.learning_loop import MemoryLearningError, consolidate_learning, learning_status
 from app.memory.memory_router import route_memory
 from app.memory.chat_history_store import (
     ChatHistoryError,
@@ -283,6 +284,11 @@ class MemoryRouteRequest(BaseModel):
 
 class MemoryEmbeddingRebuildRequest(BaseModel):
     limit: int = Field(default=200, ge=1, le=1000)
+
+
+class MemoryLearningRequest(BaseModel):
+    limit: int = Field(default=120, ge=1, le=500)
+    rebuild_embeddings: bool = False
 
 
 class ObsidianImportRequest(BaseModel):
@@ -899,6 +905,22 @@ async def memory_embeddings_rebuild(request: MemoryEmbeddingRebuildRequest) -> d
         return rebuild_memory_embeddings(limit=request.limit)
     except EmbeddingStoreError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.get("/memory/learning/status", dependencies=[Depends(require_sensitive_access)])
+async def memory_learning_status() -> dict[str, object]:
+    return learning_status()
+
+
+@app.post("/memory/learning/consolidate", dependencies=[Depends(require_sensitive_access)])
+async def memory_learning_consolidate(request: MemoryLearningRequest) -> dict[str, object]:
+    try:
+        return consolidate_learning(
+            limit=request.limit,
+            rebuild_embeddings=request.rebuild_embeddings,
+        )
+    except MemoryLearningError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/chat/history", dependencies=[Depends(require_sensitive_access)])

@@ -53,7 +53,7 @@ CLUSTERS: tuple[MemoryCluster, ...] = (
         key="gmail_calendar",
         label="Gmail / Calendar",
         description="Mails, calendrier, rendez-vous, suivi inbox et brouillons.",
-        keywords=("gmail", "mail", "email", "inbox", "calendar", "calendrier", "rdv", "rendez-vous"),
+        keywords=("gmail", "mail", "mails", "email", "emails", "inbox", "thread", "calendar", "calendrier", "rdv", "rendez-vous"),
     ),
     MemoryCluster(
         key="housing",
@@ -65,14 +65,14 @@ CLUSTERS: tuple[MemoryCluster, ...] = (
         key="code_projects",
         label="Projets code",
         description="Repos, Cursor, Codex, bugs, README, branches, PR et architecture.",
-        keywords=("code", "repo", "github", "cursor", "codex", "bug", "readme", "branche", "pr"),
+        keywords=("code", "projet", "projets", "repo", "github", "cursor", "codex", "bug", "readme", "branche", "pr"),
         categories=("project",),
     ),
     MemoryCluster(
         key="project_factory",
         label="Project Factory",
         description="Creation de projets, workspace, repo GitHub, prompts Cursor et sessions de codage.",
-        keywords=("nouveau projet", "project factory", "workspace", "github", "repo", "cursor-agent", "cursor", "codex"),
+        keywords=("nouveau projet", "projet", "projets", "project factory", "workspace", "github", "repo", "cursor-agent", "cursor", "codex"),
         categories=("workflow", "project"),
     ),
     MemoryCluster(

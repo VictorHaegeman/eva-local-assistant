@@ -59,6 +59,17 @@ ERROR_MARKERS = (
 )
 
 
+def _trigger_memory_learning(tick: "OperatorTick") -> None:
+    try:
+        from app.memory.learning_loop import learn_from_tick
+
+        learn_from_tick(tick, mirror=True)
+    except Exception:
+        # Operator journaling must never fail because the learning loop is busy
+        # or because Obsidian/Ollama is temporarily unavailable.
+        return
+
+
 def init_operator_journal() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     try:
@@ -231,7 +242,7 @@ def record_operator_tick(
     except sqlite3.Error as exc:
         raise OperatorJournalError("Impossible d'enregistrer le tick operateur Eva.") from exc
 
-    return OperatorTick(
+    tick = OperatorTick(
         id=tick_id,
         created_at=created_at,
         channel=channel[:40],
@@ -247,6 +258,8 @@ def record_operator_tick(
         status=status,
         reflex_note=reflex_note,
     )
+    _trigger_memory_learning(tick)
+    return tick
 
 
 def list_operator_ticks(limit: int = 50) -> list[OperatorTick]:

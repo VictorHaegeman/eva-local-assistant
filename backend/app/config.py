@@ -134,6 +134,8 @@ class Settings:
     eva_embedding_model: str = os.getenv("EVA_EMBEDDING_MODEL", "nomic-embed-text")
     eva_embedding_timeout_seconds: float = _env_float("EVA_EMBEDDING_TIMEOUT_SECONDS", 20.0)
     eva_memory_vector_candidates: int = _env_int("EVA_MEMORY_VECTOR_CANDIDATES", 120)
+    eva_memory_learning_enabled: bool = _env_bool("EVA_MEMORY_LEARNING_ENABLED", True)
+    eva_memory_learning_recent_ticks: int = _env_int("EVA_MEMORY_LEARNING_RECENT_TICKS", 120)
     eva_cursor_auto_copy_prompt: bool = _env_bool("EVA_CURSOR_AUTO_COPY_PROMPT", True)
     eva_cursor_auto_open_project: bool = _env_bool("EVA_CURSOR_AUTO_OPEN_PROJECT", True)
     eva_cursor_write_prompt_file: bool = _env_bool("EVA_CURSOR_WRITE_PROMPT_FILE", True)

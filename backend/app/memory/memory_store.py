@@ -372,14 +372,50 @@ def detect_auto_memory_candidate(message: str) -> MemoryCandidate | None:
         "resumes",
         "lis ",
         "lire ",
+        "ouvre ",
+        "ouvrir ",
         "analyse ",
         "corrige ",
         "ecris ",
         "redige ",
+        "repond ",
+        "reponds ",
         "cree ",
         "fais ",
+        "continue ",
+        "installe ",
+        "ameliore ",
+        "optimise ",
+        "travaille ",
+        "le dernier ",
+        "la derniere ",
+        "mes derniers ",
+        "mon dernier ",
+        "concernant ",
     )
     if normalized.startswith(blocked_starts):
+        return None
+
+    task_request_markers = (
+        "donne des prompts",
+        "code toi meme",
+        "code toi-meme",
+        "continue de travailler",
+        "ouvre le",
+        "ouvre la",
+        "ouvre mes",
+        "ouvre mon",
+        "lance ",
+        "installe ",
+        "ameliore le",
+        "optimise le",
+        "dernier mail",
+        "derniers mails",
+        "non repondu",
+        "pas encore repondu",
+        "pret a etre envoye",
+    )
+    if any(marker in normalized for marker in task_request_markers):
         return None
 
     identity_markers = (

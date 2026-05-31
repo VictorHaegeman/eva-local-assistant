@@ -23,6 +23,7 @@ import {
 
 import {
   analyzeScreen,
+  consolidateMemoryLearning,
   createAutonomyJob,
   getActions,
   getAutonomy,
@@ -37,6 +38,7 @@ import {
   getLinkedInStatus,
   getMemories,
   getMemoryEmbeddingStatus,
+  getMemoryLearningStatus,
   getObsidianMemoryStatus,
   getProjects,
   getResolverStatus,
@@ -253,12 +255,13 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
 
   async function fetchPanelData(panelName) {
     if (panelName === "memory") {
-      const [memory, obsidian, embeddings] = await Promise.all([
+      const [memory, obsidian, embeddings, learning] = await Promise.all([
         getMemories(),
         getObsidianMemoryStatus(),
         getMemoryEmbeddingStatus(),
+        getMemoryLearningStatus(),
       ]);
-      return { ...memory, obsidian, embeddings };
+      return { ...memory, obsidian, embeddings, learning };
     }
     if (panelName === "chats") return getChatHistory();
     if (panelName === "tools") {
@@ -460,6 +463,29 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleConsolidateLearning() {
+    setRunningJob("memory_learning");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await consolidateMemoryLearning(160, true);
+      await loadPanel();
+      const clusterText = (result.clusters || [])
+        .slice(0, 3)
+        .map((cluster) => `${cluster.label}: ${cluster.count}`)
+        .join(" / ");
+      const suffix = clusterText ? ` Clusters: ${clusterText}.` : "";
+      setJobResult(
+        `${result.stored || 0} apprentissage(s) consolide(s) depuis ${result.ticks_analyzed || 0} tick(s).${suffix}`
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleGenerateSmartBrief() {
     setRunningJob("smart_brief");
     setJobResult("");
@@ -541,6 +567,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     const memories = data?.memories || [];
     const obsidian = data?.obsidian || {};
     const embeddings = data?.embeddings || {};
+    const learning = data?.learning || {};
     const embeddingCount = embeddings.embedding_count || 0;
     const memoryCount = embeddings.memory_count ?? memories.length;
 
@@ -554,8 +581,45 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
             tone={memoryCount && embeddingCount < memoryCount ? "warning" : "ok"}
           />
           <Metric label="Obsidian" value={obsidian.enabled ? "on" : "off"} tone={obsidian.enabled ? "ok" : "warning"} />
+          <Metric
+            label="apprentissages"
+            value={learning.learning_memories || 0}
+            tone={learning.learning_memories ? "ok" : "neutral"}
+          />
         </div>
         {jobResult && <div className="panel-success">{jobResult}</div>}
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Boucle d'apprentissage locale</h3>
+            <StatusPill tone={learning.enabled ? "ok" : "warning"}>{learning.enabled ? "active" : "off"}</StatusPill>
+          </div>
+          <p>
+            Eva extrait les lecons stables de ses echanges, les classe en clusters,
+            les ajoute a SQLite, les miroir dans Obsidian et peut reconstruire les embeddings.
+          </p>
+          <Field label="Ticks operateur" value={learning.operator_ticks || 0} />
+          <Field label="A reprendre" value={learning.needs_followup || 0} />
+          <Field label="Rapports Obsidian" value={learning.report_count || 0} />
+          {learning.clusters?.length ? (
+            <div className="panel-chip-list">
+              {learning.clusters.slice(0, 6).map((cluster) => (
+                <StatusPill key={cluster.key} tone="ok">
+                  {cluster.label} {cluster.count}
+                </StatusPill>
+              ))}
+            </div>
+          ) : null}
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button primary"
+              onClick={handleConsolidateLearning}
+              disabled={Boolean(runningJob) || !learning.enabled}
+            >
+              {runningJob === "memory_learning" ? "Consolidation..." : "Apprendre des echanges"}
+            </button>
+          </div>
+        </section>
         <section className="panel-card">
           <div className="panel-card-heading">
             <h3>Memoire vectorielle locale</h3>

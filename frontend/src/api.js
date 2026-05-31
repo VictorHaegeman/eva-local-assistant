@@ -116,6 +116,22 @@ export async function rebuildMemoryEmbeddings(limit = 200) {
 }
 
 
+export async function getMemoryLearningStatus() {
+  return request("/memory/learning/status");
+}
+
+
+export async function consolidateMemoryLearning(limit = 120, rebuildEmbeddings = false) {
+  return request("/memory/learning/consolidate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ limit, rebuild_embeddings: rebuildEmbeddings }),
+  });
+}
+
+
 export async function getChatHistory() {
   return request("/chat/history");
 }
