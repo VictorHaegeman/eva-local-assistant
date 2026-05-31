@@ -1,7 +1,7 @@
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast, get_args
 
 from app.agents.action_planner import ActionPlan, PlanRoute, build_action_plan, build_action_plan_for_route
 from app.agents.intent_router import UserIntent, classify_user_intent, has_news_context
@@ -70,6 +70,9 @@ class UnderstandingFrame:
     cognitive_memory_count: int = 0
     cognitive_skill_summary: str = ""
     cognitive_skill_keys: tuple[str, ...] = ()
+    reinforcement_summary: str = ""
+    reinforcement_score: float = 0.0
+    reinforcement_candidates: tuple[str, ...] = ()
 
 
 def normalize_understanding_text(text: str) -> str:
@@ -529,6 +532,26 @@ def build_understanding_frame(
     domain = _domain_from_message(normalized, intent, context)
     outcome = _expected_outcome(normalized, intent, domain)
     route = _route_for_understanding(domain, outcome, str(action_plan.route))
+    reinforcement_summary = ""
+    reinforcement_score = 0.0
+    reinforcement_candidates: tuple[str, ...] = ()
+    try:
+        from app.cognition.reinforcement_store import recommend_route_for_state
+
+        recommendation = recommend_route_for_state(f"{domain}:{outcome}", str(route))
+        reinforcement_summary = recommendation.summary
+        reinforcement_score = recommendation.selected_score - recommendation.current_score
+        reinforcement_candidates = tuple(
+            f"{candidate.action_key}:{round(candidate.avg_reward, 2)}"
+            for candidate in recommendation.candidates[:5]
+        )
+        valid_routes = set(get_args(PlanRoute))
+        if recommendation.should_switch and recommendation.selected_action in valid_routes:
+            route = cast(PlanRoute, recommendation.selected_action)
+    except Exception:
+        reinforcement_summary = ""
+        reinforcement_score = 0.0
+        reinforcement_candidates = ()
     if route != action_plan.route:
         action_plan = build_action_plan_for_route(
             route=route,
@@ -560,6 +583,9 @@ def build_understanding_frame(
         required_evidence=_required_evidence(domain, outcome),
         tool_preference="cursor_agent_setup" if route == "cursor_agent_setup" else _tool_preference(domain),
         clarification_question=_clarification_question(normalized, domain, outcome, context),
+        reinforcement_summary=reinforcement_summary,
+        reinforcement_score=reinforcement_score,
+        reinforcement_candidates=reinforcement_candidates,
     )
 
 
@@ -597,6 +623,12 @@ def format_understanding_context(frame: UnderstandingFrame) -> str:
         lines.append(f"- {frame.cognitive_skill_summary}")
         if frame.cognitive_skill_keys:
             lines.append(f"- Skills: {', '.join(frame.cognitive_skill_keys)}")
+    if frame.reinforcement_summary:
+        lines.append("Reward policy locale:")
+        lines.append(f"- {frame.reinforcement_summary}")
+        lines.append(f"- Delta score: {round(frame.reinforcement_score, 3)}")
+        if frame.reinforcement_candidates:
+            lines.append(f"- Actions candidates: {', '.join(frame.reinforcement_candidates)}")
     lines.append(
         "Ne recite pas ce cadre. Utilise-le pour choisir l'outil, lire les bonnes sources, "
         "eviter l'invention et dire clairement ce qui est reellement fait."
@@ -648,4 +680,7 @@ def understanding_to_dict(frame: UnderstandingFrame) -> dict[str, object]:
         "cognitive_memory_count": frame.cognitive_memory_count,
         "cognitive_skill_summary": frame.cognitive_skill_summary,
         "cognitive_skill_keys": list(frame.cognitive_skill_keys),
+        "reinforcement_summary": frame.reinforcement_summary,
+        "reinforcement_score": frame.reinforcement_score,
+        "reinforcement_candidates": list(frame.reinforcement_candidates),
     }

@@ -18,6 +18,7 @@ import {
   Rocket,
   ShieldCheck,
   Terminal,
+  TrendingUp,
   Wrench,
 } from "lucide-react";
 
@@ -41,6 +42,7 @@ import {
   getMemoryLearningStatus,
   getObsidianMemoryStatus,
   getProjects,
+  getReinforcementStatus,
   getResolverStatus,
   getScreenStatus,
   getSkills,
@@ -148,6 +150,12 @@ const panelMeta = {
     title: "Resolution de problemes",
     description: "Les blocages deviennent diagnostics, plans B et traces locales exploitables.",
   },
+  reinforcement: {
+    icon: TrendingUp,
+    kicker: "Learning",
+    title: "Rewards locaux",
+    description: "Bonus/malus qui apprennent a Eva quelles routes marchent vraiment.",
+  },
   ollama: {
     icon: Cpu,
     kicker: "Core",
@@ -207,6 +215,13 @@ function Metric({ label, value, tone = "neutral" }) {
       <span>{label}</span>
     </div>
   );
+}
+
+
+function rewardTone(value = 0) {
+  if (value > 0.2) return "ok";
+  if (value < -0.2) return "error";
+  return "neutral";
 }
 
 
@@ -295,6 +310,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
     if (panelName === "actions") return getActions("pending");
     if (panelName === "resolver") return getResolverStatus(30);
+    if (panelName === "reinforcement") return getReinforcementStatus(40);
     if (panelName === "ollama") {
       const [health, diagnostic] = await Promise.all([getHealth(), getDoctor()]);
       return { health, diagnostic };
@@ -1492,6 +1508,105 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     );
   }
 
+  function renderReinforcement() {
+    const stats = data?.stats || [];
+    const recentEvents = data?.recent_events || [];
+    const states = data?.states || [];
+    const best = stats
+      .filter((item) => item.attempts >= (data?.min_attempts || 1))
+      .sort((a, b) => (b.policy_score || 0) - (a.policy_score || 0))[0];
+
+    return (
+      <>
+        <div className="panel-metrics">
+          <Metric label="events" value={data?.events || 0} tone={data?.events ? "ok" : "neutral"} />
+          <Metric label="reward moyen" value={data?.avg_reward ?? 0} tone={rewardTone(data?.avg_reward || 0)} />
+          <Metric label="penalites" value={data?.negative || 0} tone={data?.negative ? "warning" : "ok"} />
+        </div>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Politique locale</h3>
+            <StatusPill tone={data?.enabled ? "ok" : "warning"}>{data?.enabled ? "active" : "off"}</StatusPill>
+          </div>
+          <p>
+            Eva n'entraine pas Ollama. Elle apprend une couche de decision locale:
+            etat de la demande, route choisie, resultat, puis bonus ou penalite.
+          </p>
+          <Field label="Seuil de bascule" value={data?.switch_threshold ?? 0} />
+          <Field label="Essais minimum" value={data?.min_attempts ?? 0} />
+          <Field label="Exploration" value={data?.exploration_bonus ?? 0} />
+        </section>
+        {best && (
+          <section className="panel-card">
+            <div className="panel-card-heading">
+              <h3>Route favorite actuelle</h3>
+              <StatusPill tone={rewardTone(best.avg_reward)}>{best.action_key}</StatusPill>
+            </div>
+            <Field label="Etat" value={best.state_key} />
+            <Field label="Score politique" value={best.policy_score} />
+            <Field label="Moyenne reward" value={best.avg_reward} />
+            <Field label="Tentatives" value={best.attempts} />
+          </section>
+        )}
+        {states.length ? (
+          <section className="panel-card">
+            <div className="panel-card-heading">
+              <h3>Etats appris</h3>
+              <StatusPill>{states.length}</StatusPill>
+            </div>
+            <div className="panel-chip-list">
+              {states.slice(0, 10).map((state) => (
+                <StatusPill key={state.state_key} tone="neutral">
+                  {state.state_key} / {state.actions}
+                </StatusPill>
+              ))}
+            </div>
+          </section>
+        ) : null}
+        {stats.length ? (
+          <div className="panel-list">
+            {stats.slice(0, 12).map((item) => (
+              <div key={`${item.state_key}-${item.action_key}`} className="panel-row">
+                <div>
+                  <strong>{item.action_key}</strong>
+                  <span>{item.state_key}</span>
+                  <span className="panel-row-note">
+                    avg {item.avg_reward} / score {item.policy_score} / {item.attempts} essai(s)
+                  </span>
+                </div>
+                <div className="panel-row-actions">
+                  <StatusPill tone={rewardTone(item.last_reward)}>{item.last_reward}</StatusPill>
+                  <StatusPill tone={item.penalty_count ? "warning" : "ok"}>{item.penalty_count} malus</StatusPill>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState>Aucun signal reward pour le moment. Eva apprendra au fil des chats web et Telegram.</EmptyState>
+        )}
+        {recentEvents.length ? (
+          <section className="panel-card">
+            <div className="panel-card-heading">
+              <h3>Derniers signaux</h3>
+              <StatusPill>{recentEvents.length}</StatusPill>
+            </div>
+            <div className="panel-list compact">
+              {recentEvents.slice(0, 8).map((event) => (
+                <div key={event.id} className="panel-row">
+                  <div>
+                    <strong>#{event.id} {event.action_key}</strong>
+                    <span>{event.state_key} / {event.reason}</span>
+                  </div>
+                  <StatusPill tone={rewardTone(event.reward)}>{event.reward}</StatusPill>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </>
+    );
+  }
+
   function renderOllama() {
     const diagnostic = data?.diagnostic || doctor;
     const modelCheck = diagnostic?.checks?.find((check) => check.name === "ollama_model_available");
@@ -1559,6 +1674,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panel === "jobs") return renderJobs();
     if (panel === "actions") return renderActions();
     if (panel === "resolver") return renderResolver();
+    if (panel === "reinforcement") return renderReinforcement();
     if (panel === "ollama") return renderOllama();
     return renderDoctor();
   }

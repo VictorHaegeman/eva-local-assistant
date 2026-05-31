@@ -67,7 +67,50 @@ def _trigger_memory_learning(tick: "OperatorTick") -> None:
     except Exception:
         # Operator journaling must never fail because the learning loop is busy
         # or because Obsidian/Ollama is temporarily unavailable.
-        return
+        pass
+
+    try:
+        from app.cognition.reinforcement_store import record_tick_reward
+
+        record_tick_reward(tick)
+    except Exception:
+        # Reward tracking is useful, but it must never block the chat path.
+        pass
+
+
+def _previous_tick_before(tick_id: int) -> "OperatorTick | None":
+    try:
+        with _connect() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM operator_ticks
+                WHERE id < ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (tick_id,),
+            ).fetchone()
+    except sqlite3.Error:
+        return None
+
+    return _row_to_tick(row) if row else None
+
+
+def _trigger_user_feedback_reward(tick: "OperatorTick", feedback_message: str) -> None:
+    try:
+        from app.cognition.reinforcement_store import (
+            feedback_reward_from_message,
+            record_feedback_for_tick,
+        )
+
+        if feedback_reward_from_message(feedback_message) is None:
+            return
+        previous_tick = _previous_tick_before(tick.id)
+        if previous_tick:
+            record_feedback_for_tick(previous_tick, feedback_message)
+    except Exception:
+        pass
 
 
 def init_operator_journal() -> None:
@@ -258,6 +301,7 @@ def record_operator_tick(
         status=status,
         reflex_note=reflex_note,
     )
+    _trigger_user_feedback_reward(tick, message)
     _trigger_memory_learning(tick)
     return tick
 

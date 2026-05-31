@@ -81,6 +81,32 @@ export async function getResolverStatus(limit = 20) {
 }
 
 
+export async function getReinforcementStatus(limit = 30) {
+  return request(`/reinforcement/status?limit=${encodeURIComponent(limit)}`);
+}
+
+
+export async function getReinforcementEvents(limit = 50) {
+  return request(`/reinforcement/events?limit=${encodeURIComponent(limit)}`);
+}
+
+
+export async function sendReinforcementFeedback(stateKey, actionKey, reward, reason = "feedback manuel Victor") {
+  return request("/reinforcement/feedback", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      state_key: stateKey,
+      action_key: actionKey,
+      reward,
+      reason,
+    }),
+  });
+}
+
+
 export async function getScreenStatus() {
   return request("/screen/status");
 }

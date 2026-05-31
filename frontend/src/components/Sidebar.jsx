@@ -20,6 +20,7 @@ import {
   Sparkles,
   Stethoscope,
   Terminal,
+  TrendingUp,
   TriangleAlert,
   Wifi,
   Wrench,
@@ -127,6 +128,11 @@ const operationItems = [
     icon: Route,
     label: "Resolver",
     panel: "resolver",
+  },
+  {
+    icon: TrendingUp,
+    label: "Rewards",
+    panel: "reinforcement",
   },
   {
     icon: Cpu,

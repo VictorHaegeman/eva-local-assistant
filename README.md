@@ -485,6 +485,45 @@ EVA_MEMORY_LEARNING_RECENT_TICKS=120
 
 Cette approche rend Eva plus intelligente par contexte, retrieval, clusters et feedback loop locale, sans API payante et sans stocker de secrets.
 
+## Reinforcement local
+
+Eva dispose aussi d'une couche de bonus/malus locale inspiree du reinforcement learning. Elle n'entraine pas les poids du modele Ollama: elle apprend plutot une politique de decision.
+
+Correspondance simple:
+
+- Agent: la couche de decision d'Eva;
+- Environment: le PC local, Gmail, Obsidian, Brave, Cursor, les outils;
+- State: le contexte de demande, par exemple `gmail:read_then_audit`;
+- Action: la route choisie, par exemple `gmail_reply_audit` ou `web_search`;
+- Reward: bonus si l'action donne une preuve utile, penalite si Eva part hors sujet, invente, refuse passivement ou utilise la mauvaise route.
+
+Les signaux sont stockes localement dans:
+
+```text
+data/eva_reinforcement.sqlite
+```
+
+Eva s'en sert avec prudence: elle ne change de route que si une alternative a assez d'essais, un score positif, et que la route actuelle a ete penalisee plusieurs fois.
+
+Variables utiles:
+
+```env
+EVA_REINFORCEMENT_ENABLED=true
+EVA_REINFORCEMENT_SWITCH_THRESHOLD=0.35
+EVA_REINFORCEMENT_MIN_ATTEMPTS=3
+EVA_REINFORCEMENT_EXPLORATION_BONUS=0.16
+```
+
+Routes utiles:
+
+```text
+GET /reinforcement/status
+GET /reinforcement/events
+POST /reinforcement/feedback
+```
+
+Le panneau `Rewards` affiche les routes qui marchent, les penalites recentes et les etats appris. C'est le debut d'un systeme de penalite/recompense exploitable par la memoire Obsidian et la boucle cognitive.
+
 ## Couche de comprehension
 
 Avant de repondre ou d'utiliser un outil, Eva construit un cadre local de comprehension:

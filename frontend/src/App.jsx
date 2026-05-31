@@ -78,6 +78,10 @@ const panelShellMeta = {
     title: "Actions",
     subtitle: "Journal des operations sensibles et executions locales.",
   },
+  reinforcement: {
+    title: "Rewards",
+    subtitle: "Bonus/malus locaux qui guident les prochaines decisions d'Eva.",
+  },
   ollama: {
     title: "Ollama",
     subtitle: "Moteur IA local et modeles gratuits.",

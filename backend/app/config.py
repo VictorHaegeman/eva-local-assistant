@@ -150,6 +150,16 @@ class Settings:
         "EVA_REASONING_FORCE_STRUCTURED_TRACE",
         True,
     )
+    eva_reinforcement_enabled: bool = _env_bool("EVA_REINFORCEMENT_ENABLED", True)
+    eva_reinforcement_switch_threshold: float = _env_float(
+        "EVA_REINFORCEMENT_SWITCH_THRESHOLD",
+        0.35,
+    )
+    eva_reinforcement_min_attempts: int = _env_int("EVA_REINFORCEMENT_MIN_ATTEMPTS", 3)
+    eva_reinforcement_exploration_bonus: float = _env_float(
+        "EVA_REINFORCEMENT_EXPLORATION_BONUS",
+        0.16,
+    )
     eva_problem_solver_enabled: bool = _env_bool("EVA_PROBLEM_SOLVER_ENABLED", True)
     eva_problem_solver_max_cycles: int = _env_int("EVA_PROBLEM_SOLVER_MAX_CYCLES", 6)
     eva_job_runner_enabled: bool = _env_bool("EVA_JOB_RUNNER_ENABLED", True)
