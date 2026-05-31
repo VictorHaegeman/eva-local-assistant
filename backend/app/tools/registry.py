@@ -71,6 +71,13 @@ TOOLS = (
         description="Trace les demandes, decisions, resultats et reflexes de relance pour ameliorer l'autonomie locale.",
     ),
     ToolDescriptor(
+        key="autonomous_job_runner",
+        label="Job Runner autonome",
+        category="agents",
+        policy_level="draft_only",
+        description="Queue locale JSONL avec execution un job a la fois, resultats sauvegardes, checkpoints et reprise au redemarrage.",
+    ),
+    ToolDescriptor(
         key="file_read",
         label="Lecture fichiers",
         category="files",

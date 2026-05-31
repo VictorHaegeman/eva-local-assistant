@@ -7,6 +7,7 @@ import {
   GitBranch,
   HeartPulse,
   Layers3,
+  ListChecks,
   Mail,
   MessagesSquare,
   MessageSquarePlus,
@@ -111,6 +112,11 @@ const operationItems = [
     icon: Rocket,
     label: "Factory",
     panel: "projectFactory",
+  },
+  {
+    icon: ListChecks,
+    label: "Jobs",
+    panel: "jobs",
   },
   {
     icon: Terminal,

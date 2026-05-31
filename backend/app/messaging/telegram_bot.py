@@ -29,6 +29,7 @@ from app.integrations.google_setup_chat import (
     build_calendar_events_response,
     build_google_setup_response,
 )
+from app.jobs.job_store import JobStoreError, enqueue_job, job_runner_status, list_jobs
 from app.messaging.telegram_memory import (
     append_telegram_exchange,
     clear_telegram_context,
@@ -156,6 +157,8 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/history - revoir le fil Telegram recent\n"
                 "/screen - lire et interpreter l'ecran du PC\n"
                 "/terminal ERREUR - analyser/corriger une erreur terminal\n"
+                "/job TACHE - mettre une tache longue dans la queue autonome\n"
+                "/jobs - voir la queue autonome locale\n"
                 "/reset - oublier le fil Telegram courant\n"
                 "/pending - voir les actions en attente\n"
                 "/approve ID - valider et executer une action\n"
@@ -275,6 +278,59 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 await _send_message(client, chat_id, f"Correctif impossible: {exc}")
                 return True
         await _send_message(client, chat_id, format_terminal_diagnosis(diagnosis, launched=launched))
+        return True
+
+    if command in {"/job", "/queue", "/task"}:
+        if not argument:
+            await _send_message(
+                client,
+                chat_id,
+                "Usage: /job decris la tache longue a executer en autonomie",
+            )
+            return True
+        try:
+            job = enqueue_job(
+                argument,
+                kind="telegram_task",
+                source="telegram",
+                payload={"messages": load_telegram_context(chat_id) + [{"role": "user", "content": argument}]},
+                session_id=f"telegram-{chat_id}",
+            )
+        except JobStoreError as exc:
+            await _send_message(client, chat_id, f"Queue Eva indisponible: {exc}")
+            return True
+        await _send_message(
+            client,
+            chat_id,
+            (
+                f"Job autonome ajoute: {job['id']}\n"
+                "Eva le traitera en arriere-plan, un par un, avec checkpoints locaux."
+            ),
+        )
+        return True
+
+    if command == "/jobs":
+        try:
+            status = job_runner_status()
+            jobs = list_jobs(limit=8)
+        except JobStoreError as exc:
+            await _send_message(client, chat_id, f"Queue Eva indisponible: {exc}")
+            return True
+
+        counts = status.get("counts", {})
+        lines = [
+            "Queue autonome Eva:",
+            f"enabled={status.get('enabled')} poll={status.get('poll_seconds')}s",
+            f"queued={counts.get('queued', 0)} running={counts.get('running', 0)} completed={counts.get('completed', 0)} failed={counts.get('failed', 0)}",
+            "",
+        ]
+        if not jobs:
+            lines.append("Aucun job local pour le moment.")
+        for job in jobs:
+            lines.append(f"- {job.get('id')} [{job.get('status')}] {str(job.get('instruction', ''))[:120]}")
+            if job.get("last_error"):
+                lines.append(f"  erreur: {str(job.get('last_error'))[:160]}")
+        await _send_message(client, chat_id, "\n".join(lines))
         return True
 
     if command in {"/project", "/idea"}:

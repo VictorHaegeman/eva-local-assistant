@@ -59,6 +59,17 @@ from app.heartbeat.scheduler import (
     run_heartbeat_job,
     start_heartbeat_background_task,
 )
+from app.jobs.job_store import (
+    JobStoreError,
+    cancel_job,
+    enqueue_job,
+    ensure_job_store,
+    get_job,
+    job_runner_status,
+    list_jobs,
+    recover_running_jobs,
+)
+from app.jobs.worker import run_next_job_once, start_job_worker_background_task
 from app.integrations.gmail_client import (
     GmailIntegrationError,
     create_gmail_reply_draft,
@@ -343,6 +354,15 @@ class ProjectFactoryPlanRequest(BaseModel):
     project_name: str = Field(default="", max_length=120)
 
 
+class AutonomyJobCreateRequest(BaseModel):
+    instruction: str = Field(min_length=1, max_length=20_000)
+    kind: Literal["chat_task", "autonomous_task", "telegram_task", "project_task"] = "autonomous_task"
+    source: str = Field(default="web", max_length=80)
+    priority: str = Field(default="normal", max_length=40)
+    payload: dict[str, object] = Field(default_factory=dict)
+    session_id: str = Field(default="", max_length=120)
+
+
 class ActionCreateRequest(BaseModel):
     action_type: Literal[
         "command",
@@ -501,18 +521,22 @@ init_action_store()
 init_chat_history_store()
 init_problem_store()
 init_operator_journal()
+ensure_job_store()
+recover_running_jobs()
 
 telegram_task: asyncio.Task[None] | None = None
 heartbeat_task: asyncio.Task[None] | None = None
 screen_watch_task: asyncio.Task[None] | None = None
+job_worker_task: asyncio.Task[None] | None = None
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global heartbeat_task, screen_watch_task, telegram_task
+    global heartbeat_task, job_worker_task, screen_watch_task, telegram_task
     telegram_task = start_telegram_background_task()
     heartbeat_task = start_heartbeat_background_task()
     screen_watch_task = start_screen_watch_background_task()
+    job_worker_task = start_job_worker_background_task()
 
 
 @app.on_event("shutdown")
@@ -523,6 +547,8 @@ async def shutdown_event() -> None:
         heartbeat_task.cancel()
     if screen_watch_task:
         screen_watch_task.cancel()
+    if job_worker_task:
+        job_worker_task.cancel()
 
 
 @app.get("/health")
@@ -602,6 +628,69 @@ async def heartbeat_run(job_key: str) -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except (RssBriefError, BriefStoreError, OllamaClientError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.get("/jobs/status", dependencies=[Depends(require_sensitive_access)])
+async def jobs_status() -> dict[str, object]:
+    return job_runner_status()
+
+
+@app.get("/jobs", dependencies=[Depends(require_sensitive_access)])
+async def jobs(status: str | None = Query(default=None), limit: int = Query(default=50, ge=1, le=300)) -> dict[str, object]:
+    try:
+        return {
+            "status": job_runner_status(),
+            "jobs": list_jobs(status=status, limit=limit),
+        }
+    except JobStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/jobs", dependencies=[Depends(require_sensitive_access)])
+async def create_job(request: AutonomyJobCreateRequest) -> dict[str, object]:
+    try:
+        job = enqueue_job(
+            request.instruction,
+            kind=request.kind,
+            source=request.source,
+            priority=request.priority,
+            payload=dict(request.payload),
+            session_id=request.session_id,
+        )
+    except JobStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "queued": True,
+        "job": job,
+        "status": job_runner_status(),
+    }
+
+
+@app.get("/jobs/{job_id}", dependencies=[Depends(require_sensitive_access)])
+async def job_detail(job_id: str) -> dict[str, object]:
+    try:
+        return {"job": get_job(job_id)}
+    except JobStoreError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/jobs/run-next", dependencies=[Depends(require_sensitive_access)])
+async def jobs_run_next() -> dict[str, object]:
+    try:
+        return await run_next_job_once()
+    except JobStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/jobs/{job_id}/cancel", dependencies=[Depends(require_sensitive_access)])
+async def jobs_cancel(job_id: str) -> dict[str, object]:
+    try:
+        return {
+            "cancelled": True,
+            "job": cancel_job(job_id),
+        }
+    except JobStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/doctor")

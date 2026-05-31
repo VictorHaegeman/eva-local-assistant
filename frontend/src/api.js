@@ -216,6 +216,39 @@ export async function getHeartbeatStatus() {
 }
 
 
+export async function getJobs(limit = 40) {
+  return request(`/jobs?limit=${encodeURIComponent(limit)}`);
+}
+
+
+export async function getJobsStatus() {
+  return request("/jobs/status");
+}
+
+
+export async function createAutonomyJob(instruction, kind = "autonomous_task") {
+  return request("/jobs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      instruction,
+      kind,
+      source: "web",
+      priority: "normal",
+    }),
+  });
+}
+
+
+export async function runNextAutonomyJob() {
+  return request("/jobs/run-next", {
+    method: "POST",
+  });
+}
+
+
 export async function runHeartbeat(jobKey) {
   return request(`/heartbeat/run/${encodeURIComponent(jobKey)}`, {
     method: "POST",

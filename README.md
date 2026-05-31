@@ -880,6 +880,45 @@ Si `cursor-agent` est absent, Eva cree quand meme le workspace, GitHub et le pro
 
 Ce mode ne donne pas carte blanche a tout le PC: il ne supprime rien, n'envoie pas de message, ne publie pas de contenu et n'appelle pas OpenAI. Il execute seulement le flux Project Factory borne a ton dossier projets.
 
+## Queue autonome locale
+
+Eva a maintenant une queue de jobs locale inspiree des workflows JSONL:
+
+- une tache est ajoutee dans `data/eva_jobs/state.json`;
+- chaque evenement est journalise dans `data/eva_jobs/events.jsonl`;
+- chaque etape importante ecrit un checkpoint dans `data/eva_jobs/checkpoints.jsonl`;
+- les resultats finaux sont sauvegardes dans `data/eva_jobs/results/`;
+- un seul job tourne a la fois pour eviter les conflits sur ton PC;
+- si Eva redemarre pendant un job, le job repasse en queue et reprend automatiquement.
+
+Configuration:
+
+```env
+EVA_JOB_RUNNER_ENABLED=true
+EVA_JOB_RUNNER_POLL_SECONDS=5
+EVA_JOB_RUNNER_MAX_ATTEMPTS=2
+EVA_JOB_CHECKPOINT_EVERY=12
+```
+
+Endpoints:
+
+```text
+GET /jobs/status
+GET /jobs
+POST /jobs
+POST /jobs/run-next
+POST /jobs/{job_id}/cancel
+```
+
+Depuis Telegram:
+
+```text
+/job continue le projet F1 en autonomie, audite le resultat et relance une correction si besoin
+/jobs
+```
+
+Cette brique ne change pas le cerveau d'Eva: elle donne a Eva une memoire d'execution. Elle peut travailler longtemps, sauvegarder ses preuves, reprendre apres interruption et te notifier sur Telegram quand un job commence ou finit.
+
 Configuration:
 
 1. Cree un bot Telegram avec BotFather.

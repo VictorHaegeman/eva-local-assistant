@@ -70,6 +70,10 @@ const panelShellMeta = {
     title: "Project Factory",
     subtitle: "Idee -> workspace -> repo -> prompt de production.",
   },
+  jobs: {
+    title: "Jobs autonomes",
+    subtitle: "Queue locale, checkpoints et reprise apres interruption.",
+  },
   actions: {
     title: "Actions",
     subtitle: "Journal des operations sensibles et executions locales.",

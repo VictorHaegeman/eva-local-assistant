@@ -6,6 +6,7 @@ import httpx
 
 from app.config import settings
 from app.heartbeat.scheduler import HEARTBEATS_PATH
+from app.jobs.job_store import job_runner_status
 from app.integrations.linkedin_assistant import LINKEDIN_PATH
 from app.integrations.browser import find_browser
 from app.integrations.cli_tools import find_cursor_agent, find_gh, is_gh_authenticated
@@ -227,6 +228,29 @@ def _heartbeat_check() -> dict[str, Any]:
     )
 
 
+def _job_runner_check() -> dict[str, Any]:
+    status = job_runner_status()
+    counts = status.get("counts", {})
+    running = status.get("running")
+    if not status.get("enabled"):
+        return _check(
+            "autonomous_job_runner",
+            "warning",
+            "Queue autonome desactivee dans .env.",
+            status,
+        )
+    return _check(
+        "autonomous_job_runner",
+        "ok",
+        (
+            "Queue autonome active: "
+            f"{counts.get('queued', 0)} en attente, "
+            f"{1 if running else 0} en cours."
+        ),
+        status,
+    )
+
+
 def _linkedin_check() -> dict[str, Any]:
     return _check(
         "linkedin_assistant",
@@ -428,6 +452,7 @@ async def run_doctor() -> dict[str, Any]:
     checks.append(_obsidian_memory_check())
     checks.append(_instructions_check())
     checks.append(_heartbeat_check())
+    checks.append(_job_runner_check())
     checks.append(_linkedin_check())
     checks.append(_skills_check())
     checks.append(_telegram_check())

@@ -8,6 +8,7 @@ import {
   GitBranch,
   HeartPulse,
   Layers3,
+  ListChecks,
   Mail,
   MessagesSquare,
   Network,
@@ -22,6 +23,7 @@ import {
 
 import {
   analyzeScreen,
+  createAutonomyJob,
   getActions,
   getAutonomy,
   getDoctor,
@@ -29,6 +31,8 @@ import {
   getGmailStatus,
   getHealth,
   getHeartbeatStatus,
+  getJobs,
+  getJobsStatus,
   getLatestBrief,
   getLinkedInStatus,
   getMemories,
@@ -51,6 +55,7 @@ import {
   planProjectFactory,
   runGmailAutoReply,
   runHeartbeat,
+  runNextAutonomyJob,
   seedObsidianMemory,
   syncObsidianMemory,
 } from "../api";
@@ -123,6 +128,12 @@ const panelMeta = {
     title: "Project Factory",
     description: "Transforme une idee en workspace local, prompt Cursor et actions validables.",
   },
+  jobs: {
+    icon: ListChecks,
+    kicker: "Autonomy",
+    title: "Jobs autonomes",
+    description: "Queue locale un par un avec resultats, checkpoints JSONL et reprise au redemarrage.",
+  },
   actions: {
     icon: Terminal,
     kicker: "Reflexes",
@@ -152,7 +163,9 @@ const panelMeta = {
 
 function statusClass(value) {
   if (value === true || value === "ok" || value === "ready" || value === "executed") return "ok";
+  if (value === "completed" || value === "running") return "ok";
   if (value === "read_only" || value === "draft_only") return "ok";
+  if (value === "queued") return "warning";
   if (value === false || value === "warning" || value === "pending") return "warning";
   if (value === "confirmation_required") return "warning";
   if (value === "error" || value === "failed" || value === "offline") return "error";
@@ -233,6 +246,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
   const [factoryResult, setFactoryResult] = useState(null);
   const [screenInstruction, setScreenInstruction] = useState("Lis l'ecran et corrige l'erreur visible si le correctif est sur.");
   const [screenResult, setScreenResult] = useState(null);
+  const [autonomyJobInstruction, setAutonomyJobInstruction] = useState("");
 
   const meta = panelMeta[panel] || panelMeta.doctor;
   const Icon = meta.icon;
@@ -272,6 +286,10 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panelName === "projects") return getProjects();
     if (panelName === "brief") return getLatestBrief();
     if (panelName === "projectFactory") return { ready: true };
+    if (panelName === "jobs") {
+      const [jobs, runner] = await Promise.all([getJobs(40), getJobsStatus()]);
+      return { ...jobs, runner };
+    }
     if (panelName === "actions") return getActions("pending");
     if (panelName === "resolver") return getResolverStatus(30);
     if (panelName === "ollama") {
@@ -1214,6 +1232,121 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     );
   }
 
+  async function handleCreateAutonomyJob() {
+    const instruction = autonomyJobInstruction.trim();
+    if (!instruction) return;
+    setRunningJob("autonomy_job_create");
+    setJobResult("");
+    setError("");
+    try {
+      const result = await createAutonomyJob(instruction);
+      setAutonomyJobInstruction("");
+      await loadPanel();
+      setJobResult(`Job ajoute: ${result.job?.id || "queue locale"}. Eva le traitera en arriere-plan.`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
+  async function handleRunNextAutonomyJob() {
+    setRunningJob("autonomy_job_run_next");
+    setJobResult("");
+    setError("");
+    try {
+      const result = await runNextAutonomyJob();
+      await loadPanel();
+      setJobResult(result.ran ? `Job traite: ${result.job?.id || "termine"}.` : "Aucun job en attente.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
+  function renderJobs() {
+    const runner = data?.runner || data?.status || {};
+    const counts = runner.counts || data?.status?.counts || {};
+    const jobs = data?.jobs || [];
+    const running = runner.running;
+
+    return (
+      <>
+        <div className="panel-metrics">
+          <Metric label="runner" value={runner.enabled ? "actif" : "off"} tone={runner.enabled ? "ok" : "warning"} />
+          <Metric label="en attente" value={counts.queued || 0} tone={counts.queued ? "warning" : "neutral"} />
+          <Metric label="en cours" value={counts.running || (running ? 1 : 0)} tone={running ? "ok" : "neutral"} />
+          <Metric label="checkpoints" value={`/${runner.checkpoint_every || 12}`} />
+        </div>
+        {jobResult && <div className="panel-success">{jobResult}</div>}
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Queue autonome locale</h3>
+            <StatusPill tone={runner.enabled ? "ok" : "warning"}>{runner.enabled ? "online" : "desactivee"}</StatusPill>
+          </div>
+          <p>Eva execute les jobs un par un, sauvegarde le resultat dans data/eva_jobs, ecrit des checkpoints JSONL et reprend un job interrompu au redemarrage.</p>
+          <textarea
+            className="panel-textarea"
+            value={autonomyJobInstruction}
+            onChange={(event) => setAutonomyJobInstruction(event.target.value)}
+            placeholder="Ex: Continue le projet F1 en autonomie: ouvre le workspace, lance Cursor Agent, audite le resultat et relance une correction si besoin."
+            rows={5}
+          />
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button primary"
+              onClick={handleCreateAutonomyJob}
+              disabled={Boolean(runningJob) || !autonomyJobInstruction.trim()}
+            >
+              {runningJob === "autonomy_job_create" ? "Ajout..." : "Ajouter a la queue"}
+            </button>
+            <button
+              type="button"
+              className="panel-action-button"
+              onClick={handleRunNextAutonomyJob}
+              disabled={Boolean(runningJob)}
+            >
+              <Play size={15} aria-hidden="true" />
+              {runningJob === "autonomy_job_run_next" ? "Execution..." : "Executer le prochain"}
+            </button>
+          </div>
+        </section>
+        {running && (
+          <section className="panel-card job-running-card">
+            <div className="panel-card-heading">
+              <h3>En cours</h3>
+              <StatusPill tone="ok">{running.id}</StatusPill>
+            </div>
+            <p>{running.instruction}</p>
+            <Field label="Tentative" value={`${running.attempts || 0}/${running.max_attempts || 1}`} />
+          </section>
+        )}
+        {jobs.length ? (
+          <div className="panel-list">
+            {jobs.map((job) => (
+              <div key={job.id} className="panel-row">
+                <div>
+                  <strong>{job.instruction}</strong>
+                  <span>{job.id} / {job.kind} / {job.source}</span>
+                  {job.result_summary && <span className="panel-row-note">{job.result_summary}</span>}
+                  {job.last_error && <span className="panel-row-note">{job.last_error}</span>}
+                </div>
+                <div className="panel-row-actions">
+                  <StatusPill tone={statusClass(job.status)}>{job.status}</StatusPill>
+                  <StatusPill>{`${job.attempts || 0}/${job.max_attempts || 1}`}</StatusPill>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState>Aucun job autonome. Ajoute une tache longue ou envoie /job depuis Telegram.</EmptyState>
+        )}
+      </>
+    );
+  }
+
   function renderActions() {
     const actions = data?.actions || [];
 
@@ -1359,6 +1492,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panel === "projects") return renderProjects();
     if (panel === "brief") return renderBrief();
     if (panel === "projectFactory") return renderProjectFactory();
+    if (panel === "jobs") return renderJobs();
     if (panel === "actions") return renderActions();
     if (panel === "resolver") return renderResolver();
     if (panel === "ollama") return renderOllama();
