@@ -582,6 +582,33 @@ Route de debug locale:
 POST /understand
 ```
 
+## Roles internes
+
+Eva dispose maintenant d'un petit `Command Deck` local inspire des interfaces d'agents: elle ne change pas de modele, mais elle active des roles internes avant de repondre.
+
+Roles disponibles:
+
+- Chief Executive Officer: orchestre la priorite et le chemin d'action;
+- Chief Memory Officer: retrouve souvenirs, preferences et contexte Obsidian;
+- CMO Content & Market: posts LinkedIn, marque, angles DreamLense;
+- Market Research Analyst: veille, articles, tendances et sources publiques;
+- Sales Development Rep: prospects, relances et opportunites;
+- Account Executive Follow-up: Gmail, brouillons, style de reponse et suivi;
+- Business Analyst: synthese, risques, opportunites et reporting;
+- Project Architect: projet cible, workspace, repo, Cursor/Codex;
+- Code Operator: code, tests, logs et erreurs;
+- Security Officer: secrets, publication, suppression, push, envoi externe.
+
+Ces roles sont injectes dans le prompt systeme Ollama selon la demande de Victor. Ils restent caches dans la reponse normale: Eva doit s'en servir pour mieux comprendre et agir, pas pour raconter son organigramme.
+
+Route utile:
+
+```text
+GET /agents/roles
+```
+
+Le panneau `Roles` de l'interface affiche le deck complet et les specialistes selectionnes par defaut.
+
 ## Journal operateur et reflexes
 
 Inspiration OpenJarvis utile pour Eva: garder une boucle locale qui observe la demande,

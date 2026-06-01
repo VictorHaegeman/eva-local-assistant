@@ -61,6 +61,14 @@ export async function getModes() {
 }
 
 
+export async function getRoles(message = "", mode = "chat") {
+  const params = new URLSearchParams();
+  if (message) params.set("message", message);
+  if (mode) params.set("mode", mode);
+  return request(`/agents/roles?${params.toString()}`);
+}
+
+
 export async function getTools() {
   return request("/tools");
 }

@@ -4,6 +4,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   Clock3,
+  Crown,
   Cpu,
   Eye,
   GitBranch,
@@ -46,6 +47,7 @@ import {
   getProjects,
   getReinforcementStatus,
   getResolverStatus,
+  getRoles,
   getScreenStatus,
   getSkills,
   getTools,
@@ -98,6 +100,12 @@ const panelMeta = {
     kicker: "Skills",
     title: "Skills Eva",
     description: "Les comportements specialises qui guident Eva selon ta demande.",
+  },
+  roles: {
+    icon: Crown,
+    kicker: "Command Deck",
+    title: "Roles internes",
+    description: "Les casquettes qu'Eva active avant de comprendre, planifier et agir.",
   },
   heartbeat: {
     icon: HeartPulse,
@@ -294,6 +302,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
     if (panelName === "screen") return getScreenStatus();
     if (panelName === "skills") return getSkills();
+    if (panelName === "roles") return getRoles();
     if (panelName === "heartbeat") return getHeartbeatStatus();
     if (panelName === "curiosity") return getCuriosityStatus(30);
     if (panelName === "gmail") {
@@ -955,6 +964,61 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               {(skill.next_steps || []).length > 0 && (
                 <Field label="Prochaine etape" value={(skill.next_steps || []).slice(0, 2).join(" | ")} />
               )}
+            </section>
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  function renderRoles() {
+    const roles = data?.roles || [];
+    const selected = data?.selected || [];
+    const lanes = new Set(roles.map((role) => role.lane));
+    const orchestrator = data?.orchestrator || selected[0] || {};
+
+    return (
+      <>
+        <div className="panel-metrics">
+          <Metric label="roles" value={roles.length} tone={roles.length ? "ok" : "warning"} />
+          <Metric label="lanes" value={lanes.size} />
+          <Metric label="selection active" value={selected.length} tone={selected.length ? "ok" : "neutral"} />
+        </div>
+        <section className="panel-card role-orchestrator-card">
+          <div className="panel-card-heading">
+            <div>
+              <span className="panel-section-kicker">Orchestrateur</span>
+              <h3>{orchestrator.label || "Chief Executive Officer"}</h3>
+            </div>
+            <StatusPill tone="ok">{data?.active_model || "local_roles"}</StatusPill>
+          </div>
+          <p>{orchestrator.mission || "Eva choisit une posture avant de repondre ou d'agir."}</p>
+          <div className="panel-chip-list">
+            {selected.map((role) => (
+              <StatusPill key={role.key} tone="ok">
+                {role.label}
+              </StatusPill>
+            ))}
+          </div>
+        </section>
+        <div className="panel-grid roles-grid">
+          {roles.map((role) => (
+            <section key={role.key} className={`panel-card role-card ${role.selected ? "selected" : ""}`}>
+              <div className="panel-card-heading">
+                <h3>{role.label}</h3>
+                <StatusPill tone={role.selected ? "ok" : "neutral"}>{role.selected ? "active" : role.lane}</StatusPill>
+              </div>
+              <p>{role.mission}</p>
+              <div className="skill-card-meta">
+                <Field label="Lane" value={role.lane} />
+                <Field label="Model hint" value={role.model_hint} />
+                <Field label="Score" value={role.score || 0} />
+              </div>
+              <div className="panel-chip-list">
+                {(role.triggers || []).slice(0, 6).map((trigger) => (
+                  <StatusPill key={trigger}>{trigger}</StatusPill>
+                ))}
+              </div>
             </section>
           ))}
         </div>
@@ -1791,6 +1855,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panel === "tools") return renderTools();
     if (panel === "screen") return renderScreen();
     if (panel === "skills") return renderSkills();
+    if (panel === "roles") return renderRoles();
     if (panel === "heartbeat") return renderHeartbeat();
     if (panel === "curiosity") return renderCuriosity();
     if (panel === "gmail") return renderGmail();

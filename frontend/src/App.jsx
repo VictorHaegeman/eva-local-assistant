@@ -46,6 +46,10 @@ const panelShellMeta = {
     title: "Skills",
     subtitle: "Savoir-faire specialises qu'Eva peut choisir selon la demande.",
   },
+  roles: {
+    title: "Roles",
+    subtitle: "Command deck interne pour choisir la bonne posture.",
+  },
   heartbeat: {
     title: "Heartbeat",
     subtitle: "Automatisations locales et jobs planifies.",

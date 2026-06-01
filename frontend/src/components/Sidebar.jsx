@@ -3,6 +3,7 @@ import {
   BookOpen,
   BrainCircuit,
   CheckCircle2,
+  Crown,
   Cpu,
   Eye,
   GitBranch,
@@ -80,6 +81,11 @@ const coreItems = [
     icon: Layers3,
     label: "Skills",
     panel: "skills",
+  },
+  {
+    icon: Crown,
+    label: "Roles",
+    panel: "roles",
   },
   {
     icon: HeartPulse,

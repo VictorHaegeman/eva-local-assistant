@@ -5,6 +5,7 @@ from typing import Any, Literal, TypedDict
 import httpx
 
 from app.agents.modes import get_mode_prompt
+from app.agents.roles import build_roles_prompt_context
 from app.config import settings
 from app.memory.memory_store import (
     MemoryStoreError,
@@ -88,7 +89,8 @@ async def ask_ollama(
             f"{build_memory_prompt_context()}\n\n"
             f"{build_relevant_memory_prompt_context(latest_user_message)}\n\n"
             f"{build_obsidian_prompt_context(latest_user_message)}\n\n"
-            f"{build_skills_prompt_context(latest_user_message)}"
+            f"{build_skills_prompt_context(latest_user_message)}\n\n"
+            f"{build_roles_prompt_context(latest_user_message, mode)}"
         )
         if extra_context:
             system_prompt = f"{system_prompt}\n\nContexte supplementaire:\n{extra_context}"

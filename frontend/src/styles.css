@@ -3391,6 +3391,35 @@ button.nav-item:hover {
   animation: skillScan 4.8s ease-in-out infinite;
 }
 
+.role-orchestrator-card {
+  border-color: rgba(115, 214, 255, 0.32);
+  background:
+    radial-gradient(circle at 18% 20%, rgba(115, 214, 255, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(115, 214, 255, 0.08), rgba(255, 255, 255, 0.022)),
+    rgba(10, 17, 27, 0.86);
+}
+
+.role-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.role-card.selected {
+  border-color: rgba(115, 214, 255, 0.42);
+  box-shadow:
+    inset 0 0 32px rgba(115, 214, 255, 0.052),
+    0 0 26px rgba(33, 156, 255, 0.075);
+}
+
+.role-card.selected::after {
+  content: "";
+  position: absolute;
+  inset: auto 14px 12px 14px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(115, 214, 255, 0.72), transparent);
+  animation: skillScan 3.6s ease-in-out infinite;
+}
+
 .skill-card-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

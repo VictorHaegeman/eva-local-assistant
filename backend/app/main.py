@@ -18,6 +18,7 @@ from app.actions.action_store import (
 )
 from app.actions.executor import ActionExecutionError, execute_action
 from app.agents.modes import AgentModeName, list_modes
+from app.agents.roles import list_roles
 from app.briefs.brief_store import BriefStoreError, brief_to_dict, get_latest_brief, init_brief_store
 from app.briefs.daily_launch import DailyLaunchError, get_daily_launch_brief
 from app.briefs.rss_brief import RssBriefError, ensure_sources_file, generate_morning_brief
@@ -745,6 +746,11 @@ async def agent_modes() -> dict[str, object]:
     return {
         "modes": list_modes(),
     }
+
+
+@app.get("/agents/roles")
+async def agent_roles(message: str = "", mode: str = "chat") -> dict[str, object]:
+    return list_roles(message=message, mode=mode)
 
 
 @app.get("/tools")
