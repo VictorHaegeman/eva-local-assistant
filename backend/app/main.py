@@ -181,6 +181,7 @@ from app.memory.obsidian_store import (
     import_obsidian_notes_to_memories,
     mirror_memory_to_obsidian,
     open_obsidian_vault,
+    organize_obsidian_vault,
     obsidian_status,
     seed_obsidian_memory_vault,
     sync_memories_to_obsidian,
@@ -1092,6 +1093,14 @@ async def memory_obsidian_sync() -> dict[str, object]:
 async def memory_obsidian_hydrate() -> dict[str, object]:
     try:
         return hydrate_obsidian_vault()
+    except ObsidianMemoryError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/memory/obsidian/organize", dependencies=[Depends(require_sensitive_access)])
+async def memory_obsidian_organize() -> dict[str, object]:
+    try:
+        return organize_obsidian_vault()
     except ObsidianMemoryError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

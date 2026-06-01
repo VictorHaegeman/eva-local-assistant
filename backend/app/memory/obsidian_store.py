@@ -38,8 +38,11 @@ DEFAULT_FOLDERS = (
     "50 - Operating Rules",
     "60 - Content",
     "70 - Templates",
+    "75 - Knowledge",
     "80 - Learning",
+    "85 - Curiosity",
     "90 - Inbox",
+    "99 - Archive",
 )
 
 VAULT_INDEX_FILE = "00 - Eva/INDEX"
@@ -209,6 +212,47 @@ def _write_if_missing(path: Path, content: str) -> None:
 def _write_generated(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"{MANAGED_MARKER}\n{content}", encoding="utf-8")
+
+
+def _relative_obsidian_link(vault: Path, note_path: Path) -> str:
+    relative = note_path.relative_to(vault).as_posix()
+    if relative.lower().endswith(".md"):
+        relative = relative[:-3]
+    return f"[[{relative}|{note_path.stem}]]"
+
+
+def _archive_target(vault: Path, source: Path) -> Path:
+    archive_dir = vault / "99 - Archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    candidate = archive_dir / source.name
+    if not candidate.exists():
+        return candidate
+    index = 2
+    while True:
+        candidate = archive_dir / f"{source.stem} {index}{source.suffix}"
+        if not candidate.exists():
+            return candidate
+        index += 1
+
+
+def _inbox_target(vault: Path, source: Path) -> Path:
+    inbox_dir = vault / "90 - Inbox"
+    inbox_dir.mkdir(parents=True, exist_ok=True)
+    candidate = inbox_dir / source.name
+    if not candidate.exists():
+        return candidate
+    index = 2
+    while True:
+        candidate = inbox_dir / f"{source.stem} {index}{source.suffix}"
+        if not candidate.exists():
+            return candidate
+        index += 1
+
+
+def _loose_root_markdown_files(vault: Path) -> list[str]:
+    if not vault.exists():
+        return []
+    return sorted(path.name for path in vault.glob("*.md") if path.is_file())
 
 
 def _seed_note_markdown(title: str, links: list[str], bullets: list[str]) -> str:
@@ -768,40 +812,7 @@ def ensure_obsidian_vault() -> Path:
         )
         _write_if_missing(
             obsidian_dir / "graph.json",
-            json.dumps(
-                {
-                    "collapse-filter": False,
-                    "search": "",
-                    "showTags": True,
-                    "showAttachments": False,
-                    "hideUnresolved": False,
-                    "showOrphans": True,
-                    "collapse-color-groups": False,
-                    "colorGroups": [
-                        {"query": "path:\"10 - Profile\"", "color": {"a": 1, "rgb": 5634047}},
-                        {"query": "path:\"11 - Preferences\"", "color": {"a": 1, "rgb": 65535}},
-                        {"query": "path:\"12 - Creation\"", "color": {"a": 1, "rgb": 2228223}},
-                        {"query": "path:\"20 - Memories\"", "color": {"a": 1, "rgb": 65484}},
-                        {"query": "path:\"30 - Projects\"", "color": {"a": 1, "rgb": 16755200}},
-                        {"query": "path:\"60 - Content\"", "color": {"a": 1, "rgb": 16737792}},
-                        {"query": "path:\"70 - Templates\"", "color": {"a": 1, "rgb": 8947967}},
-                    ],
-                    "collapse-display": False,
-                    "showArrow": False,
-                    "textFadeMultiplier": 0,
-                    "nodeSizeMultiplier": 1,
-                    "lineSizeMultiplier": 1,
-                    "collapse-forces": False,
-                    "centerStrength": 0.518713248970312,
-                    "repelStrength": 10,
-                    "linkStrength": 1,
-                    "linkDistance": 250,
-                    "scale": 1,
-                    "close": False,
-                },
-                indent=2,
-            )
-            + "\n",
+            _graph_config(),
         )
         _write_if_missing(
             obsidian_dir / "hotkeys.json",
@@ -1533,6 +1544,446 @@ def hydrate_obsidian_vault() -> dict[str, Any]:
     }
 
 
+def _folder_notes(vault: Path, folder: str) -> list[Path]:
+    folder_path = vault / folder
+    if not folder_path.exists():
+        return []
+    return sorted(
+        [
+            path
+            for path in folder_path.rglob("*.md")
+            if path.name.upper() != "INDEX.md"
+        ],
+        key=lambda item: item.relative_to(vault).as_posix().lower(),
+    )
+
+
+def _links_for_folder(vault: Path, folder: str, limit: int = 40) -> list[str]:
+    notes = _folder_notes(vault, folder)[:limit]
+    return [f"- {_relative_obsidian_link(vault, note)}" for note in notes]
+
+
+def _folder_index(
+    vault: Path,
+    *,
+    folder: str,
+    title: str,
+    purpose: str,
+    workflow: list[str],
+    extra_links: list[str] | None = None,
+) -> str:
+    links = _links_for_folder(vault, folder)
+    lines = [
+        f"# {title}",
+        "",
+        purpose,
+        "",
+        "## Notes principales",
+        "",
+    ]
+    lines.extend(links or ["- Aucune note pour le moment."])
+    if extra_links:
+        lines.extend(["", "## Liens utiles", ""])
+        lines.extend(f"- {link}" for link in extra_links)
+    if workflow:
+        lines.extend(["", "## Usage par Eva", ""])
+        lines.extend(f"- {item}" for item in workflow)
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _graph_config() -> str:
+    return json.dumps(
+        {
+            "collapse-filter": False,
+            "search": "",
+            "showTags": True,
+            "showAttachments": False,
+            "hideUnresolved": False,
+            "showOrphans": False,
+            "collapse-color-groups": False,
+            "colorGroups": [
+                {"query": "path:\"00 - Eva\"", "color": {"a": 1, "rgb": 5634047}},
+                {"query": "path:\"10 - Profile\"", "color": {"a": 1, "rgb": 16777215}},
+                {"query": "path:\"11 - Preferences\"", "color": {"a": 1, "rgb": 65535}},
+                {"query": "path:\"12 - Creation\"", "color": {"a": 1, "rgb": 2228223}},
+                {"query": "path:\"20 - Memories\"", "color": {"a": 1, "rgb": 65484}},
+                {"query": "path:\"30 - Projects\"", "color": {"a": 1, "rgb": 16755200}},
+                {"query": "path:\"50 - Operating Rules\"", "color": {"a": 1, "rgb": 16744448}},
+                {"query": "path:\"60 - Content\"", "color": {"a": 1, "rgb": 16737792}},
+                {"query": "path:\"70 - Templates\"", "color": {"a": 1, "rgb": 8947967}},
+                {"query": "path:\"75 - Knowledge\"", "color": {"a": 1, "rgb": 8978431}},
+                {"query": "path:\"80 - Learning\"", "color": {"a": 1, "rgb": 10079487}},
+                {"query": "path:\"85 - Curiosity\"", "color": {"a": 1, "rgb": 43775}},
+                {"query": "path:\"90 - Inbox\"", "color": {"a": 1, "rgb": 16766720}},
+                {"query": "path:\"99 - Archive\"", "color": {"a": 0.65, "rgb": 8421504}},
+            ],
+            "collapse-display": False,
+            "showArrow": True,
+            "textFadeMultiplier": 0,
+            "nodeSizeMultiplier": 1.35,
+            "lineSizeMultiplier": 1.1,
+            "collapse-forces": False,
+            "centerStrength": 0.45,
+            "repelStrength": 11,
+            "linkStrength": 1.2,
+            "linkDistance": 210,
+            "scale": 1,
+            "close": False,
+        },
+        indent=2,
+    ) + "\n"
+
+
+def _machine_learning_index(vault: Path) -> str:
+    folder = "75 - Knowledge/Machine Learning"
+    links = _links_for_folder(vault, folder, limit=80)
+    return "\n".join(
+        [
+            "# Machine Learning Knowledge",
+            "",
+            "Cours et syntheses locales que Eva peut relier a sa memoire, son routage et ses boucles d'apprentissage.",
+            "",
+            "## Parcours",
+            "",
+            "- [[75 - Knowledge/Machine Learning/introduction-to-machine-learning|Introduction to Machine Learning]]",
+            "- [[75 - Knowledge/Machine Learning/k-means-clustering-kmeans|K-Means Clustering]]",
+            "- [[75 - Knowledge/Machine Learning/metrics-evaluation|Metrics Evaluation]]",
+            "- [[75 - Knowledge/Machine Learning/training-process|Training Process]]",
+            "- [[75 - Knowledge/Machine Learning/cross-validation|Cross-validation]]",
+            "",
+            "## Notes importees",
+            "",
+            *(links or ["- Aucune note ML importee pour le moment."]),
+            "",
+            "## Application Eva",
+            "",
+            "- Utiliser les embeddings locaux comme memoire semantique.",
+            "- Utiliser les clusters comme boussole, pas comme verite absolue.",
+            "- Utiliser les recompenses/penalites pour reordonner les routes.",
+            "- Evaluer Eva avec des regressions de comprehension.",
+            "",
+        ]
+    )
+
+
+def organize_obsidian_vault(open_after: bool = False) -> dict[str, Any]:
+    if not settings.eva_obsidian_memory_enabled:
+        return {
+            "enabled": False,
+            "organized": False,
+            "path": str(_vault_path()),
+        }
+
+    vault = ensure_obsidian_vault()
+    moved: list[dict[str, str]] = []
+    written: list[str] = []
+    errors: list[str] = []
+
+    for loose_note in sorted(vault.glob("*.md"), key=lambda item: item.name.lower()):
+        try:
+            content = loose_note.read_text(encoding="utf-8", errors="replace").strip()
+            if not content or loose_note.name == "40 - Daily.md":
+                target = _archive_target(vault, loose_note)
+            else:
+                target = _inbox_target(vault, loose_note)
+            loose_note.replace(target)
+            moved.append(
+                {
+                    "from": loose_note.name,
+                    "to": target.relative_to(vault).as_posix(),
+                }
+            )
+        except OSError as exc:
+            errors.append(f"{loose_note.name}: {exc}")
+
+    folder_specs = [
+        (
+            "10 - Profile",
+            "Profile",
+            "Identite, contexte personnel et infos stables sur Victor.",
+            ["Eva utilise ces notes pour personnaliser les reponses sans inventer."],
+            ["[[00 - Eva/Command Center]]", "[[11 - Preferences/INDEX]]"],
+        ),
+        (
+            "11 - Preferences",
+            "Preferences",
+            "Gouts, style, habitudes de travail et criteres de qualite de Victor.",
+            ["Eva consulte ces notes avant de rediger, designer ou choisir une action."],
+            ["[[10 - Profile/Victor]]", "[[12 - Creation/Creation DNA]]"],
+        ),
+        (
+            "12 - Creation",
+            "Creation",
+            "Vision produit, directions creatives et ADN des projets.",
+            ["Eva s'en sert pour transformer une demande vague en direction concrete."],
+            ["[[11 - Preferences/Creative Taste]]", "[[30 - Projects/Projects]]"],
+        ),
+        (
+            "20 - Memories",
+            "Memories",
+            "Miroir lisible des souvenirs SQLite et clusters locaux.",
+            ["Eva retrouve ici les souvenirs par categorie et les relie aux projets."],
+            ["[[00 - Eva/Memory Map]]", "[[80 - Learning/Eva Learning Loop]]"],
+        ),
+        (
+            "30 - Projects",
+            "Projects",
+            "Carte des projets locaux, aliases, contextes et objectifs.",
+            ["Eva utilise cette zone pour resoudre un projet flou avant de demander une precision."],
+            ["[[30 - Projects/Projects]]", "[[70 - Templates/Project Brief]]"],
+        ),
+        (
+            "40 - Daily",
+            "Daily",
+            "Journal quotidien, briefs, checkpoints et traces de travail.",
+            ["Eva peut y relier les apprentissages et evenements importants de la journee."],
+            ["[[85 - Curiosity/INDEX]]", "[[90 - Inbox/INDEX]]"],
+        ),
+        (
+            "50 - Operating Rules",
+            "Operating Rules",
+            "Regles de comportement, autonomie, verification et recuperation d'erreur.",
+            ["Eva doit prioriser ces notes quand elle hesite entre reponse et action."],
+            ["[[50 - Operating Rules/Eva Autonomy Rules]]", "[[50 - Operating Rules/Eva Failure Recovery]]"],
+        ),
+        (
+            "60 - Content",
+            "Content",
+            "Idees de posts, angles DreamLense, contenus LinkedIn et materiel business.",
+            ["Eva y cherche des angles pertinents avant de produire du contenu."],
+            ["[[60 - Content/DreamLense Content Memory]]", "[[60 - Content/LinkedIn Strategy Memory]]"],
+        ),
+        (
+            "70 - Templates",
+            "Templates",
+            "Formats reutilisables: projets, emails, posts, prompts et briefings.",
+            ["Eva s'en sert comme structure, pas comme texte a copier aveuglement."],
+            ["[[70 - Templates/Cursor Prompt]]", "[[70 - Templates/Project Brief]]"],
+        ),
+        (
+            "75 - Knowledge",
+            "Knowledge",
+            "Connaissances importees, cours et notes de reference locales.",
+            ["Eva peut relier ces notes a sa memoire et a ses decisions techniques."],
+            ["[[75 - Knowledge/Machine Learning/INDEX]]", "[[80 - Learning/INDEX]]"],
+        ),
+        (
+            "80 - Learning",
+            "Learning",
+            "Ce qu'Eva apprend sur ses erreurs, recompenses, penalites et boucles d'amelioration.",
+            ["Eva y transforme les corrections de Victor en routines et criteres."],
+            ["[[75 - Knowledge/Machine Learning/INDEX]]", "[[50 - Operating Rules/Eva Failure Recovery]]"],
+        ),
+        (
+            "85 - Curiosity",
+            "Curiosity",
+            "Veille autonome et lectures faites pour enrichir la memoire.",
+            ["Eva y stocke ce qu'elle a appris sans melanger avec les souvenirs personnels."],
+            ["[[40 - Daily/INDEX]]", "[[75 - Knowledge/INDEX]]"],
+        ),
+        (
+            "90 - Inbox",
+            "Inbox",
+            "Zone tampon pour idees, notes non triees et souvenirs a verifier.",
+            ["Eva doit vider progressivement cette zone vers projets, preferences ou regles."],
+            ["[[20 - Memories/INDEX]]", "[[30 - Projects/INDEX]]"],
+        ),
+        (
+            "99 - Archive",
+            "Archive",
+            "Anciennes notes, doublons et elements conserves sans polluer le graphe principal.",
+            ["Eva ne doit pas utiliser cette zone en priorite sauf demande explicite."],
+            ["[[00 - Eva/Vault Map]]"],
+        ),
+    ]
+
+    generated_notes: dict[Path, str] = {
+        vault
+        / "00 - Eva"
+        / "INDEX.md": "\n".join(
+            [
+                "# Eva Memory Vault",
+                "",
+                "Point d'entree du deuxieme cerveau local d'Eva.",
+                "",
+                "## Ouvrir en premier",
+                "",
+                "- [[00 - Eva/Command Center|Command Center]]",
+                "- [[00 - Eva/Vault Map|Vault Map]]",
+                "- [[00 - Eva/Memory Map|Memory Map]]",
+                "- [[00 - Eva/Obsidian Memory Guide|Guide memoire Obsidian]]",
+                "",
+                "## Zones",
+                "",
+                "- [[10 - Profile/INDEX|Profile]]",
+                "- [[11 - Preferences/INDEX|Preferences]]",
+                "- [[12 - Creation/INDEX|Creation]]",
+                "- [[20 - Memories/INDEX|Memories]]",
+                "- [[30 - Projects/INDEX|Projects]]",
+                "- [[40 - Daily/INDEX|Daily]]",
+                "- [[50 - Operating Rules/INDEX|Operating Rules]]",
+                "- [[60 - Content/INDEX|Content]]",
+                "- [[70 - Templates/INDEX|Templates]]",
+                "- [[75 - Knowledge/INDEX|Knowledge]]",
+                "- [[80 - Learning/INDEX|Learning]]",
+                "- [[85 - Curiosity/INDEX|Curiosity]]",
+                "- [[90 - Inbox/INDEX|Inbox]]",
+                "- [[99 - Archive/INDEX|Archive]]",
+                "",
+                "## Regle de lecture",
+                "",
+                "Eva lit ce vault comme une carte: profil -> preferences -> regles -> projets -> souvenirs utiles.",
+                "",
+            ]
+        ),
+        vault
+        / "00 - Eva"
+        / "Command Center.md": "\n".join(
+            [
+                "# Eva Command Center",
+                "",
+                "Vue centrale pour piloter la memoire et l'autonomie d'Eva.",
+                "",
+                "## Priorites de raisonnement",
+                "",
+                "1. Comprendre la demande de Victor.",
+                "2. Recuperer contexte recent, memoire et projet cible.",
+                "3. Choisir une route: chat, Gmail, projet, navigateur, ecran, contenu, recherche, action locale.",
+                "4. Executer ce qui est autorise.",
+                "5. Verifier avec une preuve locale.",
+                "6. Apprendre si Victor corrige Eva.",
+                "",
+                "## Hubs actifs",
+                "",
+                "- [[10 - Profile/Victor|Victor]]",
+                "- [[11 - Preferences/Creative Taste|Creative Taste]]",
+                "- [[11 - Preferences/Victor Working Preferences|Working Preferences]]",
+                "- [[12 - Creation/Eva Product Vision|Eva Product Vision]]",
+                "- [[30 - Projects/Projects|Projects]]",
+                "- [[50 - Operating Rules/Eva Autonomy Rules|Autonomy Rules]]",
+                "- [[50 - Operating Rules/Eva Failure Recovery|Failure Recovery]]",
+                "- [[60 - Content/DreamLense Content Memory|DreamLense Content]]",
+                "- [[75 - Knowledge/Machine Learning/INDEX|Machine Learning]]",
+                "- [[80 - Learning/Eva Learning Loop|Learning Loop]]",
+                "",
+                "## Anti-bazar",
+                "",
+                "- Les notes temporaires vont dans [[90 - Inbox/INDEX]].",
+                "- Les anciennes notes et doublons vont dans [[99 - Archive/INDEX]].",
+                "- Les connaissances de cours vont dans [[75 - Knowledge/INDEX]].",
+                "- Les preferences stables vont dans [[11 - Preferences/INDEX]].",
+                "",
+            ]
+        ),
+        vault
+        / "00 - Eva"
+        / "Vault Map.md": "\n".join(
+            [
+                "# Vault Map",
+                "",
+                "Carte simple des dossiers du coffre.",
+                "",
+                "```text",
+                "00 - Eva              tableau de bord et guides",
+                "10 - Profile          identite Victor",
+                "11 - Preferences      gouts, style, travail",
+                "12 - Creation         vision produit et creation",
+                "20 - Memories         souvenirs SQLite miroires",
+                "30 - Projects         projets locaux et business",
+                "40 - Daily            journal, briefs, checkpoints",
+                "50 - Operating Rules  regles d'action Eva",
+                "60 - Content          contenus DreamLense/LinkedIn",
+                "70 - Templates        formats reutilisables",
+                "75 - Knowledge        cours et connaissances",
+                "80 - Learning         apprentissage d'Eva",
+                "85 - Curiosity        veille autonome",
+                "90 - Inbox            notes a trier",
+                "99 - Archive          doublons et ancien contenu",
+                "```",
+                "",
+                "## Chemin recommande",
+                "",
+                "[[00 - Eva/Command Center]] -> [[11 - Preferences/INDEX]] -> [[50 - Operating Rules/INDEX]] -> [[30 - Projects/INDEX]]",
+                "",
+            ]
+        ),
+        vault
+        / "00 - Eva"
+        / "Memory Map.md": "\n".join(
+            [
+                "# Memory Map",
+                "",
+                "Carte des clusters de memoire utiles a Eva.",
+                "",
+                "## Clusters",
+                "",
+                "- Victor / identite -> [[10 - Profile/Victor]]",
+                "- Preferences de redaction -> [[11 - Preferences/Victor Working Preferences]]",
+                "- Direction creative -> [[11 - Preferences/Creative Taste]]",
+                "- DreamLense -> [[30 - Projects/DreamLense]] + [[60 - Content/DreamLense Content Memory]]",
+                "- Projets code -> [[30 - Projects/Projects]]",
+                "- Regles Eva -> [[50 - Operating Rules/Eva Autonomy Rules]]",
+                "- Recovery -> [[50 - Operating Rules/Eva Failure Recovery]]",
+                "- Machine learning -> [[75 - Knowledge/Machine Learning/INDEX]]",
+                "- Apprentissages Eva -> [[80 - Learning/INDEX]]",
+                "",
+                "## Principe",
+                "",
+                "Eva ne doit pas chercher partout. Elle route l'intention, choisit les clusters probables, puis combine recherche texte, embeddings locaux et preuves recentes.",
+                "",
+            ]
+        ),
+        vault / "75 - Knowledge" / "Machine Learning" / "INDEX.md": _machine_learning_index(vault),
+    }
+
+    for folder, title, purpose, workflow, extra_links in folder_specs:
+        generated_notes[vault / folder / "INDEX.md"] = _folder_index(
+            vault,
+            folder=folder,
+            title=title,
+            purpose=purpose,
+            workflow=workflow,
+            extra_links=extra_links,
+        )
+
+    for path, content in generated_notes.items():
+        try:
+            _write_generated(path, content)
+            written.append(path.relative_to(vault).as_posix())
+        except OSError as exc:
+            errors.append(f"{path.relative_to(vault).as_posix()}: {exc}")
+
+    try:
+        (vault / ".obsidian" / "graph.json").write_text(_graph_config(), encoding="utf-8")
+        written.append(".obsidian/graph.json")
+    except OSError as exc:
+        errors.append(f".obsidian/graph.json: {exc}")
+
+    inventory = _obsidian_note_inventory(vault)
+    opened = None
+    if open_after:
+        try:
+            opened = open_obsidian_vault(open_graph=True)
+        except ObsidianMemoryError as exc:
+            errors.append(str(exc))
+
+    return {
+        "enabled": True,
+        "organized": not errors,
+        "path": str(vault),
+        "written": written,
+        "written_count": len(written),
+        "moved": moved,
+        "errors": errors,
+        "markdown_files": inventory["markdown_files"],
+        "manual_notes": inventory["manual_notes"],
+        "managed_notes": inventory["managed_notes"],
+        "importable_notes": inventory["importable_notes"],
+        "opened": opened,
+    }
+
+
 def _open_obsidian_graph_view() -> None:
     if os.name != "nt":
         return
@@ -1576,10 +2027,18 @@ def _obsidian_exe_path() -> Path | None:
 def obsidian_status() -> dict[str, Any]:
     vault = _vault_path()
     inventory = _obsidian_note_inventory(vault)
+    organized = (
+        (vault / "00 - Eva" / "Command Center.md").exists()
+        and (vault / "00 - Eva" / "Vault Map.md").exists()
+        and (vault / "75 - Knowledge" / "INDEX.md").exists()
+        and not _loose_root_markdown_files(vault)
+    )
     return {
         "enabled": settings.eva_obsidian_memory_enabled,
         "path": str(vault),
         "exists": vault.exists(),
+        "organized": organized,
+        "loose_root_markdown_files": _loose_root_markdown_files(vault),
         "markdown_files": inventory["markdown_files"],
         "manual_notes": inventory["manual_notes"],
         "managed_notes": inventory["managed_notes"],

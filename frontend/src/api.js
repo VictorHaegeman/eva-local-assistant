@@ -250,6 +250,13 @@ export async function hydrateObsidianMemory() {
 }
 
 
+export async function organizeObsidianMemory() {
+  return request("/memory/obsidian/organize", {
+    method: "POST",
+  });
+}
+
+
 export async function importObsidianMemory(limit = 200, rebuildEmbeddings = false) {
   return request("/memory/obsidian/import", {
     method: "POST",

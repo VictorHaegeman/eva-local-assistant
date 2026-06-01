@@ -2060,6 +2060,7 @@ Endpoints utiles:
 ```text
 GET /memory/obsidian/status
 POST /memory/obsidian/hydrate
+POST /memory/obsidian/organize
 POST /memory/obsidian/seed
 POST /memory/obsidian/import
 POST /memory/obsidian/sync
@@ -2082,6 +2083,14 @@ Eva ne devient pas plus intelligente par entrainement du modele local. Elle appr
 - angles DreamLense;
 - idees LinkedIn;
 - templates projet, Cursor, email, LinkedIn, brief et frontend.
+
+`/memory/obsidian/organize` range le coffre sans supprimer tes notes:
+
+- cree les `INDEX.md` de chaque dossier;
+- cree `00 - Eva/Command Center.md`, `Vault Map.md` et `Memory Map.md`;
+- range les notes Markdown a la racine dans `90 - Inbox/` ou `99 - Archive/`;
+- met a jour `.obsidian/graph.json` pour un graphe plus propre;
+- expose l'etat `organized` dans `/memory/obsidian/status`.
 
 `/memory/obsidian/seed` nourrit le coffre avec des notes importables plus concretes:
 
@@ -2149,18 +2158,25 @@ Format conseille dans Obsidian:
 Le coffre cree par Eva contient:
 
 - `00 - Eva/INDEX.md`: navigation du second cerveau;
+- `00 - Eva/Command Center.md`: tableau de bord du raisonnement et des hubs memoire;
+- `00 - Eva/Vault Map.md`: carte de rangement du coffre;
+- `00 - Eva/Memory Map.md`: clusters et liens memoire utiles a Eva;
 - `10 - Profile/Victor.md`: profil local genere depuis `data/eva_profile.json`;
 - `11 - Preferences/`: gouts creatifs et preferences de travail;
 - `12 - Creation/`: ADN de creation Eva/Victor;
 - `20 - Memories/`: souvenirs classes par categorie;
 - `30 - Projects/Projects.md`: index des projets connus;
 - `40 - Daily/`: journal quotidien des souvenirs;
-- `50 - Operating Rules/`: regles de comportement d'Eva.
+- `50 - Operating Rules/`: regles d'action, recovery et autonomie;
 - `60 - Content/`: angles DreamLense et idees LinkedIn;
 - `70 - Templates/`: templates pour projet, Cursor, email, posts, briefs et frontend.
+- `75 - Knowledge/`: cours et connaissances locales;
+- `80 - Learning/`: apprentissages d'Eva, rewards et corrections;
+- `85 - Curiosity/`: lectures autonomes et rapports de veille;
 - `90 - Inbox/`: inbox editable pour idees et souvenirs a importer.
+- `99 - Archive/`: anciennes notes et doublons conserves hors graphe principal.
 
-Depuis le panneau Memoire, le bouton `Ouvrir le coffre` lance Obsidian via le protocole local `obsidian://` si Obsidian est installe sur Windows.
+Depuis le panneau Memoire, `Organiser le coffre` remet la structure au propre, et `Ouvrir le coffre` lance Obsidian via le protocole local `obsidian://` si Obsidian est installe sur Windows.
 
 Sur Windows, `open-eva-obsidian.bat` ouvre aussi le coffre dans l'application Obsidian et tente d'afficher directement la vue Graph. Eva cree une configuration locale `.obsidian/graph.json` avec des couleurs pour profil, souvenirs et projets. Si Obsidian ouvre seulement l'index, utilise `Ctrl+G` dans Obsidian: Eva ajoute aussi ce raccourci localement.
 

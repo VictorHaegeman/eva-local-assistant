@@ -60,6 +60,7 @@ import {
   rebuildMemoryEmbeddings,
   connectGmail,
   openObsidianMemory,
+  organizeObsidianMemory,
   createGmailReplyDraft,
   createProjectFactoryActions,
   getChatHistory,
@@ -463,6 +464,23 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleOrganizeObsidian() {
+    setRunningJob("obsidian_organize");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await organizeObsidianMemory();
+      await loadPanel();
+      const moved = result.moved?.length ? ` ${result.moved.length} note(s) racine rangee(s).` : "";
+      setJobResult(`${result.written_count || 0} index Obsidian mis a jour.${moved}`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleImportObsidian() {
     setRunningJob("obsidian_import");
     setJobResult("");
@@ -809,11 +827,20 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           <Field label="Notes editables" value={obsidian.importable_notes || 0} />
           <Field label="Notes Eva" value={obsidian.managed_notes || 0} />
           <Field label="Cerveau Eva" value={obsidian.brain_hydrated ? "rempli" : "a remplir"} />
+          <Field label="Organisation" value={obsidian.organized ? "propre" : "a ranger"} />
           <p>
             Ecris tes gouts, idees et regles dans Obsidian, puis importe-les: Eva les ajoute a SQLite,
             les retrouve en FTS/vectoriel et les reinjecte dans ses decisions.
           </p>
           <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button primary"
+              onClick={handleOrganizeObsidian}
+              disabled={Boolean(runningJob)}
+            >
+              {runningJob === "obsidian_organize" ? "Rangement..." : "Organiser le coffre"}
+            </button>
             <button
               type="button"
               className="panel-action-button primary"
