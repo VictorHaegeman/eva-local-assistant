@@ -485,6 +485,45 @@ EVA_MEMORY_LEARNING_RECENT_TICKS=120
 
 Cette approche rend Eva plus intelligente par contexte, retrieval, clusters et feedback loop locale, sans API payante et sans stocker de secrets.
 
+## Curiosity Loop
+
+Eva peut aussi fonctionner comme une machine qui s'instruit en arriere-plan, sans attendre une demande de Victor. Cette V1 reste volontairement controlee:
+
+- lectures publiques uniquement: RSS deja configures et pages Wikipedia publiques;
+- pas de scraping direct Twitter/X en V1, car c'est fragile, souvent bloque et mauvais pour une memoire propre;
+- scoring local selon tes axes: IA, agents autonomes, business, finance, DreamLense, LinkedIn, productivite, machine learning;
+- stockage d'une lecon courte, pas de copie complete d'article;
+- ajout dans `data/eva_memory.sqlite`, miroir Obsidian et rapport dans `data/obsidian_vault/85 - Curiosity/`;
+- aucun token, mot de passe ou donnee privee ne doit etre stocke dans cette boucle.
+
+Configuration:
+
+```env
+EVA_CURIOSITY_ENABLED=false
+EVA_CURIOSITY_INTERVAL_MINUTES=180
+EVA_CURIOSITY_MAX_ITEMS_PER_RUN=5
+EVA_CURIOSITY_MIN_SCORE=10
+EVA_CURIOSITY_WIKIPEDIA_PAGES=2
+EVA_CURIOSITY_REBUILD_EMBEDDINGS=false
+```
+
+Par defaut, la boucle h24 est desactivee pour eviter de remplir la memoire avant que les sources soient bonnes. Tu peux:
+
+- ouvrir le panneau `Curiosity`;
+- cliquer `Lire maintenant` pour lancer une veille forcee;
+- editer `data/eva_curiosity_sources.json` pour ajuster les axes;
+- mettre `EVA_CURIOSITY_ENABLED=true` quand tu veux qu'elle tourne seule toutes les quelques heures.
+
+Routes utiles:
+
+```text
+GET /curiosity/status
+GET /curiosity/items
+POST /curiosity/run
+```
+
+Le bon principe long terme: Eva lit, filtre, resume, relie a tes projets, puis nourrit Obsidian et la memoire vectorielle. Elle ne doit pas avaler Internet en vrac.
+
 ## Reinforcement local
 
 Eva dispose aussi d'une couche de bonus/malus locale inspiree du reinforcement learning. Elle n'entraine pas les poids du modele Ollama: elle apprend plutot une politique de decision.

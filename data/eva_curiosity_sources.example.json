@@ -1,0 +1,27 @@
+{
+  "focus": [
+    "IA",
+    "agents autonomes",
+    "business",
+    "finance",
+    "DreamLense",
+    "LinkedIn",
+    "productivite",
+    "machine learning"
+  ],
+  "rules": [
+    "Lire uniquement des sources publiques ou RSS autorisees.",
+    "Ne pas stocker d'article complet dans la memoire.",
+    "Transformer les lectures en apprentissages courts et utiles.",
+    "Ne jamais stocker de secrets, tokens ou donnees de compte.",
+    "Twitter/X n'est pas lu directement sans integration explicite."
+  ],
+  "wikipedia": {
+    "enabled": true,
+    "languages": ["fr", "en"],
+    "pages_per_run": 2
+  },
+  "rss": {
+    "reuse_eva_sources": true
+  }
+}

@@ -42,6 +42,15 @@ from app.cognition.reinforcement_store import (
     reinforcement_status,
 )
 from app.cognition.structured_interpreter import refine_understanding_with_ollama
+from app.curiosity.curiosity_loop import (
+    CuriosityError,
+    curiosity_status,
+    ensure_curiosity_sources_file,
+    init_curiosity_store,
+    list_curiosity_items,
+    run_curiosity_once,
+    start_curiosity_background_task,
+)
 from app.agents.operator_journal import (
     OperatorJournalError,
     init_operator_journal,
@@ -306,6 +315,10 @@ class ReinforcementFeedbackRequest(BaseModel):
     reason: str = Field(default="feedback manuel Victor", max_length=240)
 
 
+class CuriosityRunRequest(BaseModel):
+    force: bool = False
+
+
 class ObsidianImportRequest(BaseModel):
     limit: int = Field(default=200, ge=1, le=1000)
     rebuild_embeddings: bool = False
@@ -532,6 +545,7 @@ init_memory_store()
 ensure_obsidian_vault()
 ensure_allowed_paths_file()
 ensure_sources_file()
+ensure_curiosity_sources_file()
 ensure_projects_file()
 ensure_heartbeats_file()
 ensure_linkedin_file()
@@ -543,6 +557,7 @@ init_action_store()
 init_chat_history_store()
 init_problem_store()
 init_reinforcement_store()
+init_curiosity_store()
 init_operator_journal()
 ensure_job_store()
 recover_running_jobs()
@@ -551,15 +566,17 @@ telegram_task: asyncio.Task[None] | None = None
 heartbeat_task: asyncio.Task[None] | None = None
 screen_watch_task: asyncio.Task[None] | None = None
 job_worker_task: asyncio.Task[None] | None = None
+curiosity_task: asyncio.Task[None] | None = None
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global heartbeat_task, job_worker_task, screen_watch_task, telegram_task
+    global curiosity_task, heartbeat_task, job_worker_task, screen_watch_task, telegram_task
     telegram_task = start_telegram_background_task()
     heartbeat_task = start_heartbeat_background_task()
     screen_watch_task = start_screen_watch_background_task()
     job_worker_task = start_job_worker_background_task()
+    curiosity_task = start_curiosity_background_task()
 
 
 @app.on_event("shutdown")
@@ -572,6 +589,8 @@ async def shutdown_event() -> None:
         screen_watch_task.cancel()
     if job_worker_task:
         job_worker_task.cancel()
+    if curiosity_task:
+        curiosity_task.cancel()
 
 
 @app.get("/health")
@@ -879,6 +898,30 @@ async def reinforcement_feedback(request: ReinforcementFeedbackRequest) -> dict[
         "recorded": True,
         "event": event_to_dict(event),
     }
+
+
+@app.get("/curiosity/status", dependencies=[Depends(require_sensitive_access)])
+async def curiosity_status_route(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, object]:
+    try:
+        return curiosity_status(limit=limit)
+    except CuriosityError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/curiosity/items", dependencies=[Depends(require_sensitive_access)])
+async def curiosity_items(limit: int = Query(default=30, ge=1, le=200)) -> dict[str, object]:
+    try:
+        return {"items": list_curiosity_items(limit=limit)}
+    except CuriosityError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/curiosity/run", dependencies=[Depends(require_sensitive_access)])
+async def curiosity_run(request: CuriosityRunRequest) -> dict[str, object]:
+    try:
+        return await run_curiosity_once(force=request.force)
+    except CuriosityError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/profile", dependencies=[Depends(require_sensitive_access)])

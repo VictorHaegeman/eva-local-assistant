@@ -50,6 +50,10 @@ const panelShellMeta = {
     title: "Heartbeat",
     subtitle: "Automatisations locales et jobs planifies.",
   },
+  curiosity: {
+    title: "Curiosity",
+    subtitle: "Lecture publique autonome pour enrichir la memoire Eva.",
+  },
   gmail: {
     title: "Gmail",
     subtitle: "Inbox, brouillons, tri et reponses encadrees.",

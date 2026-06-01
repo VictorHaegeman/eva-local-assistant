@@ -86,6 +86,22 @@ export async function getReinforcementStatus(limit = 30) {
 }
 
 
+export async function getCuriosityStatus(limit = 20) {
+  return request(`/curiosity/status?limit=${encodeURIComponent(limit)}`);
+}
+
+
+export async function runCuriosity(force = true) {
+  return request("/curiosity/run", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force }),
+  });
+}
+
+
 export async function getReinforcementEvents(limit = 50) {
   return request(`/reinforcement/events?limit=${encodeURIComponent(limit)}`);
 }

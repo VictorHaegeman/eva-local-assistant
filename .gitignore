@@ -35,6 +35,7 @@ data/*
 !data/eva_linkedin.example.json
 !data/eva_socials.example.json
 !data/eva_skills.example.json
+!data/eva_curiosity_sources.example.json
 !data/gmail_credentials.example.json
 data/eva_profile.json
 data/eva_memory.sqlite
@@ -58,6 +59,10 @@ data/eva_daily_launch.json
 data/eva_linkedin.json
 data/eva_socials.json
 data/eva_social_state.json
+data/eva_curiosity_sources.json
+data/eva_curiosity_state.json
+data/eva_curiosity.sqlite
+data/eva_curiosity.sqlite-*
 data/obsidian_vault/
 data/cursor_agent_logs/
 data/screen_captures/

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  BookOpen,
   BrainCircuit,
   CheckCircle2,
   Clock3,
@@ -28,6 +29,7 @@ import {
   createAutonomyJob,
   getActions,
   getAutonomy,
+  getCuriosityStatus,
   getDoctor,
   getGmailMessages,
   getGmailStatus,
@@ -59,6 +61,7 @@ import {
   planProjectFactory,
   runGmailAutoReply,
   runHeartbeat,
+  runCuriosity,
   runNextAutonomyJob,
   seedObsidianMemory,
   syncObsidianMemory,
@@ -101,6 +104,12 @@ const panelMeta = {
     kicker: "Heartbeat",
     title: "Automatisations locales",
     description: "Les jobs planifies qui peuvent tourner sur ton PC quand tu les actives.",
+  },
+  curiosity: {
+    icon: BookOpen,
+    kicker: "Curiosity",
+    title: "Apprentissage autonome",
+    description: "Eva lit des sources publiques, filtre ce qui sert Victor, puis enrichit la memoire.",
   },
   gmail: {
     icon: Mail,
@@ -286,6 +295,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panelName === "screen") return getScreenStatus();
     if (panelName === "skills") return getSkills();
     if (panelName === "heartbeat") return getHeartbeatStatus();
+    if (panelName === "curiosity") return getCuriosityStatus(30);
     if (panelName === "gmail") {
       const status = await getGmailStatus();
       let messages = [];
@@ -366,6 +376,24 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
       const result = await runHeartbeat(jobKey);
       await loadPanel();
       setJobResult(result.message || "Job execute.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
+  async function handleRunCuriosity() {
+    setRunningJob("curiosity_run");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await runCuriosity(true);
+      await loadPanel();
+      setJobResult(
+        `${result.learned?.length || 0} apprentissage(s) ajoute(s) depuis ${result.candidates || 0} source(s) candidates.`
+      );
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -967,6 +995,104 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
             </section>
           ))}
         </div>
+      </>
+    );
+  }
+
+  function renderCuriosity() {
+    const recent = data?.recent || [];
+    const rules = Array.isArray(data?.rules) ? data.rules : [];
+    const focus = Array.isArray(data?.focus) ? data.focus : [];
+    const lastResult = data?.state?.last_result || {};
+    const lastRunAt = data?.state?.last_run_at || "";
+
+    return (
+      <>
+        <div className="panel-metrics">
+          <Metric label="boucle" value={data?.enabled ? "active" : "manuelle"} tone={data?.enabled ? "ok" : "warning"} />
+          <Metric label="lectures utiles" value={data?.total_items || 0} tone={data?.total_items ? "ok" : "neutral"} />
+          <Metric label="cadence" value={`${data?.interval_minutes || 0} min`} />
+          <Metric label="seuil" value={data?.min_score ?? 0} />
+        </div>
+        {jobResult && <div className="panel-success">{jobResult}</div>}
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Boucle de curiosite controlee</h3>
+            <StatusPill tone={data?.enabled ? "ok" : "warning"}>
+              {data?.enabled ? "h24" : "off par defaut"}
+            </StatusPill>
+          </div>
+          <p>
+            Eva peut lire des sources publiques en arriere-plan, filtrer ce qui sert tes projets,
+            puis transformer chaque lecture en souvenir court dans SQLite et Obsidian.
+          </p>
+          <Field label="Dernier passage" value={lastRunAt ? new Date(lastRunAt).toLocaleString() : "jamais"} />
+          <Field label="Candidats dernier passage" value={lastResult.candidates ?? 0} />
+          <Field label="Apprentissages dernier passage" value={lastResult.learned ?? 0} />
+          <Field label="Rapport Obsidian" value={lastResult.report_path ? "cree" : "aucun"} />
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button primary"
+              onClick={handleRunCuriosity}
+              disabled={Boolean(runningJob)}
+            >
+              <BookOpen size={15} aria-hidden="true" />
+              {runningJob === "curiosity_run" ? "Lecture..." : "Lire maintenant"}
+            </button>
+          </div>
+        </section>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Focus Victor</h3>
+            <StatusPill tone="ok">{focus.length} axes</StatusPill>
+          </div>
+          <div className="panel-chip-list">
+            {focus.slice(0, 14).map((item) => (
+              <StatusPill key={item} tone="ok">{item}</StatusPill>
+            ))}
+          </div>
+          {rules.length ? (
+            <div className="panel-list compact">
+              {rules.slice(0, 5).map((rule) => (
+                <div key={rule} className="panel-row muted-row">
+                  <strong>{rule}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Dernieres lectures retenues</h3>
+            <StatusPill tone={recent.length ? "ok" : "neutral"}>{recent.length}</StatusPill>
+          </div>
+          {!recent.length ? (
+            <div className="panel-empty">
+              Rien appris pour l'instant. Lance une lecture manuelle ou active EVA_CURIOSITY_ENABLED=true.
+            </div>
+          ) : (
+            <div className="panel-list">
+              {recent.slice(0, 10).map((item) => (
+                <div key={item.id || item.url} className="panel-row">
+                  <div>
+                    <strong>{item.title}</strong>
+                    <span>{item.insight}</span>
+                    <span className="panel-row-note">{item.source} - score {item.score} - memoire #{item.memory_id || "non stockee"}</span>
+                  </div>
+                  <div className="panel-row-actions">
+                    <StatusPill tone={item.score >= 20 ? "ok" : "neutral"}>{item.category}</StatusPill>
+                    {item.url ? (
+                      <a className="panel-row-link" href={item.url} target="_blank" rel="noreferrer">
+                        ouvrir
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </>
     );
   }
@@ -1666,6 +1792,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     if (panel === "screen") return renderScreen();
     if (panel === "skills") return renderSkills();
     if (panel === "heartbeat") return renderHeartbeat();
+    if (panel === "curiosity") return renderCuriosity();
     if (panel === "gmail") return renderGmail();
     if (panel === "linkedin") return renderLinkedIn();
     if (panel === "projects") return renderProjects();

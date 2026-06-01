@@ -1,5 +1,6 @@
 import {
   Bot,
+  BookOpen,
   BrainCircuit,
   CheckCircle2,
   Cpu,
@@ -84,6 +85,11 @@ const coreItems = [
     icon: HeartPulse,
     label: "Heartbeat",
     panel: "heartbeat",
+  },
+  {
+    icon: BookOpen,
+    label: "Curiosity",
+    panel: "curiosity",
   },
   {
     icon: Mail,
