@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 
 from app.config import settings
-from app.integrations.cli_tools import find_cursor_agent
+from app.integrations.cli_tools import find_cursor_agent, find_cursor_agent_command
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -192,14 +192,14 @@ def _run_cursor_agent(
     project_name: str,
     suffix: str,
 ) -> tuple[int, Path]:
-    cursor_agent = find_cursor_agent()
-    if not cursor_agent:
+    cursor_agent_command = find_cursor_agent_command()
+    if not cursor_agent_command:
         raise ProjectFactoryAgentError("cursor-agent introuvable dans le PATH.")
 
     CURSOR_AGENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_path = CURSOR_AGENT_LOG_DIR / f"{workspace.name}-{_utc_stamp()}-{suffix}.log"
     command = [
-        cursor_agent,
+        *cursor_agent_command,
         "-p",
         prompt,
         "--output-format",

@@ -7,7 +7,7 @@ from pathlib import Path
 import httpx
 
 from app.config import settings
-from app.integrations.cli_tools import find_cursor_agent
+from app.integrations.cli_tools import find_cursor_agent, find_cursor_agent_command
 from app.projects.project_store import build_cursor_prompt, get_project
 
 
@@ -98,8 +98,8 @@ def _watch_agent_process(
 
 
 def _start_cursor_agent(project_path: Path, prompt: str) -> dict[str, object]:
-    cursor_agent = find_cursor_agent()
-    if not cursor_agent:
+    cursor_agent_command = find_cursor_agent_command()
+    if not cursor_agent_command:
         return {
             "available": False,
             "started": False,
@@ -113,7 +113,7 @@ def _start_cursor_agent(project_path: Path, prompt: str) -> dict[str, object]:
     log_file = log_path.open("w", encoding="utf-8")
 
     command = [
-        cursor_agent,
+        *cursor_agent_command,
         "-p",
         prompt,
         "--output-format",

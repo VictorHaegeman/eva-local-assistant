@@ -105,6 +105,13 @@ def hands_readiness() -> dict[str, Any]:
     if not cursor_agent and not gh_authenticated:
         status = "blocked"
 
+    next_steps = [
+        "Terminer gh auth login sur le PC.",
+        "Ajouter un superviseur de jobs qui relit les logs et relance une correction si besoin.",
+    ]
+    if not cursor_agent:
+        next_steps.insert(1, "Installer WSL puis cursor-agent pour les jobs Cursor sans intervention.")
+
     return _track(
         key="hands",
         label="Hands / execution locale",
@@ -112,16 +119,13 @@ def hands_readiness() -> dict[str, Any]:
         done=[
             "Creation de workspace projet local.",
             "Generation de README, PROJECT_BRIEF, TASKS et CURSOR_PROMPT.",
+            "Generation locale d'une V1 runnable par Eva avant Cursor Agent.",
             "Ouverture Cursor GUI et copie presse-papiers.",
             "Commit Git initial possible.",
             "Creation repo et push prevus via gh.",
         ],
         missing=missing,
-        next_steps=[
-            "Terminer gh auth login sur le PC.",
-            "Installer WSL puis cursor-agent pour les jobs Cursor sans intervention.",
-            "Ajouter un superviseur de jobs qui relit les logs et relance une correction si besoin.",
-        ],
+        next_steps=next_steps,
         details={
             "cursor_agent": cursor_agent,
             "gh": gh,

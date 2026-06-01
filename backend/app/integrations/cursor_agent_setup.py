@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from app.integrations.browser import open_url
-from app.integrations.cli_tools import find_cursor_agent
+from app.integrations.cli_tools import find_cursor_agent, find_cursor_agent_command
 from app.agents.intent_router import normalize_intent_text
 
 
@@ -78,13 +78,14 @@ def _cursor_agent_in_wsl() -> str:
 
 
 def cursor_agent_setup_status() -> dict[str, Any]:
-    windows_path = find_cursor_agent()
+    windows_command = find_cursor_agent()
     wsl_available = _wsl_available()
-    wsl_path = _cursor_agent_in_wsl() if wsl_available else ""
-    installed = bool(windows_path or wsl_path)
+    wsl_path = _cursor_agent_in_wsl() if wsl_available and not windows_command else ""
+    installed = bool(windows_command or wsl_path)
     return {
         "installed": installed,
-        "windows_path": windows_path,
+        "windows_path": windows_command,
+        "windows_command": find_cursor_agent_command(),
         "wsl_available": wsl_available,
         "wsl_path": wsl_path,
         "docs_url": CURSOR_AGENT_DOCS_URL,
@@ -188,4 +189,6 @@ def format_cursor_agent_setup_response(result: dict[str, Any]) -> str:
     lines.append("")
     lines.append("Verification:")
     lines.append("cursor-agent --version")
+    lines.append("ou, sur ton Windows actuel:")
+    lines.append("cursor agent --version")
     return "\n".join(lines)

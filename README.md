@@ -953,21 +953,22 @@ GET /chat/history/{session_id}
 
 Autonomie Cursor a distance:
 
-- si `cursor-agent` est disponible, Eva peut lancer un vrai job agent depuis Telegram;
-- Eva envoie un message Telegram quand le job `cursor-agent` se termine, avec le chemin du log local;
+- si `cursor-agent` ou `cursor agent` est disponible, Eva peut lancer un vrai job agent depuis Telegram;
+- Eva envoie un message Telegram quand le job Cursor Agent se termine, avec le chemin du log local;
 - sinon elle ouvre Cursor et prepare le prompt, mais le collage dans l'interface reste un fallback local;
 - docs Cursor Agent CLI: https://docs.cursor.com/en/cli/overview
-- note Windows: Cursor indique l'installation CLI pour macOS, Linux et Windows via WSL. Sur Windows natif/Git Bash, l'installeur officiel peut refuser l'installation; dans ce cas il faut installer WSL, puis installer `cursor-agent` dans WSL.
+- note Windows: les versions recentes de Cursor exposent aussi l'agent via `cursor agent`. Eva detecte maintenant les deux formes.
 
 Verification:
 
 ```powershell
+cursor agent --version
 cursor-agent --help
 gh --version
 gh auth status
 ```
 
-Si `cursor-agent` est absent sur Windows, chemin propre:
+Si les deux commandes Cursor Agent sont absentes sur Windows, chemin propre:
 
 ```powershell
 wsl --install

@@ -27,10 +27,13 @@ def find_gh() -> str:
 
 
 def find_cursor_agent() -> str:
-    resolved = shutil.which("cursor-agent")
-    if resolved:
-        return resolved
+    command = find_cursor_agent_command()
+    if command:
+        return " ".join(command)
+    return ""
 
+
+def _cursor_agent_binary_candidates() -> list[Path]:
     home = Path.home()
     local_app_data = os.environ.get("LOCALAPPDATA")
     candidates = [
@@ -39,7 +42,37 @@ def find_cursor_agent() -> str:
     ]
     if local_app_data:
         candidates.append(Path(local_app_data) / "Programs" / "cursor-agent" / "cursor-agent.exe")
-    return _existing(candidates)
+    return candidates
+
+
+def _cursor_subcommand_available(cursor_path: str) -> bool:
+    try:
+        completed = subprocess.run(
+            [cursor_path, "agent", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            shell=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return completed.returncode == 0
+
+
+def find_cursor_agent_command() -> list[str]:
+    resolved = shutil.which("cursor-agent")
+    if resolved:
+        return [resolved]
+
+    existing_binary = _existing(_cursor_agent_binary_candidates())
+    if existing_binary:
+        return [existing_binary]
+
+    cursor = shutil.which("cursor")
+    if cursor and _cursor_subcommand_available(cursor):
+        return [cursor, "agent"]
+
+    return []
 
 
 def is_gh_authenticated() -> bool:
