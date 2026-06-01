@@ -2178,7 +2178,7 @@ Le coffre cree par Eva contient:
 
 Depuis le panneau Memoire, `Organiser le coffre` remet la structure au propre, et `Ouvrir le coffre` lance Obsidian via le protocole local `obsidian://` si Obsidian est installe sur Windows.
 
-Sur Windows, `open-eva-obsidian.bat` ouvre aussi le coffre dans l'application Obsidian et tente d'afficher directement la vue Graph. Eva cree une configuration locale `.obsidian/graph.json` avec des couleurs pour profil, souvenirs et projets. Si Obsidian ouvre seulement l'index, utilise `Ctrl+G` dans Obsidian: Eva ajoute aussi ce raccourci localement.
+Sur Windows, `open-eva-obsidian.bat` ouvre aussi le coffre dans l'application Obsidian et tente d'afficher directement la vue Graph. Eva cree une configuration locale `.obsidian/graph.json` avec des couleurs pour profil, souvenirs et projets. La vue globale masque les `INDEX.md`, les tags, `40 - Daily` et `99 - Archive` pour garder des clusters lisibles. La note `00 - Eva/Graph Guide.md` explique comment lire le graphe. Si Obsidian ouvre seulement l'index, utilise `Ctrl+G` dans Obsidian: Eva ajoute aussi ce raccourci localement.
 
 ## Structure
 

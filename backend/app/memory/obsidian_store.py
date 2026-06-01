@@ -1563,6 +1563,11 @@ def _links_for_folder(vault: Path, folder: str, limit: int = 40) -> list[str]:
     return [f"- {_relative_obsidian_link(vault, note)}" for note in notes]
 
 
+def _plain_notes_for_folder(vault: Path, folder: str, limit: int = 40) -> list[str]:
+    notes = _folder_notes(vault, folder)[:limit]
+    return [f"- `{note.relative_to(vault).as_posix()}`" for note in notes]
+
+
 def _folder_index(
     vault: Path,
     *,
@@ -1572,16 +1577,16 @@ def _folder_index(
     workflow: list[str],
     extra_links: list[str] | None = None,
 ) -> str:
-    links = _links_for_folder(vault, folder)
+    notes = _plain_notes_for_folder(vault, folder)
     lines = [
         f"# {title}",
         "",
         purpose,
         "",
-        "## Notes principales",
+        "## Notes du dossier",
         "",
     ]
-    lines.extend(links or ["- Aucune note pour le moment."])
+    lines.extend(notes or ["- Aucune note pour le moment."])
     if extra_links:
         lines.extend(["", "## Liens utiles", ""])
         lines.extend(f"- {link}" for link in extra_links)
@@ -1596,10 +1601,10 @@ def _graph_config() -> str:
     return json.dumps(
         {
             "collapse-filter": False,
-            "search": "",
-            "showTags": True,
+            "search": '-file:"INDEX" -path:"99 - Archive" -path:"40 - Daily"',
+            "showTags": False,
             "showAttachments": False,
-            "hideUnresolved": False,
+            "hideUnresolved": True,
             "showOrphans": False,
             "collapse-color-groups": False,
             "colorGroups": [
@@ -1620,14 +1625,14 @@ def _graph_config() -> str:
             ],
             "collapse-display": False,
             "showArrow": True,
-            "textFadeMultiplier": 0,
-            "nodeSizeMultiplier": 1.35,
-            "lineSizeMultiplier": 1.1,
+            "textFadeMultiplier": 1.6,
+            "nodeSizeMultiplier": 1.05,
+            "lineSizeMultiplier": 0.55,
             "collapse-forces": False,
-            "centerStrength": 0.45,
-            "repelStrength": 11,
-            "linkStrength": 1.2,
-            "linkDistance": 210,
+            "centerStrength": 0.28,
+            "repelStrength": 18,
+            "linkStrength": 0.75,
+            "linkDistance": 310,
             "scale": 1,
             "close": False,
         },
@@ -1812,6 +1817,7 @@ def organize_obsidian_vault(open_after: bool = False) -> dict[str, Any]:
                 "- [[00 - Eva/Command Center|Command Center]]",
                 "- [[00 - Eva/Vault Map|Vault Map]]",
                 "- [[00 - Eva/Memory Map|Memory Map]]",
+                "- [[00 - Eva/Graph Guide|Graph Guide]]",
                 "- [[00 - Eva/Obsidian Memory Guide|Guide memoire Obsidian]]",
                 "",
                 "## Zones",
@@ -1873,6 +1879,36 @@ def organize_obsidian_vault(open_after: bool = False) -> dict[str, Any]:
                 "- Les anciennes notes et doublons vont dans [[99 - Archive/INDEX]].",
                 "- Les connaissances de cours vont dans [[75 - Knowledge/INDEX]].",
                 "- Les preferences stables vont dans [[11 - Preferences/INDEX]].",
+                "- Le graphe global doit rester lisible: voir [[00 - Eva/Graph Guide]].",
+                "",
+            ]
+        ),
+        vault
+        / "00 - Eva"
+        / "Graph Guide.md": "\n".join(
+            [
+                "# Graph Guide",
+                "",
+                "Le graphe Obsidian d'Eva doit montrer des zones de decision lisibles, pas tous les liens de navigation.",
+                "",
+                "## Vue globale propre",
+                "",
+                "- Les notes `INDEX.md` sont masquees dans le graphe global.",
+                "- Les tags sont masques pour eviter les faux clusters.",
+                "- `40 - Daily` et `99 - Archive` sont exclus de la vue globale par defaut.",
+                "- Les notes de dossier listent les fichiers en texte simple pour ne pas creer de liens inutiles.",
+                "",
+                "## Clusters attendus",
+                "",
+                "- Eva Core: [[00 - Eva/Command Center]], [[00 - Eva/Memory Map]], [[00 - Eva/Vault Map]]",
+                "- Victor: [[10 - Profile/Victor]], [[11 - Preferences/Creative Taste]], [[11 - Preferences/Victor Working Preferences]]",
+                "- DreamLense: [[30 - Projects/DreamLense]], [[60 - Content/DreamLense Content Memory]], [[60 - Content/LinkedIn Strategy Memory]]",
+                "- Autonomie: [[50 - Operating Rules/Eva Autonomy Rules]], [[50 - Operating Rules/Eva Failure Recovery]], [[80 - Learning/Eva Learning Loop]]",
+                "- Knowledge: [[75 - Knowledge/Machine Learning/Machine Learning Knowledge]]",
+                "",
+                "## Quand le graphe redevient confus",
+                "",
+                "Relancer `Organiser le coffre` depuis le panneau Memoire. Eva reecrit la config du graphe et recree les index sobres.",
                 "",
             ]
         ),
