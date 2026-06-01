@@ -4,6 +4,7 @@ from app.agents.understanding import UnderstandingFrame
 from app.cognition.problem_store import record_problem_event
 from app.cognition.state import CognitiveState, goal_frame_from_understanding
 from app.cognition.tool_result import ToolResult
+from app.integrations.gmail_auth import GmailAuthLaunchError, start_gmail_oauth_flow
 from app.integrations.gmail_client import is_google_reauth_error
 
 
@@ -212,12 +213,28 @@ def build_problem_solver_response(
             "La connexion Google locale a expire ou a ete revoquee. Le token Gmail/Calendar doit etre regenere avant qu'Eva puisse relire Gmail.",
             "",
             "Je ne vais pas remplacer ca par une recherche web ni inventer des mails.",
-            "",
-            "Action a faire:",
-            "- depuis Eva: panneau Gmail > Reconnecter scopes;",
-            "- depuis Telegram: envoie /google;",
-            "- valide le compte Google dans la fenetre ouverte sur le PC, puis renvoie ta demande.",
         ]
+        if state.trusted_actions:
+            lines.extend(["", "Action lancee:"])
+            try:
+                oauth_result = start_gmail_oauth_flow(force_reconnect=True)
+            except GmailAuthLaunchError as exc:
+                lines.append(f"- je n'ai pas pu lancer OAuth automatiquement: {exc}")
+                lines.append("- ouvre le panneau Gmail puis clique Reconnecter scopes, ou envoie /google depuis Telegram.")
+            else:
+                lines.append(f"- {oauth_result.get('message', 'Flux OAuth Google lance sur le PC.')}")
+                lines.append("- valide le compte Google dans la fenetre ouverte sur le PC, puis renvoie ta demande.")
+                lines.append("- si Google affiche 403 access_denied, ajoute ton Gmail dans Google Auth Platform > Audience > Test users.")
+        else:
+            lines.extend(
+                [
+                    "",
+                    "Action a faire:",
+                    "- depuis Eva: panneau Gmail > Reconnecter scopes;",
+                    "- depuis Telegram: envoie /google;",
+                    "- valide le compte Google dans la fenetre ouverte sur le PC, puis renvoie ta demande.",
+                ]
+            )
         return "\n".join(lines)
 
     latest_tool = latest_result.tool if latest_result else "outil local"

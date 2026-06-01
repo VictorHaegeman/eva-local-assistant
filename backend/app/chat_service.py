@@ -383,6 +383,20 @@ async def process_chat_messages(
         frame=understanding,
     )
     understanding = attach_cognitive_context(understanding, cognitive_context)
+    if wants_google_account_setup(latest_user_message):
+        return {
+            "message": {
+                "role": "assistant",
+                "content": build_google_setup_response(
+                    trusted_actions=trusted_actions,
+                    intent_context="",
+                    force_reconnect=_wants_force_google_reconnect(latest_user_message),
+                ),
+            },
+            "saved_memory": None,
+            "pending_action": None,
+        }
+
     understanding = await refine_understanding_with_ollama(
         latest_user_message,
         conversation_context=conversation_context,
@@ -488,7 +502,7 @@ async def process_chat_messages(
                     "role": "assistant",
                     "content": build_google_setup_response(
                         trusted_actions=trusted_actions,
-                        intent_context=intent_context,
+                        intent_context="",
                         force_reconnect=_wants_force_google_reconnect(latest_user_message),
                     ),
                 },
@@ -799,20 +813,6 @@ async def process_chat_messages(
                 "message": {
                     "role": "assistant",
                     "content": build_calendar_events_response(days=7),
-                },
-                "saved_memory": None,
-                "pending_action": None,
-            }
-
-        if wants_google_account_setup(latest_user_message):
-            return {
-                "message": {
-                    "role": "assistant",
-                    "content": build_google_setup_response(
-                        trusted_actions=trusted_actions,
-                        intent_context=intent_context,
-                        force_reconnect=_wants_force_google_reconnect(latest_user_message),
-                    ),
                 },
                 "saved_memory": None,
                 "pending_action": None,

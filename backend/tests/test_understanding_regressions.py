@@ -15,6 +15,8 @@ from app.cognition.structured_interpreter import StructuredInterpretation, _shou
 from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
 from app.integrations.cursor_agent_setup import format_cursor_agent_setup_response, wants_cursor_agent_setup
+from app.integrations.gmail_client import is_google_reauth_error
+from app.integrations.google_setup_chat import wants_google_account_setup
 from app.projects.project_chat import attach_recent_project_context, infer_project_resolution
 from app.screen.screen_navigator import wants_screen_navigation
 
@@ -344,6 +346,18 @@ def test_google_invalid_grant_gets_reauth_message_not_raw_trace() -> None:
     assert "recherche web" not in response.lower()
 
 
+def test_gmail_broken_routes_to_google_reconnect_not_mail_search() -> None:
+    frame = _frame("qu'est ce qui se passe mon gmail est casse")
+    assert frame.primary_domain == "google_setup"
+    assert frame.action_plan.route == "google_oauth_setup"
+    assert wants_google_account_setup("qu'est ce qui se passe mon gmail est casse")
+    assert is_google_reauth_error("Token Gmail absent. La connexion Google locale doit etre relancee.")
+
+
+def test_plain_gmail_read_does_not_trigger_google_setup() -> None:
+    assert not wants_google_account_setup("lis mes mails concernant DreamLense")
+
+
 if __name__ == "__main__":
     test_dreamlense_mail_draft_routes_to_gmail()
     test_gmail_followup_does_not_become_cursor()
@@ -373,4 +387,6 @@ if __name__ == "__main__":
     test_direct_problem_solver_replaces_permission_refusal()
     test_exception_recovery_does_not_end_as_raw_error()
     test_google_invalid_grant_gets_reauth_message_not_raw_trace()
+    test_gmail_broken_routes_to_google_reconnect_not_mail_search()
+    test_plain_gmail_read_does_not_trigger_google_setup()
     print("understanding regressions OK")

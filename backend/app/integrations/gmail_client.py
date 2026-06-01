@@ -59,12 +59,27 @@ def is_google_reauth_error(error: object) -> bool:
         marker in normalized
         for marker in (
             "invalid_grant",
+            "token gmail absent",
+            "token google absent",
+            "token local absent",
+            "token google incomplet",
+            "token gmail incomplet",
             "token has been expired or revoked",
             "token has been expired",
             "token expired",
             "revoked",
             "invalid credentials",
             "invalid_token",
+            "connexion google locale",
+            "connexion gmail",
+            "connexion google a refaire",
+            "connexion google expiree",
+            "connexion google expir",
+            "google local absent",
+            "reconnecte google",
+            "reconnecte gmail",
+            "reconnecter scopes",
+            "scopes manquants",
         )
     )
 
@@ -107,6 +122,34 @@ def quarantine_gmail_token(reason: str = "") -> Path | None:
     return backup_path
 
 
+def _latest_invalid_token_status() -> dict[str, str]:
+    token_file = gmail_token_path()
+    try:
+        invalid_tokens = sorted(
+            token_file.parent.glob(f"{token_file.stem}_invalid_*{token_file.suffix}"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+    except OSError:
+        return {}
+
+    if not invalid_tokens:
+        return {}
+
+    latest = invalid_tokens[0]
+    reason_path = latest.with_suffix(f"{latest.suffix}.reason.txt")
+    reason = ""
+    if reason_path.exists():
+        try:
+            reason = reason_path.read_text(encoding="utf-8").strip()[:500]
+        except OSError:
+            reason = ""
+    return {
+        "last_invalid_token": str(latest),
+        "last_invalid_token_reason": reason,
+    }
+
+
 def gmail_status() -> dict[str, object]:
     token_scope_status = google_token_scope_status()
     compose_status = google_token_scope_status([GMAIL_COMPOSE_SCOPE])
@@ -115,7 +158,7 @@ def gmail_status() -> dict[str, object]:
         settings.eva_gmail_auto_send_obvious_replies
         and settings.eva_allow_auto_external_send
     )
-    return {
+    status = {
         "enabled": settings.eva_gmail_enabled,
         "credentials_path": str(gmail_credentials_path()),
         "credentials_exists": gmail_credentials_path().exists(),
@@ -137,6 +180,8 @@ def gmail_status() -> dict[str, object]:
         "drafts_require_manual_send": not auto_send_enabled,
         "send_requires_confirmation": not auto_send_enabled,
     }
+    status.update(_latest_invalid_token_status())
+    return status
 
 
 def google_token_scope_status(required_scopes: list[str] | None = None) -> dict[str, object]:
@@ -211,7 +256,7 @@ def _gmail_service() -> Any:
         )
     if not token_file.exists():
         raise GmailIntegrationError(
-            "Token Gmail absent. Lance: cd backend puis python -m app.integrations.gmail_auth"
+            "Token Gmail absent. La connexion Google locale doit etre relancee avant de lire Gmail/Calendar."
         )
 
     Request, Credentials, build = _google_imports()

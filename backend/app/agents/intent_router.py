@@ -118,6 +118,22 @@ NEWS_MARKERS = (
 
 
 def has_news_context(text: str) -> bool:
+    if _has_any(text, ("gmail", "mail", "mails", "email", "emails", "calendar", "calendrier")) and _has_any(
+        text,
+        (
+            "casse",
+            "cassee",
+            "marche pas",
+            "ne marche pas",
+            "ne fonctionne pas",
+            "bug",
+            "erreur",
+            "panne",
+            "reconnecte",
+            "reconnecter",
+        ),
+    ):
+        return False
     return _has_any(text, NEWS_MARKERS)
 
 
@@ -340,6 +356,17 @@ def classify_user_intent(message: str) -> UserIntent:
             "colle",
             "coller",
             "la ou il faut",
+            "casse",
+            "cassee",
+            "marche pas",
+            "ne marche pas",
+            "ne fonctionne pas",
+            "bug",
+            "erreur",
+            "panne",
+            "reconnecte",
+            "reconnecter",
+            "reconnexion",
         ),
     )
     if google_context and google_setup_action:

@@ -22,8 +22,53 @@ def _normalize(text: str) -> str:
     return " ".join(without_accents.split())
 
 
+def _public_invalid_token_reason(reason: object) -> str:
+    normalized = _normalize(str(reason))
+    if "invalid_grant" in normalized or "expired" in normalized or "revoked" in normalized:
+        return "expire ou revoque par Google"
+    if "scope" in normalized:
+        return "scopes Google incomplets"
+    if normalized:
+        return "token local invalide"
+    return "token local invalide"
+
+
 def wants_google_account_setup(message: str) -> bool:
     normalized = _normalize(message)
+    google_markers = ("google", "gmail", "oauth", "calendar", "calendrier", "compte google")
+    troubleshooting_markers = (
+        "casse",
+        "cassee",
+        "cassé",
+        "cassée",
+        "marche pas",
+        "ne marche pas",
+        "ne fonctionne pas",
+        "fonctionne pas",
+        "bug",
+        "bloque",
+        "bloquee",
+        "panne",
+        "pourquoi",
+        "failed",
+        "erreur",
+        "erreur gmail",
+        "gmail indisponible",
+        "indisponible",
+        "token absent",
+        "invalid grant",
+        "invalid_grant",
+        "reconnecte",
+        "reconnecter",
+        "reconnexion",
+        "ne lit pas",
+        "ne lis pas",
+    )
+    if any(marker in normalized for marker in google_markers) and any(
+        marker in normalized for marker in troubleshooting_markers
+    ):
+        return True
+
     explicit_setup_markers = (
         "connect",
         "connexion",
@@ -40,7 +85,6 @@ def wants_google_account_setup(message: str) -> bool:
     if not any(marker in normalized for marker in explicit_setup_markers):
         return False
 
-    google_markers = ("google", "gmail", "oauth", "calendar", "calendrier", "compte google")
     action_markers = (
         "connect",
         "connexion",
@@ -121,10 +165,13 @@ def build_google_setup_response(
     if missing_scopes:
         lines.append(f"- scopes manquants: {', '.join(str(scope) for scope in missing_scopes)}")
 
+    if gmail.get("last_invalid_token_reason"):
+        lines.append(f"- dernier token invalide: {_public_invalid_token_reason(gmail['last_invalid_token_reason'])}")
+    elif gmail.get("last_invalid_token"):
+        lines.append("- dernier token invalide detecte localement.")
+
     if gmail["credentials_exists"] and not gmail["token_exists"]:
-        lines.append(
-            "- diagnostic 403 probable: l'app Google est en mode test et ton compte Gmail n'est pas encore dans Audience > Test users."
-        )
+        lines.append("- diagnostic: credentials presents, mais token Google local absent.")
 
     if not trusted_actions:
         lines.extend(
@@ -156,16 +203,10 @@ def build_google_setup_response(
         return "\n".join(lines)
 
     if not gmail["token_exists"]:
-        open_url(GOOGLE_CLOUD_OAUTH_AUDIENCE_URL)
         lines.extend(
             [
                 "",
-                "J'ai ouvert Google Auth Platform > Audience dans Brave.",
-                "Si Google affiche 403 access_denied, corrige d'abord ce point:",
-                "1. Selectionne le projet Google Cloud qui contient le client OAuth Eva.",
-                "2. Va dans Audience > Test users.",
-                "3. Ajoute exactement le compte Gmail utilise pour la connexion.",
-                "4. Sauvegarde, puis relance la connexion Gmail depuis Eva si Google a bloque la premiere tentative.",
+                "Je vais relancer le flux OAuth local. Si Google affiche 403 access_denied, alors il faudra ouvrir Google Auth Platform > Audience et ajouter ton Gmail dans Test users.",
             ]
         )
 
