@@ -7,6 +7,7 @@ from typing import Any
 from app.actions.action_store import EvaAction
 from app.integrations.cli_tools import find_gh
 from app.projects.project_store import PROJECTS_PATH, ensure_projects_file
+from app.project_factory.local_coder import LocalProjectCoderError, generate_local_v1
 
 
 class ProjectFactoryExecutionError(Exception):
@@ -126,6 +127,27 @@ def execute_project_workspace_create(action: EvaAction) -> str:
             git_result,
         ]
     ).strip()
+
+
+def execute_project_local_code_v1(action: EvaAction) -> str:
+    payload = action.payload
+    try:
+        result = generate_local_v1(payload, force=bool(payload.get("force_local_v1", False)))
+    except LocalProjectCoderError as exc:
+        raise ProjectFactoryExecutionError(str(exc)) from exc
+
+    lines = [
+        f"V1 locale codee: {result['project_name']}",
+        f"Workspace: {result['workspace_path']}",
+        f"Template: {result['template']}",
+        f"Fichiers ecrits: {result['written_count']}",
+        f"Fichiers conserves: {result['skipped_count']}",
+    ]
+    lines.extend(f"- {path}" for path in result["written"][:80])
+    if result["skipped"]:
+        lines.append("Conserves sans ecraser:")
+        lines.extend(f"- {path}" for path in result["skipped"][:40])
+    return "\n".join(lines)
 
 
 def execute_clipboard_set_prompt(action: EvaAction) -> str:

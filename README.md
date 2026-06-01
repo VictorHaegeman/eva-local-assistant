@@ -108,6 +108,7 @@ Routes utiles:
 - `GET /linkedin/status`: statut LinkedIn en mode brouillon + pont navigateur.
 - `POST /project-factory/plan`: previsualiser un projet depuis une idee;
 - `POST /project-factory/actions`: creer les actions validables workspace, clipboard, Cursor et GitHub CLI.
+- `POST /project-factory/local-v1`: coder une V1 locale runnable directement dans le workspace.
 - Telegram `/cursor` ou `/codex`: ouvrir un projet connu dans Cursor, copier le prompt de travail et ecrire `EVA_CURSOR_PROMPT.md`.
 
 Messages riches dans le chat:
@@ -1019,12 +1020,13 @@ Avec ce mode active dans `backend/.env`, quand tu envoies `/project ...` ou que 
 
 - creation du dossier dans `EVA_PROJECTS_DIR`;
 - creation des fichiers de cadrage;
+- generation d'une V1 locale runnable par Eva elle-meme, meme si `cursor-agent` est absent;
 - initialisation Git locale si `git` est disponible;
 - copie du prompt Cursor dans le presse-papiers;
 - ouverture du projet dans Cursor si la CLI `cursor` est disponible;
 - commit initial local si `EVA_PROJECT_FACTORY_AUTO_COMMIT=true`;
 - creation du repo GitHub via `gh` si `EVA_PROJECT_FACTORY_AUTO_GITHUB=true` et `gh auth login` est deja configure;
-- lancement de `cursor-agent` pour coder la V1 si `EVA_PROJECT_FACTORY_AUTO_CURSOR_AGENT=true`;
+- lancement de `cursor-agent` pour ameliorer/coder plus loin la V1 si `EVA_PROJECT_FACTORY_AUTO_CURSOR_AGENT=true`;
 - audit local du workspace apres generation;
 - relance automatique d'un prompt de correction une fois si l'audit echoue;
 - commit local de la V1 generee si `EVA_PROJECT_FACTORY_AGENT_AUTO_COMMIT=true`;
@@ -1042,7 +1044,19 @@ Les logs et audits restent locaux dans:
 data/cursor_agent_logs/
 ```
 
-Si `cursor-agent` est absent, Eva cree quand meme le workspace, GitHub et le prompt Cursor, puis indique clairement que la partie codage autonome n'a pas demarre.
+Si `cursor-agent` est absent, Eva code quand meme une V1 locale simple: React/Vite + FastAPI pour les projets web, ou CLI Python pour les scripts/outils. Cursor Agent devient une couche d'amelioration, pas le seul moyen de produire du code.
+
+Endpoint direct pour forcer la generation locale:
+
+```text
+POST /project-factory/local-v1
+```
+
+Audit d'autonomie:
+
+```text
+docs/EVA_AUTONOMY_PROJECT_AUDIT.md
+```
 
 Ce mode ne donne pas carte blanche a tout le PC: il ne supprime rien, n'envoie pas de message, ne publie pas de contenu et n'appelle pas OpenAI. Il execute seulement le flux Project Factory borne a ton dossier projets.
 

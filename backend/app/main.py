@@ -206,6 +206,7 @@ from app.project_factory.planner import (
     build_project_plan,
     create_project_factory_actions,
 )
+from app.project_factory.local_coder import LocalProjectCoderError, generate_local_v1
 from app.project_factory.automation import (
     auto_execute_project_factory_actions,
     project_factory_auto_status,
@@ -423,6 +424,7 @@ class ActionCreateRequest(BaseModel):
         "write_file",
         "delete_path",
         "codex_prompt",
+        "project_local_code_v1",
         "git_initial_commit",
         "git_push",
     ]
@@ -1878,6 +1880,24 @@ async def project_factory_actions(request: ProjectFactoryPlanRequest) -> dict[st
         "auto_results": auto_results,
         "executed": bool(auto_results),
         "requires_confirmation": not bool(auto_results),
+    }
+
+
+@app.post("/project-factory/local-v1", dependencies=[Depends(require_sensitive_access)])
+async def project_factory_local_v1(request: ProjectFactoryPlanRequest) -> dict[str, object]:
+    try:
+        plan = build_project_plan(
+            idea=request.idea,
+            project_name=request.project_name or None,
+        )
+        result = generate_local_v1(plan, force=False)
+    except (ProjectFactoryError, LocalProjectCoderError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "plan": plan,
+        "local_v1": result,
+        "executed": True,
     }
 
 

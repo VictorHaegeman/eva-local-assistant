@@ -12,6 +12,7 @@ from app.project_factory.executor import (
     execute_git_initial_commit,
     execute_git_push,
     execute_github_repo_create,
+    execute_project_local_code_v1,
     execute_project_workspace_create,
 )
 from app.project_factory.agent_runner import ProjectFactoryAgentError, start_project_factory_agent
@@ -203,6 +204,8 @@ def execute_action(action_id: int, require_approval: bool = True) -> dict[str, o
             result = _codex_prompt(action)
         elif action.action_type == "project_workspace_create":
             result = execute_project_workspace_create(action)
+        elif action.action_type == "project_local_code_v1":
+            result = execute_project_local_code_v1(action)
         elif action.action_type == "clipboard_set_prompt":
             result = execute_clipboard_set_prompt(action)
         elif action.action_type == "cursor_open_project":

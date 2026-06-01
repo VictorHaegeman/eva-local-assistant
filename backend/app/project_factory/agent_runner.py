@@ -110,10 +110,10 @@ def audit_project_workspace(workspace: Path) -> dict[str, object]:
 
     readme_path = workspace / "README.md"
     readme = readme_path.read_text(encoding="utf-8", errors="replace") if readme_path.exists() else ""
-    package_exists = (workspace / "package.json").exists()
+    package_exists = any(path.name == "package.json" for path in files)
     python_entry_exists = any(
-        (workspace / candidate).exists()
-        for candidate in ("main.py", "app.py", "requirements.txt", "pyproject.toml")
+        path.name in {"main.py", "app.py", "requirements.txt", "pyproject.toml"}
+        for path in files
     )
 
     failures: list[str] = []

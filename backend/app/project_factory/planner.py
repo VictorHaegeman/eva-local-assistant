@@ -213,6 +213,7 @@ def build_project_plan(idea: str, project_name: str | None = None) -> dict[str, 
             "auto_scope": [
                 "creer le dossier projet",
                 "ecrire les fichiers",
+                "coder une V1 locale runnable si cursor-agent est absent ou indisponible",
                 "copier dans le presse-papiers",
                 "ouvrir Cursor",
                 "lancer cursor-agent pour coder la V1",
@@ -250,6 +251,15 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
     bundle = create_project_factory_action(idea=idea, project_name=project_name)
     plan = bundle["plan"]
     workspace_action = bundle["action"]
+    local_code_action = create_action(
+        action_type="project_local_code_v1",
+        title=f"Coder une V1 locale pour {plan['project_name']}",
+        description=(
+            "Genere un premier code runnable local-first dans le workspace: "
+            "frontend React/Vite + backend FastAPI, ou CLI Python selon le plan."
+        ),
+        payload={**plan, "force_local_v1": False},
+    )
     clipboard_action = create_action(
         action_type="clipboard_set_prompt",
         title=f"Copier le prompt Cursor pour {plan['project_name']}",
@@ -307,6 +317,7 @@ def create_project_factory_actions(idea: str, project_name: str | None = None) -
         "plan": plan,
         "actions": [
             workspace_action,
+            local_code_action,
             clipboard_action,
             cursor_action,
             commit_action,

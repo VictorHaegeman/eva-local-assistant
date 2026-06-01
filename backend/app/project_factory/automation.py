@@ -6,6 +6,7 @@ from app.security.action_policy import can_auto_execute
 
 AUTO_ACTION_ORDER = {
     "project_workspace_create": 10,
+    "project_local_code_v1": 15,
     "clipboard_set_prompt": 20,
     "cursor_open_project": 30,
     "git_initial_commit": 40,
@@ -21,6 +22,9 @@ def _auto_enabled_for(action: EvaAction) -> tuple[bool, str]:
 
     if action.action_type == "clipboard_set_prompt":
         return settings.eva_project_factory_auto_copy_prompt, "auto_copy_prompt desactive"
+
+    if action.action_type == "project_local_code_v1":
+        return True, "local_v1 toujours actif dans Project Factory"
 
     if action.action_type == "cursor_open_project":
         return settings.eva_project_factory_auto_open_cursor, "auto_open_cursor desactive"
@@ -110,6 +114,7 @@ def project_factory_auto_status() -> dict[str, object]:
         "auto_execute": settings.eva_project_factory_auto_execute,
         "auto_copy_prompt": settings.eva_project_factory_auto_copy_prompt,
         "auto_open_cursor": settings.eva_project_factory_auto_open_cursor,
+        "auto_local_v1": True,
         "auto_commit": settings.eva_project_factory_auto_commit,
         "auto_github": settings.eva_project_factory_auto_github,
         "auto_push": settings.eva_project_factory_auto_push,
