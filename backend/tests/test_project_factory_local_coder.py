@@ -4,8 +4,10 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from app.agents.intent_router import classify_user_intent
 from app.project_factory.agent_runner import audit_project_workspace
 from app.project_factory.local_coder import generate_local_v1
+from app.project_factory.planner import infer_project_name
 
 
 def _plan(workspace: Path) -> dict[str, object]:
@@ -79,8 +81,27 @@ def test_local_coder_replaces_eva_scaffold_readme_without_force() -> None:
         assert "V1 codee localement" in readme.read_text(encoding="utf-8")
 
 
+def test_project_factory_infers_useful_names_from_natural_ideas() -> None:
+    cases = {
+        "j'ai une nouvelle idee de projet, une app qui analyse mes onboardings SaaS et donne un score UX": "App Analyse Onboardings SaaS Score",
+        "nouvelle idée de projet: dashboard F1 pour prédire les resultats avec du machine learning": "Dashboard F1 Predire Resultats Machine",
+        "crée un projet pour gérer les prospects DreamLense et les relances LinkedIn": "Gerer Prospects DreamLense Relances LinkedIn",
+        "je veux lancer un projet de plateforme de reservation pour coachs sportifs": "Plateforme Reservation Coachs Sportifs",
+    }
+
+    for prompt, expected in cases.items():
+        assert infer_project_name(prompt) == expected
+
+
+def test_cursor_agent_setup_is_not_project_factory() -> None:
+    intent = classify_user_intent("installe cursor agent pour tous les projets")
+    assert intent.name == "cursor_agent_setup"
+
+
 if __name__ == "__main__":
     test_local_coder_generates_runnable_web_v1()
     test_local_coder_does_not_overwrite_without_force()
     test_local_coder_replaces_eva_scaffold_readme_without_force()
+    test_project_factory_infers_useful_names_from_natural_ideas()
+    test_cursor_agent_setup_is_not_project_factory()
     print("project factory local coder OK")

@@ -29,65 +29,187 @@ def _slugify(value: str) -> str:
 
 
 def _normalize_project_text(value: str) -> str:
-    return "".join(
+    normalized = "".join(
         char
         for char in unicodedata.normalize("NFKD", value)
         if not unicodedata.combining(char)
     )
+    return normalized.replace("\u2019", "'").replace("\u2018", "'").replace("`", "'")
+
+
+PROJECT_NAME_STOPWORDS = {
+    "a",
+    "afin",
+    "ai",
+    "avec",
+    "besoin",
+    "c",
+    "ca",
+    "ce",
+    "ces",
+    "comme",
+    "dans",
+    "de",
+    "des",
+    "du",
+    "elle",
+    "en",
+    "et",
+    "eva",
+    "faire",
+    "fais",
+    "fait",
+    "fasse",
+    "il",
+    "j",
+    "je",
+    "la",
+    "le",
+    "les",
+    "ma",
+    "me",
+    "mes",
+    "mon",
+    "nouveau",
+    "nouvelle",
+    "ou",
+    "pour",
+    "projet",
+    "qu",
+    "que",
+    "qui",
+    "se",
+    "si",
+    "sur",
+    "tu",
+    "un",
+    "une",
+    "va",
+    "veux",
+}
+
+
+PROJECT_NAME_VERBS = {
+    "ajoute",
+    "ameliorer",
+    "code",
+    "coder",
+    "commence",
+    "cree",
+    "creer",
+    "demarre",
+    "developpe",
+    "developper",
+    "donne",
+    "genere",
+    "installe",
+    "lance",
+    "monte",
+    "ouvrir",
+    "prepare",
+    "push",
+    "pousse",
+}
+
+
+PROJECT_NAME_CANONICAL = {
+    "ai": "AI",
+    "api": "API",
+    "crm": "CRM",
+    "dreamlense": "DreamLense",
+    "f1": "F1",
+    "ia": "IA",
+    "linkedin": "LinkedIn",
+    "ml": "ML",
+    "saas": "SaaS",
+    "seo": "SEO",
+    "ux": "UX",
+}
+
+
+def _display_project_word(word: str) -> str:
+    cleaned = word.strip("_- ")
+    canonical = PROJECT_NAME_CANONICAL.get(cleaned.lower())
+    if canonical:
+        return canonical
+    if cleaned.isupper():
+        return cleaned
+    return cleaned[:1].upper() + cleaned[1:].lower()
+
+
+def _project_subject_text(idea: str) -> str:
+    normalized = _normalize_project_text(idea).lower()
+    normalized = re.sub(r"[^a-z0-9+#._'\-\s]+", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+
+    markers = (
+        "nouvelle idee de projet",
+        "idee de projet",
+        "j ai une nouvelle idee",
+        "jai une nouvelle idee",
+        "j ai une idee",
+        "jai une idee",
+        "cree un projet",
+        "creer un projet",
+        "lance un projet",
+        "demarre un projet",
+        "prepare un projet",
+        "nouveau projet",
+        "projet",
+    )
+    subject = normalized
+    for marker in markers:
+        index = normalized.find(marker)
+        if index >= 0:
+            candidate = normalized[index + len(marker) :].strip()
+            if len(candidate) >= 8:
+                subject = candidate
+                break
+
+    subject = re.sub(
+        r"^(pour|de|d|du|des|une|un|le|la|les|a|afin de|qui|permet de|permettrait de)\s+",
+        "",
+        subject,
+    ).strip()
+    return subject or normalized
 
 
 def infer_project_name(idea: str) -> str:
     normalized_idea = _normalize_project_text(idea)
     patterns = (
-        r"(?:idee|idée|idÃ©e)\s+de\s+projet\s*:\s*(?P<name>[A-Za-z0-9 _-]{3,60})",
-        r"(?:nomme|nommé|appelle|appelé|projet)\s+(?P<name>[A-Za-z0-9 _-]{3,60})",
-        r"(?:idee|idée|projet)\s*:\s*(?P<name>[A-Za-z0-9 _-]{3,60})",
+        r"(?:idee)\s+de\s+projet\s*:\s*(?P<name>[A-Za-z0-9 _-]{3,60})",
+        r"(?:nomme|nommee|appelle|appelee)\s+(?P<name>[A-Za-z0-9 _-]{3,60})",
+        r"(?:idee|projet)\s*:\s*(?P<name>[A-Za-z0-9 _-]{3,60})",
     )
     for pattern in patterns:
         match = re.search(pattern, normalized_idea, flags=re.IGNORECASE)
         if match:
-            return _safe_project_name(match.group("name"))
+            explicit = _safe_project_name(match.group("name"))
+            if len(explicit.split()) <= 6:
+                return explicit
 
-    words = re.findall(r"[A-Za-z0-9]+", normalized_idea)
+    subject = _project_subject_text(idea)
+    words = re.findall(r"[A-Za-z0-9+#]+", subject)
     if not words:
         return "Nouveau Projet"
-    ignored = {
-        "eva",
-        "cree",
-        "crée",
-        "faire",
-        "nouveau",
-        "nouvelle",
-        "projet",
-        "idee",
-        "idée",
-        "j",
-        "ai",
-        "jai",
-        "de",
-        "du",
-        "des",
-        "pour",
-        "sur",
-        "mon",
-        "ma",
-        "mes",
-        "ton",
-        "ta",
-        "tes",
-        "lance",
-        "demarre",
-        "prepare",
-        "idée",
-        "une",
-        "un",
-        "app",
-        "application",
-        "site",
-        "web",
-    }
-    useful = [word for word in words if word.lower() not in ignored]
-    return _safe_project_name(" ".join(useful[:4]) or "Nouveau Projet")
+
+    useful = [
+        word
+        for word in words
+        if word.lower() not in PROJECT_NAME_STOPWORDS
+        and word.lower() not in PROJECT_NAME_VERBS
+        and len(word) > 1
+    ]
+    if len(useful) < 2:
+        useful = [
+            word
+            for word in words
+            if word.lower() not in PROJECT_NAME_STOPWORDS
+            and len(word) > 1
+        ]
+
+    name_words = [_display_project_word(word) for word in useful[:5]]
+    return _safe_project_name(" ".join(name_words) or "Nouveau Projet")
 
 
 def infer_stack(idea: str) -> dict[str, str]:

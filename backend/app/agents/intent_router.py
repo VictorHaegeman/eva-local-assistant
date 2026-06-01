@@ -138,6 +138,24 @@ def has_news_context(text: str) -> bool:
 
 
 def _looks_like_new_project_request(text: str) -> bool:
+    if _has_any(text, ("cursor-agent", "cursor agent", "agent cursor", "cursor cli")) and _has_any(
+        text,
+        (
+            "installe",
+            "installer",
+            "install",
+            "setup",
+            "configure",
+            "configurer",
+            "active",
+            "activer",
+            "mettre en place",
+            "pour tous les projets",
+            "tous les projets",
+        ),
+    ):
+        return False
+
     if _has_any(
         text,
         (

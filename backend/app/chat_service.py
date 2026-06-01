@@ -191,6 +191,9 @@ def _should_attach_project_context(message: str) -> bool:
 
 
 def _should_create_project_factory_plan(message: str) -> bool:
+    if wants_cursor_agent_setup(message):
+        return False
+
     normalized = "".join(
         char
         for char in unicodedata.normalize("NFKD", message.lower())

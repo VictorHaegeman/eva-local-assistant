@@ -98,6 +98,86 @@ def _git_current_branch(cwd: Path) -> str:
     return branch or "main"
 
 
+def _ensure_main_branch(cwd: Path) -> str:
+    completed = subprocess.run(
+        ["git", "branch", "--show-current"],
+        cwd=str(cwd),
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    if completed.returncode != 0 or not completed.stdout.strip():
+        return ""
+
+    rename = subprocess.run(
+        ["git", "branch", "-M", "main"],
+        cwd=str(cwd),
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    if rename.returncode != 0:
+        return (rename.stderr or rename.stdout or "").strip()
+    return "Branche Git active: main"
+
+
+def _gh_current_login(gh: str) -> str:
+    completed = subprocess.run(
+        [gh, "api", "user", "--jq", ".login"],
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    if completed.returncode != 0:
+        return ""
+    return completed.stdout.strip()
+
+
+def _repo_exists(gh: str, full_name: str) -> bool:
+    completed = subprocess.run(
+        [gh, "repo", "view", full_name, "--json", "name"],
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+    return completed.returncode == 0
+
+
+def _ensure_origin_remote(workspace: Path, remote_url: str) -> str:
+    remote = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        cwd=str(workspace),
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    if remote.returncode == 0:
+        current = remote.stdout.strip()
+        if current == remote_url:
+            return f"Remote origin deja configure: {remote_url}"
+        update = subprocess.run(
+            ["git", "remote", "set-url", "origin", remote_url],
+            cwd=str(workspace),
+            text=True,
+            capture_output=True,
+            timeout=20,
+        )
+        if update.returncode != 0:
+            raise ProjectFactoryExecutionError(update.stderr or "Impossible de mettre a jour origin.")
+        return f"Remote origin mis a jour: {remote_url}"
+
+    add = subprocess.run(
+        ["git", "remote", "add", "origin", remote_url],
+        cwd=str(workspace),
+        text=True,
+        capture_output=True,
+        timeout=20,
+    )
+    if add.returncode != 0:
+        raise ProjectFactoryExecutionError(add.stderr or "Impossible d'ajouter origin.")
+    return f"Remote origin ajoute: {remote_url}"
+
+
 def execute_project_workspace_create(action: EvaAction) -> str:
     payload = action.payload
     workspace = _resolve_workspace(str(payload.get("workspace_path", "")))
@@ -188,6 +268,9 @@ def execute_git_initial_commit(action: EvaAction) -> str:
         timeout=20,
     )
     if not status.stdout.strip():
+        branch_result = _ensure_main_branch(workspace)
+        if branch_result:
+            outputs.append(branch_result)
         return "Aucun changement a commit.\n" + "\n\n".join(outputs)
 
     completed = subprocess.run(
@@ -204,6 +287,10 @@ def execute_git_initial_commit(action: EvaAction) -> str:
         outputs.append(completed.stderr[-4000:])
     if completed.returncode != 0:
         raise ProjectFactoryExecutionError("\n".join(outputs))
+
+    branch_result = _ensure_main_branch(workspace)
+    if branch_result:
+        outputs.append(branch_result)
 
     return "\n".join(outputs)
 
@@ -238,6 +325,18 @@ def execute_github_repo_create(action: EvaAction) -> str:
     if auth.returncode != 0:
         raise ProjectFactoryExecutionError("GitHub CLI n'est pas connecte. Lance: gh auth login")
 
+    owner = _gh_current_login(gh)
+    full_name = f"{owner}/{repo_name}" if owner else repo_name
+    remote_url = f"https://github.com/{full_name}.git"
+    if _repo_exists(gh, full_name):
+        remote_result = _ensure_origin_remote(workspace, remote_url)
+        return "\n".join(
+            [
+                f"Repo GitHub deja existant: {full_name}",
+                remote_result,
+            ]
+        )
+
     command = [
         gh,
         "repo",
@@ -256,6 +355,16 @@ def execute_github_repo_create(action: EvaAction) -> str:
     if completed.stderr:
         output.append(completed.stderr[-8000:])
     if completed.returncode != 0:
+        failure_text = "\n".join(output)
+        if "already exists" in failure_text.lower() or "name already exists" in failure_text.lower():
+            remote_result = _ensure_origin_remote(workspace, remote_url)
+            return "\n".join(
+                [
+                    f"Repo GitHub deja existant: {full_name}",
+                    remote_result,
+                    failure_text,
+                ]
+            )
         raise ProjectFactoryExecutionError("\n".join(output))
     return "\n".join(["Repo GitHub cree via gh CLI.", *output])
 
