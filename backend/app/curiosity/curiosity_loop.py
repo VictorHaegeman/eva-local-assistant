@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -34,12 +35,25 @@ class CuriosityItem:
     tags: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class CuriosityTopic:
+    title: str
+    language: str
+    category: str
+    priority: int
+    reason: str
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
 CURIOUS_SOURCES_PATH = DATA_DIR / "eva_curiosity_sources.json"
 CURIOUS_SOURCES_EXAMPLE_PATH = DATA_DIR / "eva_curiosity_sources.example.json"
 CURIOUS_STATE_PATH = DATA_DIR / "eva_curiosity_state.json"
 CURIOUS_DB_PATH = DATA_DIR / "eva_curiosity.sqlite"
+WIKIMEDIA_USER_AGENT = (
+    "EvaLocalAssistant/1.0 "
+    "(https://github.com/VictorHaegeman/eva-local-assistant; local personal assistant)"
+)
 
 DEFAULT_FOCUS = (
     "IA",
@@ -50,6 +64,65 @@ DEFAULT_FOCUS = (
     "LinkedIn",
     "productivite",
     "machine learning",
+)
+
+DEFAULT_WIKIPEDIA_TOPICS: tuple[CuriosityTopic, ...] = (
+    CuriosityTopic(
+        title="Artificial intelligence",
+        language="en",
+        category="ai",
+        priority=30,
+        reason="socle general IA",
+    ),
+    CuriosityTopic(
+        title="Large language model",
+        language="en",
+        category="ai",
+        priority=32,
+        reason="cerveau local et agents",
+    ),
+    CuriosityTopic(
+        title="Autonomous agent",
+        language="en",
+        category="agents",
+        priority=34,
+        reason="autonomie Eva",
+    ),
+    CuriosityTopic(
+        title="Retrieval-augmented generation",
+        language="en",
+        category="memory",
+        priority=36,
+        reason="memoire vectorielle Eva",
+    ),
+    CuriosityTopic(
+        title="Machine learning",
+        language="en",
+        category="machine_learning",
+        priority=30,
+        reason="apprentissage local",
+    ),
+    CuriosityTopic(
+        title="Reinforcement learning",
+        language="en",
+        category="machine_learning",
+        priority=34,
+        reason="bonus/malus Eva",
+    ),
+    CuriosityTopic(
+        title="Cluster analysis",
+        language="en",
+        category="machine_learning",
+        priority=28,
+        reason="clusters memoire",
+    ),
+    CuriosityTopic(
+        title="Productivity",
+        language="en",
+        category="productivity",
+        priority=22,
+        reason="assistant personnel",
+    ),
 )
 
 KEYWORD_WEIGHTS = {
@@ -179,6 +252,48 @@ def _focus_terms(config: dict[str, Any]) -> list[str]:
     return focus or list(DEFAULT_FOCUS)
 
 
+def _int_from_config(payload: dict[str, Any], key: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(payload.get(key, default))
+    except (TypeError, ValueError):
+        value = default
+    return min(max(value, minimum), maximum)
+
+
+def _topic_from_config(payload: Any) -> CuriosityTopic | None:
+    if isinstance(payload, str):
+        title = payload.strip()
+        return CuriosityTopic(title=title, language="en", category="wikipedia", priority=18, reason="topic manuel") if title else None
+    if not isinstance(payload, dict):
+        return None
+
+    title = str(payload.get("title", "")).strip()
+    if not title:
+        return None
+    language = str(payload.get("language", "en")).strip() or "en"
+    category = str(payload.get("category", "wikipedia")).strip() or "wikipedia"
+    reason = str(payload.get("reason", "topic configure")).strip() or "topic configure"
+    priority = _int_from_config(payload, "priority", 22, 0, 100)
+    return CuriosityTopic(
+        title=title,
+        language=language,
+        category=category,
+        priority=priority,
+        reason=reason,
+    )
+
+
+def _configured_wikipedia_topics(config: dict[str, Any]) -> list[CuriosityTopic]:
+    wikipedia = config.get("wikipedia", {})
+    if not isinstance(wikipedia, dict):
+        return list(DEFAULT_WIKIPEDIA_TOPICS)
+    raw_topics = wikipedia.get("topics", [])
+    if not isinstance(raw_topics, list):
+        return list(DEFAULT_WIKIPEDIA_TOPICS)
+    topics = [topic for topic in (_topic_from_config(item) for item in raw_topics) if topic]
+    return topics or list(DEFAULT_WIKIPEDIA_TOPICS)
+
+
 def _score_item(title: str, excerpt: str, category: str, focus: list[str]) -> tuple[int, tuple[str, ...]]:
     haystack = _normalize(f"{category} {title} {excerpt}")
     score = 0
@@ -192,6 +307,16 @@ def _score_item(title: str, excerpt: str, category: str, focus: list[str]) -> tu
             score += 3
             tags.append(term)
     return min(score, 100), tuple(dict.fromkeys(tags[:8]))
+
+
+def _passes_quality_gate(item: CuriosityItem, min_score: int) -> bool:
+    if item.score < min_score:
+        return False
+    if len(item.excerpt.strip()) < 120:
+        return False
+    if _already_seen(item.url, item.title):
+        return False
+    return True
 
 
 def _already_seen(url: str, title: str) -> bool:
@@ -237,7 +362,7 @@ async def _fetch_wikipedia_items(config: dict[str, Any], focus: list[str]) -> li
             try:
                 response = await client.get(
                     url,
-                    headers={"User-Agent": "EvaLocalAssistant/1.0 curiosity loop"},
+                    headers={"User-Agent": WIKIMEDIA_USER_AGENT},
                 )
                 response.raise_for_status()
                 payload = response.json()
@@ -262,6 +387,61 @@ async def _fetch_wikipedia_items(config: dict[str, Any], focus: list[str]) -> li
                 )
             )
     return items
+
+
+async def _fetch_wikipedia_targeted_items(
+    config: dict[str, Any],
+    focus: list[str],
+    state: dict[str, Any],
+) -> tuple[list[CuriosityItem], int]:
+    wikipedia = config.get("wikipedia", {})
+    if not isinstance(wikipedia, dict) or not bool(wikipedia.get("enabled", True)):
+        return [], int(state.get("wikipedia_topic_offset") or 0)
+
+    topics = _configured_wikipedia_topics(config)
+    pages_per_run = _int_from_config(wikipedia, "targeted_pages_per_run", 4, 0, 12)
+    if not topics or pages_per_run <= 0:
+        return [], int(state.get("wikipedia_topic_offset") or 0)
+
+    current_offset = int(state.get("wikipedia_topic_offset") or 0)
+    selected_topics = [topics[(current_offset + index) % len(topics)] for index in range(min(pages_per_run, len(topics)))]
+    next_offset = (current_offset + len(selected_topics)) % len(topics)
+
+    items: list[CuriosityItem] = []
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+        for topic in selected_topics:
+            title_slug = quote(topic.title.replace(" ", "_"), safe="")
+            url = f"https://{topic.language}.wikipedia.org/api/rest_v1/page/summary/{title_slug}"
+            try:
+                response = await client.get(
+                    url,
+                    headers={"User-Agent": WIKIMEDIA_USER_AGENT},
+                )
+                response.raise_for_status()
+                payload = response.json()
+            except (httpx.HTTPError, ValueError):
+                continue
+
+            title = _strip_text(str(payload.get("title", topic.title)))
+            excerpt = _strip_text(str(payload.get("extract", "")))[:1400]
+            page_url = str(payload.get("content_urls", {}).get("desktop", {}).get("page", "")).strip()
+            if not title or not page_url or _already_seen(page_url, title):
+                continue
+
+            base_score, tags = _score_item(title, excerpt, topic.category, focus)
+            tags = tuple(list(dict.fromkeys((*tags, topic.category, "self-study")))[:10])
+            items.append(
+                CuriosityItem(
+                    source="Wikipedia self-study",
+                    category=topic.category,
+                    title=title,
+                    url=page_url,
+                    excerpt=f"{excerpt}\n\nPourquoi Eva lit ce sujet: {topic.reason}",
+                    score=min(base_score + topic.priority, 100),
+                    tags=tags,
+                )
+            )
+    return items, next_offset
 
 
 async def _fetch_rss_curiosity_items(config: dict[str, Any], focus: list[str]) -> list[CuriosityItem]:
@@ -398,12 +578,15 @@ async def run_curiosity_once(force: bool = False) -> dict[str, Any]:
 
     config = load_curiosity_config()
     focus = _focus_terms(config)
-    rss_items, wiki_items = await asyncio.gather(
+    state = _load_state()
+    rss_items, wiki_items, targeted_result = await asyncio.gather(
         _fetch_rss_curiosity_items(config, focus),
         _fetch_wikipedia_items(config, focus),
+        _fetch_wikipedia_targeted_items(config, focus, state),
     )
+    targeted_items, next_wikipedia_offset = targeted_result
     candidates = sorted(
-        [*rss_items, *wiki_items],
+        [*targeted_items, *rss_items, *wiki_items],
         key=lambda item: item.score,
         reverse=True,
     )
@@ -411,7 +594,7 @@ async def run_curiosity_once(force: bool = False) -> dict[str, Any]:
     selected = [
         item
         for item in candidates
-        if item.score >= min_score
+        if _passes_quality_gate(item, min_score)
     ][: max(1, settings.eva_curiosity_max_items_per_run)]
 
     learned: list[dict[str, Any]] = []
@@ -460,9 +643,14 @@ async def run_curiosity_once(force: bool = False) -> dict[str, Any]:
             errors.append(str(exc))
 
     state = {
+        **state,
+        "wikipedia_topic_offset": next_wikipedia_offset,
         "last_run_at": datetime.now(UTC).isoformat(),
         "last_result": {
             "candidates": len(candidates),
+            "targeted_candidates": len(targeted_items),
+            "rss_candidates": len(rss_items),
+            "random_wikipedia_candidates": len(wiki_items),
             "learned": len(learned),
             "report_path": report_path,
             "errors": errors,
@@ -474,6 +662,9 @@ async def run_curiosity_once(force: bool = False) -> dict[str, Any]:
         "enabled": settings.eva_curiosity_enabled,
         "ran": True,
         "candidates": len(candidates),
+        "targeted_candidates": len(targeted_items),
+        "rss_candidates": len(rss_items),
+        "random_wikipedia_candidates": len(wiki_items),
         "learned": learned,
         "errors": errors,
         "report_path": report_path,
@@ -536,6 +727,16 @@ def curiosity_status(limit: int = 20) -> dict[str, Any]:
         "db_path": str(CURIOUS_DB_PATH),
         "focus": _focus_terms(config),
         "rules": config.get("rules", []),
+        "wikipedia_topics": [
+            {
+                "title": topic.title,
+                "language": topic.language,
+                "category": topic.category,
+                "priority": topic.priority,
+                "reason": topic.reason,
+            }
+            for topic in _configured_wikipedia_topics(config)
+        ],
         "total_items": int(total["count"]) if total else 0,
         "state": state,
         "recent": list_curiosity_items(limit=limit),

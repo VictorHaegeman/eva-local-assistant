@@ -1135,6 +1135,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     const recent = data?.recent || [];
     const rules = Array.isArray(data?.rules) ? data.rules : [];
     const focus = Array.isArray(data?.focus) ? data.focus : [];
+    const wikipediaTopics = Array.isArray(data?.wikipedia_topics) ? data.wikipedia_topics : [];
     const lastResult = data?.state?.last_result || {};
     const lastRunAt = data?.state?.last_run_at || "";
 
@@ -1160,6 +1161,8 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           </p>
           <Field label="Dernier passage" value={lastRunAt ? new Date(lastRunAt).toLocaleString() : "jamais"} />
           <Field label="Candidats dernier passage" value={lastResult.candidates ?? 0} />
+          <Field label="Self-study Wikipedia" value={lastResult.targeted_candidates ?? 0} />
+          <Field label="RSS / veille" value={lastResult.rss_candidates ?? 0} />
           <Field label="Apprentissages dernier passage" value={lastResult.learned ?? 0} />
           <Field label="Rapport Obsidian" value={lastResult.report_path ? "cree" : "aucun"} />
           <div className="panel-actions">
@@ -1172,6 +1175,23 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               <BookOpen size={15} aria-hidden="true" />
               {runningJob === "curiosity_run" ? "Lecture..." : "Lire maintenant"}
             </button>
+          </div>
+        </section>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Curriculum self-study</h3>
+            <StatusPill tone={wikipediaTopics.length ? "ok" : "neutral"}>{wikipediaTopics.length} sujets</StatusPill>
+          </div>
+          <div className="panel-list compact">
+            {wikipediaTopics.slice(0, 8).map((topic) => (
+              <div key={`${topic.language}-${topic.title}`} className="panel-row muted-row">
+                <div>
+                  <strong>{topic.title}</strong>
+                  <span>{topic.reason}</span>
+                </div>
+                <StatusPill tone="ok">{topic.category}</StatusPill>
+              </div>
+            ))}
           </div>
         </section>
         <section className="panel-card">

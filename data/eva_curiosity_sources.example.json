@@ -19,7 +19,66 @@
   "wikipedia": {
     "enabled": true,
     "languages": ["fr", "en"],
-    "pages_per_run": 2
+    "pages_per_run": 1,
+    "targeted_pages_per_run": 4,
+    "topics": [
+      {
+        "title": "Artificial intelligence",
+        "language": "en",
+        "category": "ai",
+        "priority": 30,
+        "reason": "socle general IA"
+      },
+      {
+        "title": "Large language model",
+        "language": "en",
+        "category": "ai",
+        "priority": 32,
+        "reason": "cerveau local et agents"
+      },
+      {
+        "title": "Autonomous agent",
+        "language": "en",
+        "category": "agents",
+        "priority": 34,
+        "reason": "autonomie Eva"
+      },
+      {
+        "title": "Retrieval-augmented generation",
+        "language": "en",
+        "category": "memory",
+        "priority": 36,
+        "reason": "memoire vectorielle Eva"
+      },
+      {
+        "title": "Machine learning",
+        "language": "en",
+        "category": "machine_learning",
+        "priority": 30,
+        "reason": "apprentissage local"
+      },
+      {
+        "title": "Reinforcement learning",
+        "language": "en",
+        "category": "machine_learning",
+        "priority": 34,
+        "reason": "bonus/malus Eva"
+      },
+      {
+        "title": "Cluster analysis",
+        "language": "en",
+        "category": "machine_learning",
+        "priority": 28,
+        "reason": "clusters memoire"
+      },
+      {
+        "title": "Productivity",
+        "language": "en",
+        "category": "productivity",
+        "priority": 22,
+        "reason": "assistant personnel"
+      }
+    ]
   },
   "rss": {
     "reuse_eva_sources": true

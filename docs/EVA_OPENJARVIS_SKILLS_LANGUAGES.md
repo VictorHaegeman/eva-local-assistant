@@ -35,6 +35,7 @@ Implementation ajoutee dans Eva:
 - panneau Memoire: statut de la memoire vectorielle locale et bouton de reconstruction des embeddings.
 - `backend/app/screen/screen_navigator.py`: boucle locale inspiree des outils agentiques `observe -> action -> verify`, avec ouverture URL, clic visuel, raccourci et collage;
 - `POST /screen/navigate`: endpoint local pour tester une navigation ecran complete sans donner de coordonnees manuelles.
+- `backend/app/curiosity/curiosity_loop.py`: boucle autonome de self-study public, avec RSS + Wikipedia cible, scoring, memoire SQLite, Obsidian et embeddings.
 
 Les skills Eva importantes maintenant:
 
@@ -134,6 +135,23 @@ message -> comprehension deterministe -> memoire hybride -> skills candidates
 ```
 
 Ce n'est pas une API cloud. Si un modele manque, Eva doit rester capable de fonctionner en mode degrade: FTS/BM25 + routeur deterministe + outils locaux.
+
+## Curiosity h24 controlee
+
+Eva peut tourner sans prompt avec une boucle d'apprentissage locale:
+
+```text
+veille RSS + curriculum Wikipedia
+  -> score selon Victor
+  -> insight court
+  -> memoire locale
+  -> note Obsidian
+  -> embeddings
+```
+
+Le self-study est volontairement cible: IA, LLM, agents, RAG, ML, reinforcement learning, clustering et productivite. Twitter/X n'est pas lu directement en V1; il faut privilegier RSS, newsletters et notifications via Gmail autorise.
+
+Doc d'audit: `docs/EVA_AUTONOMOUS_CURIOSITY_AUDIT.md`.
 
 ## Navigation ecran locale
 
