@@ -8,6 +8,7 @@ from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.cognition.cognitive_loop import build_reasoning_trace, run_cognitive_loop
 from app.cognition.context import attach_cognitive_context, build_cognitive_context, format_cognitive_context
+from app.cognition.ml_adaptation import build_ml_adaptation_context
 from app.cognition.problem_solver import (
     build_direct_problem_solver_response,
     build_passive_refusal_recovery,
@@ -410,6 +411,7 @@ async def process_chat_messages(
         format_cognitive_context(cognitive_context),
         format_understanding_context(understanding),
         format_action_plan_context(action_plan),
+        build_ml_adaptation_context(latest_user_message, understanding),
     ]
 
     if understanding.clarification_question and understanding.safety_level in {"external_draft", "critical"}:

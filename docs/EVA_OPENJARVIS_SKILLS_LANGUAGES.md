@@ -260,6 +260,50 @@ But: Eva ne "s'entraine" pas comme un modele ML complet. Elle transforme les cou
 - training process et cross-validation renforcent la boucle essai -> preuve -> critique -> correction;
 - supervised learning sert de modele mental pour utiliser le feedback de Victor comme labels locaux.
 
+## Adaptation ML branchee dans la boucle cognitive
+
+Nouvelle couche operationnelle:
+
+```text
+message Victor
+  -> comprehension deterministe
+  -> memoire + skills
+  -> adaptation ML locale
+       - KNN: retrouve les cas resolver proches
+       - metrics: score les routes avec rewards/penalites
+       - cross-validation: reordonne les routes candidates
+       - training loop: reinjecte les erreurs de l'operator journal
+  -> boucle cognitive
+  -> outil local
+  -> preuve / critique / reward
+```
+
+Fichier:
+
+```text
+backend/app/cognition/ml_adaptation.py
+```
+
+Endpoint local:
+
+```text
+GET /learning/ml-adaptation/status
+```
+
+Ce que ca change concretement:
+
+- une demande Gmail privee penalise fortement `web_search`;
+- une route qui a deja recu des malus descend dans le classement;
+- une route proche d'un cas resolver resolu remonte;
+- les cours ML ne sont pas seulement consultables dans Obsidian, ils guident le choix des actions.
+
+Variables:
+
+```text
+EVA_ML_ADAPTATION_ENABLED=true
+EVA_ML_ADAPTATION_SIMILAR_CASES=4
+```
+
 Endpoints:
 
 ```text

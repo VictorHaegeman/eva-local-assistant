@@ -3,6 +3,7 @@ from typing import Any
 
 from app.agents.understanding import UnderstandingFrame
 from app.cognition.critic import critic_report_to_dict, criticize_response
+from app.cognition.ml_adaptation import rank_routes_with_ml_policy
 from app.cognition.problem_solver import (
     build_problem_solver_response,
     diagnose_problem,
@@ -288,7 +289,12 @@ def _route_sequence(route: str, understanding: UnderstandingFrame) -> list[str]:
         if candidate not in unique_routes:
             unique_routes.append(candidate)
 
-    return unique_routes[:_max_reasoning_attempts()]
+    ranked_routes = rank_routes_with_ml_policy(
+        unique_routes,
+        understanding,
+        understanding.raw_message,
+    )
+    return ranked_routes[:_max_reasoning_attempts()]
 
 
 def _route_options(

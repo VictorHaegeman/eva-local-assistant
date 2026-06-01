@@ -575,6 +575,8 @@ EVA_REINFORCEMENT_ENABLED=true
 EVA_REINFORCEMENT_SWITCH_THRESHOLD=0.35
 EVA_REINFORCEMENT_MIN_ATTEMPTS=3
 EVA_REINFORCEMENT_EXPLORATION_BONUS=0.16
+EVA_ML_ADAPTATION_ENABLED=true
+EVA_ML_ADAPTATION_SIMILAR_CASES=4
 ```
 
 Routes utiles:
@@ -583,9 +585,17 @@ Routes utiles:
 GET /reinforcement/status
 GET /reinforcement/events
 POST /reinforcement/feedback
+GET /learning/ml-adaptation/status
 ```
 
 Le panneau `Rewards` affiche les routes qui marchent, les penalites recentes et les etats appris. C'est le debut d'un systeme de penalite/recompense exploitable par la memoire Obsidian et la boucle cognitive.
+
+Les cours Machine Learning alimentent maintenant une couche d'adaptation locale en plus du reward store:
+
+- KNN: Eva compare la demande aux cas proches du resolver;
+- metrics: elle score les routes avec reward moyen, penalites et nombre d'essais;
+- cross-validation: elle reordonne les routes candidates avant execution;
+- training process: elle reinjecte les corrections de Victor dans la politique locale.
 
 ## Couche de comprehension
 
@@ -2043,6 +2053,7 @@ GET /memory/knowledge/status
 POST /memory/knowledge/import
 GET /memory/learning/status
 POST /memory/learning/consolidate
+GET /learning/ml-adaptation/status
 ```
 
 Eva ne devient pas plus intelligente par entrainement du modele local. Elle apprend au sens assistant personnel: elle conserve des informations non sensibles, les reinjecte dans le contexte Ollama, et les miroir dans Obsidian pour que Victor puisse les relire, corriger ou enrichir.

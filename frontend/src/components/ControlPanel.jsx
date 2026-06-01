@@ -44,6 +44,7 @@ import {
   getMemories,
   getMemoryEmbeddingStatus,
   getMemoryLearningStatus,
+  getMlAdaptationStatus,
   getObsidianMemoryStatus,
   getProjects,
   getReinforcementStatus,
@@ -289,14 +290,15 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
 
   async function fetchPanelData(panelName) {
     if (panelName === "memory") {
-      const [memory, obsidian, embeddings, learning, knowledge] = await Promise.all([
+      const [memory, obsidian, embeddings, learning, knowledge, mlAdaptation] = await Promise.all([
         getMemories(),
         getObsidianMemoryStatus(),
         getMemoryEmbeddingStatus(),
         getMemoryLearningStatus(),
         getKnowledgeStatus(),
+        getMlAdaptationStatus(40),
       ]);
-      return { ...memory, obsidian, embeddings, learning, knowledge };
+      return { ...memory, obsidian, embeddings, learning, knowledge, mlAdaptation };
     }
     if (panelName === "chats") return getChatHistory();
     if (panelName === "tools") {
@@ -651,6 +653,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     const embeddings = data?.embeddings || {};
     const learning = data?.learning || {};
     const knowledge = data?.knowledge || {};
+    const mlAdaptation = data?.mlAdaptation || {};
     const embeddingCount = embeddings.embedding_count || 0;
     const memoryCount = embeddings.memory_count ?? memories.length;
 
@@ -673,6 +676,11 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
             label="PDF ML"
             value={knowledge.pdf_count || 0}
             tone={knowledge.pdf_count ? "ok" : "neutral"}
+          />
+          <Metric
+            label="policy ML"
+            value={mlAdaptation.enabled ? "active" : "off"}
+            tone={mlAdaptation.enabled ? "ok" : "warning"}
           />
         </div>
         {jobResult && <div className="panel-success">{jobResult}</div>}
@@ -740,6 +748,35 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               {runningJob === "knowledge_import" ? "Import ML..." : "Importer PDFs ML"}
             </button>
           </div>
+        </section>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Adaptation ML en production</h3>
+            <StatusPill tone={mlAdaptation.enabled ? "ok" : "warning"}>
+              {mlAdaptation.enabled ? "branchee" : "off"}
+            </StatusPill>
+          </div>
+          <p>
+            Eva applique les cours ML dans sa boucle: cas proches, scores de routes,
+            penalites, cross-validation et preuve locale avant reponse.
+          </p>
+          <Field label="Souvenirs ML" value={mlAdaptation.knowledge_memories || 0} />
+          <Field label="Routes recompensees" value={mlAdaptation.rewarded_routes || 0} />
+          <Field label="Routes penalisees" value={mlAdaptation.penalized_routes || 0} />
+          <Field label="Cas resolver" value={mlAdaptation.problem_cases || 0} />
+          {mlAdaptation.lessons?.length ? (
+            <div className="panel-list compact">
+              {mlAdaptation.lessons.slice(0, 5).map((lesson) => (
+                <div key={lesson.course} className="panel-row">
+                  <div>
+                    <strong>{lesson.course}</strong>
+                    <span>{lesson.adaptation}</span>
+                  </div>
+                  <StatusPill tone="ok">{lesson.status}</StatusPill>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
         <section className="panel-card">
           <div className="panel-card-heading">

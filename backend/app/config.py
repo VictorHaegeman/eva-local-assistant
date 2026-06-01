@@ -166,6 +166,8 @@ class Settings:
         "EVA_REINFORCEMENT_EXPLORATION_BONUS",
         0.16,
     )
+    eva_ml_adaptation_enabled: bool = _env_bool("EVA_ML_ADAPTATION_ENABLED", True)
+    eva_ml_adaptation_similar_cases: int = _env_int("EVA_ML_ADAPTATION_SIMILAR_CASES", 4)
     eva_problem_solver_enabled: bool = _env_bool("EVA_PROBLEM_SOLVER_ENABLED", True)
     eva_problem_solver_max_cycles: int = _env_int("EVA_PROBLEM_SOLVER_MAX_CYCLES", 6)
     eva_job_runner_enabled: bool = _env_bool("EVA_JOB_RUNNER_ENABLED", True)

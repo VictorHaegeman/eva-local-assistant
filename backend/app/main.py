@@ -34,6 +34,7 @@ from app.cognition.problem_store import (
     init_problem_store,
     problem_resolver_status,
 )
+from app.cognition.ml_adaptation import ml_adaptation_status
 from app.cognition.reinforcement_store import (
     ReinforcementStoreError,
     event_to_dict,
@@ -1029,6 +1030,11 @@ async def memory_embeddings_rebuild(request: MemoryEmbeddingRebuildRequest) -> d
 @app.get("/memory/learning/status", dependencies=[Depends(require_sensitive_access)])
 async def memory_learning_status() -> dict[str, object]:
     return learning_status()
+
+
+@app.get("/learning/ml-adaptation/status", dependencies=[Depends(require_sensitive_access)])
+async def learning_ml_adaptation_status(limit: int = Query(default=30, ge=1, le=200)) -> dict[str, object]:
+    return ml_adaptation_status(limit=limit)
 
 
 @app.post("/memory/learning/consolidate", dependencies=[Depends(require_sensitive_access)])

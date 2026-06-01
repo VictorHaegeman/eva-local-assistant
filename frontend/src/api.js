@@ -171,6 +171,11 @@ export async function getMemoryLearningStatus() {
 }
 
 
+export async function getMlAdaptationStatus(limit = 30) {
+  return request(`/learning/ml-adaptation/status?limit=${encodeURIComponent(limit)}`);
+}
+
+
 export async function getKnowledgeStatus() {
   return request("/memory/knowledge/status");
 }
