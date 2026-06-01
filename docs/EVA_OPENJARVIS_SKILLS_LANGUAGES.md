@@ -219,3 +219,51 @@ POST /memory/obsidian/seed
 ```
 
 Par defaut, le seed evite de reconstruire les embeddings dans la meme requete pour ne pas bloquer l'interface si Ollama est lent. Utilise ensuite `Memoire` -> `Reconstruire les embeddings`.
+
+## Ingestion de cours Machine Learning
+
+Nouvelle brique locale:
+
+```text
+PDFs dans docs/
+  -> extraction texte locale avec pypdf
+  -> concepts ML utiles
+  -> notes Obsidian dans 75 - Knowledge/Machine Learning/
+  -> souvenirs SQLite source=knowledge_pdf
+  -> embeddings Ollama apres reconstruction
+  -> routeur memoire plus riche
+```
+
+But: Eva ne "s'entraine" pas comme un modele ML complet. Elle transforme les cours en contexte exploitable:
+
+- KNN inspire la recherche de cas passes similaires;
+- clustering enrichit les clusters de memoire;
+- metrics/evaluation alimente la logique reward/penalty;
+- training process et cross-validation renforcent la boucle essai -> preuve -> critique -> correction;
+- supervised learning sert de modele mental pour utiliser le feedback de Victor comme labels locaux.
+
+Endpoints:
+
+```text
+GET /memory/knowledge/status
+POST /memory/knowledge/import
+```
+
+L'import remplace les notes gerees par Eva dans `75 - Knowledge/Machine Learning/` et les souvenirs `source=knowledge_pdf`, ce qui evite d'accumuler des doublons quand Victor ajoute ou corrige des PDFs.
+
+Payload conseille:
+
+```json
+{
+  "source_dir": "docs",
+  "pattern": "*.pdf",
+  "limit": 20,
+  "max_pages": 18,
+  "import_to_sqlite": true,
+  "write_obsidian": true,
+  "rebuild_embeddings": false,
+  "replace_existing": true
+}
+```
+
+Dans l'interface: `Memoire` -> `Importer PDFs ML`, puis `Reconstruire les embeddings`.

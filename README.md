@@ -2015,6 +2015,8 @@ POST /memory/obsidian/seed
 POST /memory/obsidian/import
 POST /memory/obsidian/sync
 POST /memory/obsidian/open
+GET /memory/knowledge/status
+POST /memory/knowledge/import
 GET /memory/learning/status
 POST /memory/learning/consolidate
 ```
@@ -2044,6 +2046,36 @@ Eva ne devient pas plus intelligente par entrainement du modele local. Elle appr
 - boucle d'apprentissage locale dans `80 - Learning/`.
 
 Ces notes restent locales dans `data/obsidian_vault`. Le bouton `Nourrir la memoire` du panneau Memoire les cree si elles n'existent pas encore, puis importe les lignes `#memory/...` dans SQLite. La reconstruction des embeddings reste separee via `Reconstruire les embeddings` pour eviter de bloquer l'interface si Ollama est lent.
+
+### Importer les connaissances Machine Learning
+
+Eva peut maintenant lire les PDFs locaux ajoutes dans `docs/`, extraire des concepts ML utiles, creer des notes Obsidian dans `75 - Knowledge/Machine Learning/`, puis ajouter des souvenirs `learning` et `operating_rule` dans SQLite.
+
+L'import est idempotent: Eva remplace les notes gerees par elle et les souvenirs `source=knowledge_pdf` avant de regenerer la base. Tes PDFs restent locaux; ils ne doivent pas etre pousses sur GitHub.
+
+Installation de la dependance PDF:
+
+```powershell
+cd backend
+pip install -r requirements.txt
+```
+
+Import depuis l'interface:
+
+- panneau `Memoire`;
+- bouton `Importer PDFs ML`;
+- puis bouton `Reconstruire les embeddings` si tu veux renforcer la recherche vectorielle.
+
+Import depuis l'API:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://localhost:8000/memory/knowledge/import `
+  -ContentType "application/json" `
+  -Body '{"source_dir":"docs","pattern":"*.pdf","limit":20,"max_pages":18,"import_to_sqlite":true,"write_obsidian":true,"rebuild_embeddings":false,"replace_existing":true}'
+```
+
+Ce n'est pas un entrainement des poids du modele Ollama. C'est une couche RAG locale: PDFs -> notes Obsidian -> souvenirs SQLite -> embeddings Ollama -> contexte utile avant reponse/action.
 
 Eva injecte un resume de ces notes Obsidian dans le prompt Ollama quand la demande concerne creation, design, mails, posts, projets ou decisions. Le vault reste local et peut etre edite a la main dans Obsidian.
 

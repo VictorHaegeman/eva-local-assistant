@@ -104,6 +104,13 @@ CLUSTERS: tuple[MemoryCluster, ...] = (
         categories=("operating_rule", "idea"),
     ),
     MemoryCluster(
+        key="machine_learning",
+        label="Machine Learning",
+        description="Concepts ML locaux: supervised, unsupervised, clustering, metriques, training, cross-validation et rewards.",
+        keywords=("machine learning", "ml", "supervised", "unsupervised", "knn", "regression", "clustering", "k-means", "metrics", "training", "cross-validation", "reward"),
+        categories=("learning", "ml_concept"),
+    ),
+    MemoryCluster(
         key="messages",
         label="Beeper / messages",
         description="Messages, Beeper, Telegram, WhatsApp et reponses a preparer.",

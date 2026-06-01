@@ -171,6 +171,40 @@ export async function getMemoryLearningStatus() {
 }
 
 
+export async function getKnowledgeStatus() {
+  return request("/memory/knowledge/status");
+}
+
+
+export async function importMachineLearningKnowledge({
+  sourceDir = "docs",
+  pattern = "*.pdf",
+  limit = 20,
+  maxPages = 14,
+  importToSqlite = true,
+  writeObsidian = true,
+  rebuildEmbeddings = false,
+  replaceExisting = true,
+} = {}) {
+  return request("/memory/knowledge/import", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      source_dir: sourceDir,
+      pattern,
+      limit,
+      max_pages: maxPages,
+      import_to_sqlite: importToSqlite,
+      write_obsidian: writeObsidian,
+      rebuild_embeddings: rebuildEmbeddings,
+      replace_existing: replaceExisting,
+    }),
+  });
+}
+
+
 export async function consolidateMemoryLearning(limit = 120, rebuildEmbeddings = false) {
   return request("/memory/learning/consolidate", {
     method: "POST",

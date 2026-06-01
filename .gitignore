@@ -74,6 +74,9 @@ EVA_CURSOR_PROMPT.md
 EVA_SELF_IMPROVE_PROMPT.md
 sidecars/**/target/
 
+# Local knowledge/course material
+docs/*.pdf
+
 # OS / editors
 .DS_Store
 Thumbs.db

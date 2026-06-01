@@ -184,6 +184,11 @@ from app.memory.obsidian_store import (
     seed_obsidian_memory_vault,
     sync_memories_to_obsidian,
 )
+from app.memory.knowledge_ingestion import (
+    KnowledgeIngestionError,
+    import_machine_learning_knowledge,
+    knowledge_ingestion_status,
+)
 from app.memory.profile_store import ProfileStoreError, ensure_profile_file, load_profile
 from app.messaging.telegram_bot import start_telegram_background_task, telegram_config_status
 from app.projects.project_store import (
@@ -329,6 +334,17 @@ class ObsidianSeedRequest(BaseModel):
     import_to_sqlite: bool = True
     limit: int = Field(default=500, ge=1, le=1000)
     rebuild_embeddings: bool = False
+
+
+class KnowledgeImportRequest(BaseModel):
+    source_dir: str = Field(default="docs", min_length=1, max_length=260)
+    pattern: str = Field(default="*.pdf", min_length=1, max_length=80)
+    limit: int = Field(default=20, ge=1, le=100)
+    max_pages: int = Field(default=14, ge=1, le=80)
+    import_to_sqlite: bool = True
+    write_obsidian: bool = True
+    rebuild_embeddings: bool = False
+    replace_existing: bool = True
 
 
 class FileReadRequest(BaseModel):
@@ -1101,6 +1117,34 @@ async def memory_obsidian_open() -> dict[str, object]:
         return open_obsidian_vault()
     except ObsidianMemoryError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/memory/knowledge/status", dependencies=[Depends(require_sensitive_access)])
+async def memory_knowledge_status(
+    source_dir: str = Query(default="docs", min_length=1, max_length=260),
+    pattern: str = Query(default="*.pdf", min_length=1, max_length=80),
+) -> dict[str, object]:
+    try:
+        return knowledge_ingestion_status(source_dir=source_dir, pattern=pattern)
+    except KnowledgeIngestionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/memory/knowledge/import", dependencies=[Depends(require_sensitive_access)])
+async def memory_knowledge_import(request: KnowledgeImportRequest) -> dict[str, object]:
+    try:
+        return import_machine_learning_knowledge(
+            source_dir=request.source_dir,
+            pattern=request.pattern,
+            limit=request.limit,
+            max_pages=request.max_pages,
+            import_to_sqlite=request.import_to_sqlite,
+            write_obsidian=request.write_obsidian,
+            rebuild_embeddings=request.rebuild_embeddings,
+            replace_existing=request.replace_existing,
+        )
+    except (KnowledgeIngestionError, ObsidianMemoryError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/memories", dependencies=[Depends(require_sensitive_access)])

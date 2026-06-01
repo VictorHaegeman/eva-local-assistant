@@ -38,6 +38,7 @@ import {
   getHeartbeatStatus,
   getJobs,
   getJobsStatus,
+  getKnowledgeStatus,
   getLatestBrief,
   getLinkedInStatus,
   getMemories,
@@ -54,6 +55,7 @@ import {
   generateSmartBrief,
   hydrateObsidianMemory,
   importObsidianMemory,
+  importMachineLearningKnowledge,
   rebuildMemoryEmbeddings,
   connectGmail,
   openObsidianMemory,
@@ -287,13 +289,14 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
 
   async function fetchPanelData(panelName) {
     if (panelName === "memory") {
-      const [memory, obsidian, embeddings, learning] = await Promise.all([
+      const [memory, obsidian, embeddings, learning, knowledge] = await Promise.all([
         getMemories(),
         getObsidianMemoryStatus(),
         getMemoryEmbeddingStatus(),
         getMemoryLearningStatus(),
+        getKnowledgeStatus(),
       ]);
-      return { ...memory, obsidian, embeddings, learning };
+      return { ...memory, obsidian, embeddings, learning, knowledge };
     }
     if (panelName === "chats") return getChatHistory();
     if (panelName === "tools") {
@@ -499,6 +502,32 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     }
   }
 
+  async function handleImportKnowledge() {
+    setRunningJob("knowledge_import");
+    setJobResult("");
+    setError("");
+
+    try {
+      const result = await importMachineLearningKnowledge({
+        limit: 20,
+        maxPages: 18,
+        importToSqlite: true,
+        writeObsidian: true,
+        rebuildEmbeddings: false,
+        replaceExisting: true,
+      });
+      await loadPanel();
+      const errors = result.errors?.length ? ` ${result.errors.length} erreur(s) a verifier.` : "";
+      setJobResult(
+        `${result.imported_documents || 0} PDF(s) ML indexes, ${result.imported_memories || 0} souvenir(s) ajoutes.${errors}`
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRunningJob("");
+    }
+  }
+
   async function handleRebuildEmbeddings() {
     setRunningJob("embeddings_rebuild");
     setJobResult("");
@@ -621,6 +650,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     const obsidian = data?.obsidian || {};
     const embeddings = data?.embeddings || {};
     const learning = data?.learning || {};
+    const knowledge = data?.knowledge || {};
     const embeddingCount = embeddings.embedding_count || 0;
     const memoryCount = embeddings.memory_count ?? memories.length;
 
@@ -638,6 +668,11 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
             label="apprentissages"
             value={learning.learning_memories || 0}
             tone={learning.learning_memories ? "ok" : "neutral"}
+          />
+          <Metric
+            label="PDF ML"
+            value={knowledge.pdf_count || 0}
+            tone={knowledge.pdf_count ? "ok" : "neutral"}
           />
         </div>
         {jobResult && <div className="panel-success">{jobResult}</div>}
@@ -670,6 +705,39 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               disabled={Boolean(runningJob) || !learning.enabled}
             >
               {runningJob === "memory_learning" ? "Consolidation..." : "Apprendre des echanges"}
+            </button>
+          </div>
+        </section>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Connaissances Machine Learning</h3>
+            <StatusPill tone={knowledge.pdf_reader_available ? "ok" : "warning"}>
+              {knowledge.pdf_reader_available ? "PDF ready" : "pypdf absent"}
+            </StatusPill>
+          </div>
+          <p>
+            Eva transforme tes supports ML locaux en notes Obsidian, souvenirs SQLite et contexte vectoriel.
+            Elle s'en sert ensuite pour mieux choisir ses routes, clusters, rewards et corrections.
+          </p>
+          <Field label="Dossier" value={knowledge.source_dir || "docs"} />
+          <Field label="PDF detectes" value={knowledge.pdf_count || 0} />
+          <Field label="Notes knowledge" value={knowledge.knowledge_notes || 0} />
+          <Field label="Souvenirs ML" value={knowledge.knowledge_memories || 0} />
+          {knowledge.pdfs?.length ? (
+            <div className="panel-chip-list">
+              {knowledge.pdfs.slice(0, 6).map((pdf) => (
+                <StatusPill key={pdf.name}>{pdf.name.replace(/^CX016-2\.5-3-IML - /, "")}</StatusPill>
+              ))}
+            </div>
+          ) : null}
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-action-button primary"
+              onClick={handleImportKnowledge}
+              disabled={Boolean(runningJob) || !knowledge.pdf_reader_available || !knowledge.pdf_count}
+            >
+              {runningJob === "knowledge_import" ? "Import ML..." : "Importer PDFs ML"}
             </button>
           </div>
         </section>
