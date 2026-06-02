@@ -13,6 +13,11 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function setResult(text, state = "info") {
+  result.textContent = text;
+  result.dataset.state = state;
+}
+
 async function activeTab() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   return tabs && tabs.length ? tabs[0] : null;
@@ -119,10 +124,10 @@ toggleButton.addEventListener("click", async () => {
 
 runButton.addEventListener("click", async () => {
   const text = instruction.value.trim() || "Continue l'exercice visible en mode entrainement";
-  result.textContent = "Synchronisation de l'onglet actif...";
+  setResult("Synchronisation de l'onglet actif...", "loading");
   try {
     await syncActivePage({ force: true });
-    result.textContent = "Eva prend le relais sur la page visible...";
+    setResult("Eva observe la page, choisit une route et verifie avant d'agir...", "loading");
     const response = await fetch(`${EVA_API}/browser-extension/training`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -130,10 +135,11 @@ runButton.addEventListener("click", async () => {
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.detail || response.statusText);
-    result.textContent = payload.summary || `Statut: ${payload.status}`;
+    const state = payload.status === "blocked" ? "warning" : payload.status === "done" ? "ok" : "info";
+    setResult(payload.summary || `Statut: ${payload.status}`, state);
     await refreshStatus();
   } catch (error) {
-    result.textContent = `Erreur: ${error.message || error}`;
+    setResult(`Erreur: ${error.message || error}`, "error");
   }
 });
 

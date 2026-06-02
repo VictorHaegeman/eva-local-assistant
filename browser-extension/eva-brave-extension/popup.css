@@ -123,7 +123,38 @@ textarea {
 .result {
   min-height: 18px;
   margin: 12px 0 0;
-  color: #b5c5d4;
+  padding: 10px 12px;
+  border: 1px solid rgba(95, 198, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(5, 15, 24, 0.52);
+  color: #cfe8f8;
   font-size: 13px;
   line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.result:empty {
+  display: none;
+}
+
+.result[data-state="loading"] {
+  border-color: rgba(90, 222, 255, 0.35);
+  color: #8edfff;
+}
+
+.result[data-state="ok"] {
+  border-color: rgba(78, 231, 169, 0.35);
+  color: #c8ffe8;
+}
+
+.result[data-state="warning"] {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(61, 38, 8, 0.28);
+  color: #ffe4b2;
+}
+
+.result[data-state="error"] {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(67, 14, 22, 0.28);
+  color: #ffd2d2;
 }

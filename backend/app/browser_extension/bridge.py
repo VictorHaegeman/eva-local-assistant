@@ -559,15 +559,36 @@ def format_browser_training_response(result: dict[str, object]) -> str:
     if not isinstance(steps, list):
         steps = []
 
-    lines = [
-        "Mode navigateur Brave via extension Eva.",
-        f"Statut: {result.get('status', 'inconnu')}",
-        f"Tours: {result.get('rounds_used', len(steps))}/{result.get('max_rounds', '?')}",
-        f"Actions executees: {result.get('executed_count', 0)}",
-    ]
     reason = _clean_text(result.get("reason"), 260)
+    status = str(result.get("status", "inconnu"))
+    is_assessment_block = status == "blocked" and any(
+        marker in reason.lower()
+        for marker in (
+            "test/evaluation",
+            "examen",
+            "certification",
+            "evaluation officielle",
+            "test note",
+        )
+    )
+
+    if is_assessment_block:
+        lines = [
+            "Mode coach Eva.",
+            "Ce n'est pas une erreur technique: Eva a reconnu une page de test/evaluation.",
+            "Elle peut expliquer, donner un indice et t'aider a reviser, mais elle ne clique pas automatiquement sur les reponses.",
+            f"Tours: {result.get('rounds_used', len(steps))}/{result.get('max_rounds', '?')}",
+            f"Actions executees: {result.get('executed_count', 0)}",
+        ]
+    else:
+        lines = [
+            "Mode navigateur Brave via extension Eva.",
+            f"Statut: {status}",
+            f"Tours: {result.get('rounds_used', len(steps))}/{result.get('max_rounds', '?')}",
+            f"Actions executees: {result.get('executed_count', 0)}",
+        ]
     if reason:
-        lines.append(f"Note: {reason}")
+        lines.append(f"Raison: {reason}" if is_assessment_block else f"Note: {reason}")
     study_help = result.get("study_help")
     if isinstance(study_help, dict) and any(study_help.get(key) for key in ("question", "hint", "reasoning", "likely_answer")):
         lines.append("")
