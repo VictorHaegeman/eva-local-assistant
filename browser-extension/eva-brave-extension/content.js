@@ -8,6 +8,7 @@ const EVA_API = "http://localhost:8000";
 const EVA_MAX_TEXT = 5000;
 const EVA_MAX_ELEMENTS = 140;
 let evaLastActionId = "";
+let evaPendingClickTimer = null;
 
 function isVisible(element) {
   if (!element || !(element instanceof HTMLElement)) return false;
@@ -165,8 +166,15 @@ async function executeAction(action) {
   await new Promise((resolve) => setTimeout(resolve, 250));
 
   if (name === "click") {
-    element.click();
-    return { ok: true, message: `Clicked ${elementLabel(element)}` };
+    const label = elementLabel(element);
+    if (evaPendingClickTimer) {
+      window.clearTimeout(evaPendingClickTimer);
+    }
+    evaPendingClickTimer = window.setTimeout(() => {
+      evaPendingClickTimer = null;
+      element.click();
+    }, 650);
+    return { ok: true, message: `Clicked ${label}` };
   }
 
   if (name === "focus") {
