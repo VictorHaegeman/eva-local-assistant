@@ -57,6 +57,12 @@ from app.screen.screen_navigator import (
     navigate_screen,
     wants_screen_navigation,
 )
+from app.self_improvement.loop import (
+    SelfImproveError,
+    detect_self_improvement_request,
+    execute_self_improvement_loop,
+    format_self_improvement_response,
+)
 from app.terminal.terminal_doctor import (
     analyze_terminal_error,
     format_terminal_diagnosis,
@@ -242,6 +248,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/history - revoir le fil Telegram recent\n"
                 "/screen - lire et interpreter l'ecran du PC\n"
                 "/pilot INSTRUCTION - piloter l'ecran local avec vision + clics\n"
+                "/learn CORRECTION - apprendre d'une erreur ou ameliorer Eva\n"
                 "/terminal ERREUR - analyser/corriger une erreur terminal\n"
                 "/job TACHE - mettre une tache longue dans la queue autonome\n"
                 "/jobs - voir la queue autonome locale\n"
@@ -361,6 +368,29 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             return True
 
         assistant_text = format_screen_navigation_response(result)
+        _remember_telegram_exchange(chat_id, text, assistant_text, context=load_telegram_context(chat_id))
+        await _send_message(client, chat_id, assistant_text)
+        return True
+
+    if command in {"/learn", "/apprends", "/improve", "/selfimprove"}:
+        if not argument:
+            await _send_message(
+                client,
+                chat_id,
+                "Usage: /learn Eva doit mieux comprendre les demandes Gmail avant de chercher sur le web",
+            )
+            return True
+        try:
+            result = execute_self_improvement_loop(
+                argument,
+                source="telegram",
+                trusted_actions=True,
+            )
+        except SelfImproveError as exc:
+            await _send_message(client, chat_id, f"Apprentissage Eva bloque: {exc}")
+            return True
+
+        assistant_text = format_self_improvement_response(result)
         _remember_telegram_exchange(chat_id, text, assistant_text, context=load_telegram_context(chat_id))
         await _send_message(client, chat_id, assistant_text)
         return True
@@ -552,6 +582,17 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             return
 
         context = load_telegram_context(chat_id)
+        if detect_self_improvement_request(text):
+            result = execute_self_improvement_loop(
+                text,
+                source="telegram",
+                trusted_actions=True,
+            )
+            assistant_text = format_self_improvement_response(result)
+            _remember_telegram_exchange(chat_id, text, assistant_text, context=context)
+            await _send_message(client, chat_id, assistant_text)
+            return
+
         understanding = build_understanding_frame(
             text,
             conversation_context=context,
@@ -593,7 +634,14 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             trusted_actions=True,
             channel="telegram",
         )
-    except (ChatServiceError, CursorAgentSetupError, ProjectFactoryError, ActionStoreError, ScreenNavigationError) as exc:
+    except (
+        ChatServiceError,
+        CursorAgentSetupError,
+        ProjectFactoryError,
+        ActionStoreError,
+        ScreenNavigationError,
+        SelfImproveError,
+    ) as exc:
         await _send_message(
             client,
             chat_id,

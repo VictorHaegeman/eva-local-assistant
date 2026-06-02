@@ -1481,7 +1481,7 @@ Important:
 - Eva ne depend pas de Codex ni de l'API OpenAI;
 - Eva peut preparer un prompt Cursor/Codex directement dans le chat;
 - Eva peut lancer `cursor-agent` en arriere-plan si la CLI est installee et activee;
-- Eva ne modifie pas les fichiers hors Project Factory autonome sans validation;
+- Eva peut modifier le repo Eva via la Self Improvement Loop si les flags locaux l'autorisent;
 - Eva ne fait pas de `git push` hors Project Factory sauf si `EVA_ALLOW_AUTO_GIT_PUSH=true`;
 - elle peut lire/analyser les projets configures et preparer plans, prompts, README drafts et PR plans.
 
@@ -1504,8 +1504,9 @@ Flux local:
 3. Si c'est une regle durable, elle ajoute une memoire `operating_rule`.
 4. Si c'est une evolution technique, elle cree une tache locale pour le projet `Eva`.
 5. Elle genere `EVA_SELF_IMPROVE_PROMPT.md` avec un prompt Cursor propre.
-6. Si `EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT=true` ou `auto_launch_agent=true`, elle peut lancer `cursor-agent`.
-7. Elle journalise l'evenement dans `data/eva_self_improvements.jsonl`.
+6. Si la cible est `code` ou `mixed`, Eva peut lancer une session d'auto-code sur son propre repo via `cursor-agent`.
+7. Elle capture un snapshot Git avant le run, garde le prompt, le log agent et les tests attendus.
+8. Elle journalise l'evenement dans `data/eva_self_improvements.jsonl` et `data/eva_self_code_runs.jsonl`.
 
 Routes:
 
@@ -1514,6 +1515,7 @@ GET /self-improve/status
 POST /self-improve/plan
 POST /self-improve
 GET /self-improve/log
+GET /self-improve/code-runs
 ```
 
 Variables:
@@ -1521,10 +1523,11 @@ Variables:
 ```env
 EVA_SELF_IMPROVE_ENABLED=true
 EVA_SELF_IMPROVE_PROJECT_NAME=Eva
-EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT=false
+EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT=true
+EVA_SELF_IMPROVE_ALLOW_CODE_WRITES=true
 ```
 
-Par defaut, Eva ne lance pas `cursor-agent` automatiquement pour se modifier elle-meme. Elle cree la memoire, la tache et le prompt. Tu peux activer le lancement agent quand le workflow est stable sur ton PC.
+Par defaut, Eva peut donc se modifier elle-meme quand une correction touche son comportement. Ce n'est pas une reecriture libre de tout le PC: le run est borne au repo Eva, ne doit pas stocker de secret, ne pousse pas automatiquement sur Git, et doit lancer les tests locaux utiles. Si `cursor-agent` n'est pas disponible, Eva garde le prompt et le diagnostic au lieu de pretendre avoir modifie le code.
 
 ## Installation Ollama
 

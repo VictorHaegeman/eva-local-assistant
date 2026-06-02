@@ -253,6 +253,7 @@ from app.self_improvement.loop import (
     detect_self_improvement_request,
     execute_self_improvement_loop,
     format_self_improvement_response,
+    list_self_code_runs,
     list_self_improvement_events,
     self_improvement_plan_to_dict,
 )
@@ -2205,6 +2206,7 @@ async def self_improve_status() -> dict[str, object]:
         "enabled": settings.eva_self_improve_enabled,
         "project_name": settings.eva_self_improve_project_name,
         "auto_cursor_agent": settings.eva_self_improve_auto_cursor_agent,
+        "allow_code_writes": settings.eva_self_improve_allow_code_writes,
         "detects_examples": [
             "Eva, dorenavant...",
             "A partir de maintenant...",
@@ -2252,4 +2254,11 @@ async def self_improve_plan(request: SelfImproveRequest) -> dict[str, object]:
 async def self_improve_log(limit: int = Query(default=30, ge=1, le=200)) -> dict[str, object]:
     return {
         "events": list_self_improvement_events(limit=limit),
+    }
+
+
+@app.get("/self-improve/code-runs", dependencies=[Depends(require_sensitive_access)])
+async def self_improve_code_runs(limit: int = Query(default=30, ge=1, le=200)) -> dict[str, object]:
+    return {
+        "events": list_self_code_runs(limit=limit),
     }

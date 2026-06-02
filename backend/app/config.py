@@ -207,7 +207,11 @@ class Settings:
     eva_self_improve_project_name: str = os.getenv("EVA_SELF_IMPROVE_PROJECT_NAME", "Eva")
     eva_self_improve_auto_cursor_agent: bool = _env_bool(
         "EVA_SELF_IMPROVE_AUTO_CURSOR_AGENT",
-        False,
+        True,
+    )
+    eva_self_improve_allow_code_writes: bool = _env_bool(
+        "EVA_SELF_IMPROVE_ALLOW_CODE_WRITES",
+        True,
     )
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")

@@ -11,6 +11,7 @@ from app.cognition.problem_solver import (
     diagnose_problem,
     problem_routes_for_result,
 )
+from app.cognition.reinforcement_store import feedback_reward_from_message
 from app.cognition.structured_interpreter import StructuredInterpretation, _should_accept_interpretation
 from app.cognition.tool_result import ToolResult
 from app.integrations.beeper_assistant import beeper_response_has_useful_content
@@ -19,6 +20,7 @@ from app.integrations.gmail_client import is_google_reauth_error
 from app.integrations.google_setup_chat import wants_google_account_setup
 from app.projects.project_chat import attach_recent_project_context, infer_project_resolution
 from app.screen.screen_navigator import wants_screen_navigation
+from app.self_improvement.loop import build_self_improvement_plan, detect_self_improvement_request
 
 
 def _frame(message: str, context: list[dict[str, str]] | None = None):
@@ -358,6 +360,33 @@ def test_plain_gmail_read_does_not_trigger_google_setup() -> None:
     assert not wants_google_account_setup("lis mes mails concernant DreamLense")
 
 
+def test_implicit_bad_understanding_feedback_triggers_self_improve() -> None:
+    assert detect_self_improvement_request("Elle comprends rien")
+    plan = build_self_improvement_plan("Elle comprends rien", source="test")
+    assert plan.target == "mixed"
+    assert plan.should_save_memory
+    assert plan.should_create_task
+    assert plan.should_modify_code
+    assert plan.code_autonomy == "cursor_agent"
+
+
+def test_interpretation_feedback_triggers_self_improve() -> None:
+    assert detect_self_improvement_request("Elle interprete plus mes messages et part dans du hors sujet")
+    plan = build_self_improvement_plan(
+        "Elle interprete plus mes messages et part dans du hors sujet",
+        source="test",
+    )
+    assert plan.target == "mixed"
+    assert plan.should_prepare_cursor_prompt
+    assert plan.should_modify_code
+
+
+def test_negative_feedback_becomes_reinforcement_penalty() -> None:
+    reward = feedback_reward_from_message("Elle comprends rien, mauvaise interpretation")
+    assert reward is not None
+    assert reward[0] < 0
+
+
 if __name__ == "__main__":
     test_dreamlense_mail_draft_routes_to_gmail()
     test_gmail_followup_does_not_become_cursor()
@@ -389,4 +418,7 @@ if __name__ == "__main__":
     test_google_invalid_grant_gets_reauth_message_not_raw_trace()
     test_gmail_broken_routes_to_google_reconnect_not_mail_search()
     test_plain_gmail_read_does_not_trigger_google_setup()
+    test_implicit_bad_understanding_feedback_triggers_self_improve()
+    test_interpretation_feedback_triggers_self_improve()
+    test_negative_feedback_becomes_reinforcement_penalty()
     print("understanding regressions OK")
