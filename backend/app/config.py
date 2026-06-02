@@ -128,6 +128,10 @@ class Settings:
     eva_screen_navigation_max_steps: int = _env_int("EVA_SCREEN_NAVIGATION_MAX_STEPS", 4)
     eva_screen_training_enabled: bool = _env_bool("EVA_SCREEN_TRAINING_ENABLED", True)
     eva_screen_training_max_rounds: int = _env_int("EVA_SCREEN_TRAINING_MAX_ROUNDS", 14)
+    eva_browser_extension_reasoning_timeout_seconds: float = _env_float(
+        "EVA_BROWSER_EXTENSION_REASONING_TIMEOUT_SECONDS",
+        75.0,
+    )
     eva_visual_action_enabled: bool = _env_bool("EVA_VISUAL_ACTION_ENABLED", True)
     eva_visual_action_min_confidence: float = _env_float("EVA_VISUAL_ACTION_MIN_CONFIDENCE", 0.62)
     eva_obsidian_memory_enabled: bool = _env_bool("EVA_OBSIDIAN_MEMORY_ENABLED", True)

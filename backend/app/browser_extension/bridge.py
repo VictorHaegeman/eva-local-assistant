@@ -354,11 +354,18 @@ async def run_browser_training(
                 BROWSER_EXTENSION_SYSTEM_PROMPT,
                 _training_context(instruction, snapshot),
                 model=settings.ollama_reasoning_model,
-                timeout_seconds=settings.ollama_reasoning_timeout_seconds,
+                timeout_seconds=settings.eva_browser_extension_reasoning_timeout_seconds,
                 temperature=0.05,
             )
         except OllamaClientError as exc:
-            raise BrowserExtensionError(str(exc)) from exc
+            message = str(exc)
+            if "ne repond pas assez vite" in message:
+                message = (
+                    "Ollama a mis trop longtemps a choisir l'action navigateur. "
+                    "C'est souvent le premier chargement du modele ou un modele trop lourd. "
+                    "Reessaie une fois, ou augmente EVA_BROWSER_EXTENSION_REASONING_TIMEOUT_SECONDS."
+                )
+            raise BrowserExtensionError(message) from exc
 
         payload = _safe_action_payload(action, snapshot, instruction)
         blocked = bool(payload.get("blocked"))

@@ -1019,6 +1019,14 @@ Fonctionnement:
 - si l'extension est connectee, Eva la prefere au mode pixels pour les entrainements navigateur;
 - si l'extension n'est pas connectee, Eva retombe sur `/screen/training`.
 
+Si tu vois `Le modele de raisonnement Ollama ne repond pas assez vite`, la page est bien connectee mais Ollama n'a pas rendu la decision JSON dans le delai. Le timeout dedie au bridge Brave est:
+
+```text
+EVA_BROWSER_EXTENSION_REASONING_TIMEOUT_SECONDS=75
+```
+
+Tu peux le monter a `120` si ton modele local est lent au premier chargement.
+
 Routes utiles:
 
 ```text
