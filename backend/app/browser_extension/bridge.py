@@ -50,6 +50,29 @@ Regles:
 """.strip()
 
 
+ASSESSMENT_COACH_SYSTEM_PROMPT = """
+Tu es Eva Study Coach. Tu aides Victor a s'entrainer sans prendre le controle d'un test note.
+
+Retourne uniquement un JSON valide:
+{
+  "question": "question visible",
+  "choices": ["choix A", "choix B"],
+  "hint": "indice utile sans blabla",
+  "reasoning": "raisonnement court pour apprendre",
+  "likely_answer": "choix le plus probable si c'est une annale/mock/entrainement, sinon vide",
+  "confidence": 0.0,
+  "warning": "limite ou prudence"
+}
+
+Regles:
+- N'explique pas comment automatiser ou soumettre le test.
+- Ne propose pas de cliquer a la place de Victor.
+- Si la page ressemble a une certification/examen officiel/evaluation finale, donne seulement un indice et un rappel de cours.
+- Si la page indique annale, mock, entrainement ou sample, tu peux indiquer le choix le plus probable avec justification.
+- Si tu n'es pas sur, laisse likely_answer vide et explique ce qu'il faut verifier.
+""".strip()
+
+
 DANGEROUS_ELEMENT_MARKERS = (
     "payer",
     "payment",
@@ -239,6 +262,17 @@ def _training_context(instruction: str, snapshot: dict[str, Any]) -> str:
     )
 
 
+def _assessment_coach_context(instruction: str, snapshot: dict[str, Any]) -> str:
+    return (
+        f"Instruction de Victor:\n{instruction.strip()}\n\n"
+        f"Page:\n- titre: {_clean_text(snapshot.get('title'), 180)}\n"
+        f"- url: {_clean_text(snapshot.get('tab_url'), 260)}\n\n"
+        f"Texte visible:\n{_clean_text(snapshot.get('visible_text'), 3200)}\n\n"
+        "Elements interactifs visibles:\n"
+        f"{_elements_for_prompt(snapshot)}"
+    )
+
+
 def _as_float(value: object, default: float = 0.0) -> float:
     try:
         return max(0.0, min(1.0, float(value)))
@@ -334,6 +368,41 @@ def _safe_action_payload(action: dict[str, Any], snapshot: dict[str, Any], instr
     return payload
 
 
+async def _build_assessment_coach(snapshot: dict[str, Any], instruction: str) -> dict[str, object]:
+    try:
+        payload = await ask_ollama_json(
+            ASSESSMENT_COACH_SYSTEM_PROMPT,
+            _assessment_coach_context(instruction, snapshot),
+            model=settings.ollama_reasoning_model,
+            timeout_seconds=settings.eva_browser_extension_reasoning_timeout_seconds,
+            temperature=0.05,
+        )
+    except OllamaClientError as exc:
+        return {
+            "question": "",
+            "choices": [],
+            "hint": "La page est lisible, mais Ollama n'a pas produit d'aide fiable assez vite.",
+            "reasoning": str(exc),
+            "likely_answer": "",
+            "confidence": 0.0,
+            "warning": "Aucune action n'a ete executee.",
+        }
+
+    choices = payload.get("choices")
+    if not isinstance(choices, list):
+        choices = []
+
+    return {
+        "question": _clean_text(payload.get("question"), 500),
+        "choices": [_clean_text(choice, 240) for choice in choices[:8]],
+        "hint": _clean_text(payload.get("hint"), 500),
+        "reasoning": _clean_text(payload.get("reasoning"), 900),
+        "likely_answer": _clean_text(payload.get("likely_answer"), 500),
+        "confidence": _as_float(payload.get("confidence"), 0.0),
+        "warning": _clean_text(payload.get("warning"), 500) or "Aucune action n'a ete executee.",
+    }
+
+
 async def _queue_action(tab_id: str, action: dict[str, Any]) -> None:
     browser_action = BrowserAction(id=str(action["id"]), tab_id=tab_id, payload=action)
     async with _state_lock:
@@ -355,19 +424,10 @@ async def run_browser_training(
     instruction: str,
     max_rounds: int = 14,
 ) -> dict[str, object]:
-    if looks_like_blocked_assessment_request(instruction):
-        return {
-            "status": "blocked",
-            "blocked": True,
-            "done": False,
-            "executed_count": 0,
-            "rounds_used": 0,
-            "steps": [],
-            "reason": "Mode refuse pour examen/certification/evaluation officielle.",
-        }
-
     safe_rounds = max(1, min(int(max_rounds), 40))
     steps: list[dict[str, object]] = []
+    study_help: dict[str, object] | None = None
+    blocked_by_instruction = looks_like_blocked_assessment_request(instruction)
 
     for round_index in range(1, safe_rounds + 1):
         fresh = _fresh_snapshot(max_age_seconds=10.0)
@@ -378,29 +438,41 @@ async def run_browser_training(
             )
         tab_id, snapshot = fresh
 
-        try:
-            action = await ask_ollama_json(
-                BROWSER_EXTENSION_SYSTEM_PROMPT,
-                _training_context(instruction, snapshot),
-                model=settings.ollama_reasoning_model,
-                timeout_seconds=settings.eva_browser_extension_reasoning_timeout_seconds,
-                temperature=0.05,
-            )
-        except OllamaClientError as exc:
-            message = str(exc)
-            if "ne repond pas assez vite" in message:
-                message = (
-                    "Ollama a mis trop longtemps a choisir l'action navigateur. "
-                    "C'est souvent le premier chargement du modele ou un modele trop lourd. "
-                    "Reessaie une fois, ou augmente EVA_BROWSER_EXTENSION_REASONING_TIMEOUT_SECONDS."
+        if blocked_by_instruction:
+            action = {
+                "action": "none",
+                "confidence": 0.0,
+                "blocked": True,
+                "official_assessment": True,
+                "reason": "Instruction de reponse automatique a une evaluation detectee.",
+            }
+        else:
+            try:
+                action = await ask_ollama_json(
+                    BROWSER_EXTENSION_SYSTEM_PROMPT,
+                    _training_context(instruction, snapshot),
+                    model=settings.ollama_reasoning_model,
+                    timeout_seconds=settings.eva_browser_extension_reasoning_timeout_seconds,
+                    temperature=0.05,
                 )
-            raise BrowserExtensionError(message) from exc
+            except OllamaClientError as exc:
+                message = str(exc)
+                if "ne repond pas assez vite" in message:
+                    message = (
+                        "Ollama a mis trop longtemps a choisir l'action navigateur. "
+                        "C'est souvent le premier chargement du modele ou un modele trop lourd. "
+                        "Reessaie une fois, ou augmente EVA_BROWSER_EXTENSION_REASONING_TIMEOUT_SECONDS."
+                    )
+                raise BrowserExtensionError(message) from exc
 
         payload = _safe_action_payload(action, snapshot, instruction)
         blocked = bool(payload.get("blocked"))
         done = bool(payload.get("done"))
         executed = False
         result_message = ""
+
+        if blocked and payload.get("official_assessment"):
+            study_help = await _build_assessment_coach(snapshot, instruction)
 
         if not blocked and not done and payload["action"] != "none":
             await _queue_action(tab_id, payload)
@@ -446,6 +518,7 @@ async def run_browser_training(
         "max_rounds": safe_rounds,
         "steps": steps,
         "reason": str(steps[-1].get("reason", "")) if steps else "",
+        "study_help": study_help or {},
         "source": "Eva Browser Bridge",
     }
 
@@ -464,6 +537,31 @@ def format_browser_training_response(result: dict[str, object]) -> str:
     reason = _clean_text(result.get("reason"), 260)
     if reason:
         lines.append(f"Note: {reason}")
+    study_help = result.get("study_help")
+    if isinstance(study_help, dict) and any(study_help.get(key) for key in ("question", "hint", "reasoning", "likely_answer")):
+        lines.append("")
+        lines.append("Mode coach:")
+        question = _clean_text(study_help.get("question"), 500)
+        if question:
+            lines.append(f"Question: {question}")
+        choices = study_help.get("choices")
+        if isinstance(choices, list) and choices:
+            lines.append("Choix visibles:")
+            for choice in choices[:6]:
+                lines.append(f"- {_clean_text(choice, 220)}")
+        hint = _clean_text(study_help.get("hint"), 500)
+        if hint:
+            lines.append(f"Indice: {hint}")
+        likely = _clean_text(study_help.get("likely_answer"), 500)
+        if likely:
+            confidence = round(_as_float(study_help.get("confidence")) * 100)
+            lines.append(f"Piste probable: {likely} ({confidence}%)")
+        reasoning = _clean_text(study_help.get("reasoning"), 900)
+        if reasoning:
+            lines.append(f"Pourquoi: {reasoning}")
+        warning = _clean_text(study_help.get("warning"), 500)
+        if warning:
+            lines.append(f"Limite: {warning}")
     if steps:
         lines.append("")
         lines.append("Dernieres actions:")

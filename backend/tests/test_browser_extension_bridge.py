@@ -8,6 +8,7 @@ from app.browser_extension.bridge import (
     _looks_like_assessment_page,
     _safe_action_payload,
     browser_extension_status,
+    format_browser_training_response,
     is_browser_extension_ready,
     record_snapshot,
     wants_browser_extension_training,
@@ -96,6 +97,36 @@ def test_no_action_has_reason() -> None:
     )
     assert payload["action"] == "none"
     assert payload["reason"]
+
+
+def test_blocked_training_response_can_include_study_help() -> None:
+    text = format_browser_training_response(
+        {
+            "status": "blocked",
+            "blocked": True,
+            "done": False,
+            "executed_count": 0,
+            "rounds_used": 1,
+            "max_rounds": 24,
+            "reason": "Stop: page de test/evaluation detectee.",
+            "study_help": {
+                "question": "Which property characterizes a router?",
+                "choices": [
+                    "It gives sequence numbers",
+                    "It divides the network into multiple broadcast domains",
+                ],
+                "hint": "Un routeur separe les reseaux de niveau 3.",
+                "likely_answer": "It divides the network into multiple broadcast domains",
+                "confidence": 0.83,
+                "reasoning": "Un routeur relie des reseaux differents et limite les broadcasts.",
+                "warning": "Aucune action n'a ete executee.",
+            },
+            "steps": [],
+        }
+    )
+    assert "Mode coach" in text
+    assert "Which property" in text
+    assert "Piste probable" in text
 
 
 def test_snapshot_makes_extension_ready() -> None:
