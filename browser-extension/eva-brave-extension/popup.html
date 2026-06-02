@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eva Browser Bridge</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <header>
+        <div class="orb">E</div>
+        <div>
+          <p class="eyebrow">Eva Bridge</p>
+          <h1>Brave connecté</h1>
+        </div>
+      </header>
+
+      <section class="status-card">
+        <div>
+          <span class="dot" id="statusDot"></span>
+          <strong id="statusLabel">Diagnostic...</strong>
+        </div>
+        <button id="toggleButton" type="button">Actif</button>
+      </section>
+
+      <label for="instruction">Instruction</label>
+      <textarea id="instruction" rows="4" placeholder="Continue l'exercice visible en mode entrainement"></textarea>
+      <button id="runButton" class="primary" type="button">Lancer dans Eva</button>
+
+      <p id="result" class="result"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

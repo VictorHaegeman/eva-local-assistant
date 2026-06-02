@@ -985,6 +985,44 @@ Mode entrainement visuel:
 - si l'ecran ou la demande ressemble a un examen officiel, une certification ou une evaluation notee, Eva s'arrete;
 - le nombre de tours est regle par `EVA_SCREEN_TRAINING_MAX_ROUNDS`.
 
+## Extension Brave Eva
+
+Eva peut aussi utiliser une extension locale Brave pour piloter les pages web plus proprement que par pixels.
+
+Installation:
+
+```text
+1. Ouvre Brave.
+2. Va sur brave://extensions
+3. Active Mode developpeur.
+4. Clique Charger l'extension non empaquetee.
+5. Selectionne le dossier browser-extension/eva-brave-extension
+6. Recharge la page web a piloter.
+```
+
+Fonctionnement:
+
+- l'extension lit seulement la page visible dans Brave et envoie le resume DOM a `http://localhost:8000`;
+- Eva choisit une action locale: clic, focus, remplir un champ, touche, scroll ou attente;
+- l'extension execute l'action dans l'onglet visible puis renvoie le resultat;
+- si l'extension est connectee, Eva la prefere au mode pixels pour les entrainements navigateur;
+- si l'extension n'est pas connectee, Eva retombe sur `/screen/training`.
+
+Routes utiles:
+
+```text
+GET /browser-extension/status
+POST /browser-extension/training
+```
+
+Depuis Telegram:
+
+```text
+/training continue l'exercice visible dans Brave
+```
+
+Le pont reste local et gratuit. Il ne lit pas les messages prives ou les comptes caches; il voit ce qui est present dans le DOM de l'onglet actif. Les examens officiels, certifications et evaluations notees restent bloques.
+
 Mode vision continue:
 
 - si `EVA_SCREEN_WATCH_ENABLED=true`, Eva analyse l'ecran en arriere-plan;

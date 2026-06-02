@@ -5,6 +5,13 @@ from typing import Any
 
 import httpx
 
+from app.browser_extension.bridge import (
+    BrowserExtensionError,
+    format_browser_training_response,
+    is_browser_extension_ready,
+    run_browser_training,
+    wants_browser_extension_training,
+)
 from app.actions.action_store import (
     ActionStoreError,
     action_to_dict,
@@ -161,6 +168,15 @@ def _remember_telegram_exchange(
         )
     except OperatorJournalError:
         pass
+
+
+async def _run_best_training_for_telegram(text: str) -> str:
+    if (wants_browser_extension_training(text) or wants_training_autopilot(text)) and is_browser_extension_ready():
+        browser_result = await run_browser_training(text)
+        return format_browser_training_response(browser_result)
+
+    training_result = await run_training_autopilot(text)
+    return format_training_autopilot_response(training_result)
 
 
 def telegram_config_status() -> dict[str, object]:
@@ -388,12 +404,11 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             )
             return True
         try:
-            result = await run_training_autopilot(argument)
-        except ScreenTrainingError as exc:
+            assistant_text = await _run_best_training_for_telegram(argument)
+        except (BrowserExtensionError, ScreenTrainingError) as exc:
             await _send_message(client, chat_id, f"Autopilote entrainement impossible: {exc}")
             return True
 
-        assistant_text = format_training_autopilot_response(result)
         _remember_telegram_exchange(chat_id, text, assistant_text, context=load_telegram_context(chat_id))
         await _send_message(client, chat_id, assistant_text)
         return True
@@ -648,9 +663,8 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             await _send_message(client, chat_id, assistant_text)
             return
 
-        if wants_training_autopilot(text):
-            training_result = await run_training_autopilot(text)
-            assistant_text = format_training_autopilot_response(training_result)
+        if wants_training_autopilot(text) or wants_browser_extension_training(text):
+            assistant_text = await _run_best_training_for_telegram(text)
             _remember_telegram_exchange(chat_id, text, assistant_text, context=context)
             await _send_message(client, chat_id, assistant_text)
             return
@@ -669,6 +683,7 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
         )
     except (
         ChatServiceError,
+        BrowserExtensionError,
         CursorAgentSetupError,
         ProjectFactoryError,
         ActionStoreError,

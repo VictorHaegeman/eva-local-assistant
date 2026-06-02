@@ -23,6 +23,15 @@ from app.briefs.brief_store import BriefStoreError, brief_to_dict, get_latest_br
 from app.briefs.daily_launch import DailyLaunchError, get_daily_launch_brief
 from app.briefs.rss_brief import RssBriefError, ensure_sources_file, generate_morning_brief
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
+from app.browser_extension.bridge import (
+    BrowserExtensionError,
+    browser_extension_status,
+    format_browser_training_response,
+    next_action,
+    record_action_result,
+    record_snapshot,
+    run_browser_training,
+)
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.agents.understanding import build_understanding_frame, understanding_to_dict
@@ -530,6 +539,32 @@ class ScreenNavigationRequest(BaseModel):
 
 
 class ScreenTrainingRequest(BaseModel):
+    instruction: str = Field(min_length=1, max_length=4000)
+    max_rounds: int = Field(default=14, ge=1, le=40)
+
+
+class BrowserExtensionSnapshotRequest(BaseModel):
+    extension_id: str = Field(default="eva-brave-extension", max_length=120)
+    tab_id: str = Field(default="", max_length=240)
+    tab_url: str = Field(default="", max_length=2000)
+    title: str = Field(default="", max_length=500)
+    visible_text: str = Field(default="", max_length=8000)
+    viewport: dict[str, object] = Field(default_factory=dict)
+    elements: list[dict[str, object]] = Field(default_factory=list, max_length=200)
+    captured_at: str = Field(default="", max_length=80)
+
+
+class BrowserExtensionActionResultRequest(BaseModel):
+    action_id: str = Field(min_length=1, max_length=120)
+    tab_id: str = Field(default="", max_length=240)
+    ok: bool = False
+    message: str = Field(default="", max_length=1000)
+    url: str = Field(default="", max_length=2000)
+    title: str = Field(default="", max_length=500)
+    completed_at: str = Field(default="", max_length=80)
+
+
+class BrowserExtensionTrainingRequest(BaseModel):
     instruction: str = Field(min_length=1, max_length=4000)
     max_rounds: int = Field(default=14, ge=1, le=40)
 
@@ -1650,6 +1685,45 @@ async def screen_training(request: ScreenTrainingRequest) -> dict[str, object]:
     return {
         **result,
         "summary": format_training_autopilot_response(result),
+    }
+
+
+@app.get("/browser-extension/status")
+async def browser_extension_status_route() -> dict[str, object]:
+    return browser_extension_status()
+
+
+@app.post("/browser-extension/snapshot")
+async def browser_extension_snapshot(request: BrowserExtensionSnapshotRequest) -> dict[str, object]:
+    return await record_snapshot(request.dict())
+
+
+@app.get("/browser-extension/next-action")
+async def browser_extension_next_action(tab_id: str = Query(default="", max_length=240)) -> dict[str, object]:
+    return await next_action(tab_id)
+
+
+@app.post("/browser-extension/action-result")
+async def browser_extension_action_result(request: BrowserExtensionActionResultRequest) -> dict[str, object]:
+    try:
+        return await record_action_result(request.dict())
+    except BrowserExtensionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/browser-extension/training", dependencies=[Depends(require_sensitive_access)])
+async def browser_extension_training(request: BrowserExtensionTrainingRequest) -> dict[str, object]:
+    try:
+        result = await run_browser_training(
+            request.instruction,
+            max_rounds=request.max_rounds,
+        )
+    except BrowserExtensionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        **result,
+        "summary": format_browser_training_response(result),
     }
 
 

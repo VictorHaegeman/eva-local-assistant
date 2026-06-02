@@ -6,6 +6,13 @@ from app.actions.action_detector import create_pending_action_from_message
 from app.actions.action_store import ActionStoreError, action_to_dict, list_actions
 from app.actions.executor import ActionExecutionError, execute_action
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
+from app.browser_extension.bridge import (
+    BrowserExtensionError,
+    format_browser_training_response,
+    is_browser_extension_ready,
+    run_browser_training,
+    wants_browser_extension_training,
+)
 from app.cognition.cognitive_loop import build_reasoning_trace, run_cognitive_loop
 from app.cognition.context import attach_cognitive_context, build_cognitive_context, format_cognitive_context
 from app.cognition.ml_adaptation import build_ml_adaptation_context
@@ -233,6 +240,18 @@ def _mirror_memory(memory: object) -> None:
         pass
 
 
+async def _run_best_training_autopilot(message: str) -> tuple[str, dict[str, object]]:
+    if wants_browser_extension_training(message) and is_browser_extension_ready():
+        browser_result = await run_browser_training(message)
+        return format_browser_training_response(browser_result), browser_result
+    if wants_training_autopilot(message) and is_browser_extension_ready():
+        browser_result = await run_browser_training(message)
+        return format_browser_training_response(browser_result), browser_result
+
+    screen_result = await run_training_autopilot(message)
+    return format_training_autopilot_response(screen_result), screen_result
+
+
 def _blocked_problem_payload(
     message: str,
     understanding: Any,
@@ -456,14 +475,14 @@ async def process_chat_messages(
                         "decrire ou copier-coller l'erreur visible pour que je la diagnostique",
                     ),
                 )
-            if wants_training_autopilot(latest_user_message):
-                training_result = await run_training_autopilot(latest_user_message)
+            if wants_training_autopilot(latest_user_message) or wants_browser_extension_training(latest_user_message):
+                training_text, _training_result = await _run_best_training_autopilot(latest_user_message)
                 return {
                     "message": {
                         "role": "assistant",
                         "content": (
                             f"{intent_context}\n\n"
-                            f"{format_training_autopilot_response(training_result)}"
+                            f"{training_text}"
                         ),
                     },
                     "saved_memory": None,
@@ -710,6 +729,7 @@ async def process_chat_messages(
     except (
         ActionExecutionError,
         ActionStoreError,
+        BrowserExtensionError,
         CursorAgentSetupError,
         ProjectFactoryError,
         ScreenReaderError,
@@ -871,12 +891,12 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
-        if trusted_actions and wants_training_autopilot(latest_user_message):
-            training_result = await run_training_autopilot(latest_user_message)
+        if trusted_actions and (wants_training_autopilot(latest_user_message) or wants_browser_extension_training(latest_user_message)):
+            training_text, _training_result = await _run_best_training_autopilot(latest_user_message)
             return {
                 "message": {
                     "role": "assistant",
-                    "content": format_training_autopilot_response(training_result),
+                    "content": training_text,
                 },
                 "saved_memory": None,
                 "pending_action": None,
@@ -978,6 +998,7 @@ async def process_chat_messages(
     except (
         BrowserActionError,
         BrowserAssistError,
+        BrowserExtensionError,
         SpotifyAssistError,
         DesktopChatError,
         BeeperAssistantError,

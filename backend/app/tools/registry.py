@@ -106,6 +106,13 @@ TOOLS = (
         description="Ouvre Brave ou YouTube quand un support web/video aide mieux que du texte.",
     ),
     ToolDescriptor(
+        key="brave_extension_bridge",
+        label="Extension Brave Eva",
+        category="web",
+        policy_level="draft_only",
+        description="Pont local extension Brave: lit le DOM visible, clique/remplit les pages et pilote les entrainements navigateur.",
+    ),
+    ToolDescriptor(
         key="spotify_local",
         label="Spotify local",
         category="media",
