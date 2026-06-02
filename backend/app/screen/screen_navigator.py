@@ -47,8 +47,10 @@ Reponds uniquement en JSON valide, sans Markdown:
 }
 
 Regles:
+- Raisonne en interne: comprendre l'objectif, identifier l'app active, choisir le chemin le plus court, verifier le resultat attendu.
 - Clique seulement si le bouton/champ cible est clairement visible.
 - Si l'instruction demande d'ouvrir un site, une page ou une video et que l'URL est claire, action="open_url".
+- Si l'instruction demande "ouvre X et clique/remplis", ouvre d'abord la destination puis utilise les captures suivantes pour agir.
 - Si la tache est deja accomplie a l'ecran, action="none" et done=true.
 - Si le bouton vise envoie, publie, repond ou paie, external_send=true.
 - Ne choisis jamais un bouton Envoyer/Publier/Payer si Victor demande seulement de preparer ou brouillonner.
@@ -82,6 +84,9 @@ def wants_screen_navigation(message: str) -> bool:
         "a l'ecran",
         "dans la fenetre",
         "fenetre active",
+        "pilote le pc",
+        "pilote mon pc",
+        "controle mon pc",
         "trouve le bouton",
         "clique sur le bon bouton",
         "remplis le champ",
@@ -117,8 +122,16 @@ def wants_screen_navigation(message: str) -> bool:
         "page",
         "onglet",
     )
-    return any(marker in normalized for marker in action_markers) and any(
+    if any(marker in normalized for marker in action_markers) and any(
         marker in normalized for marker in ui_context
+    ):
+        return True
+
+    return bool(
+        re.search(
+            r"\b(?:ouvre|ouvrir|lance|va sur)\b.{0,80}\b(?:clique|click|remplis|colle|selectionne|appuie)\b",
+            normalized,
+        )
     )
 
 
@@ -163,6 +176,20 @@ def _detect_initial_url(message: str) -> str:
     if assist:
         return assist["url"]
     return detect_browser_open_url(message) or ""
+
+
+def _safe_step_for_prompt(step: dict[str, object]) -> dict[str, object]:
+    return {
+        "index": step.get("index"),
+        "action": step.get("action"),
+        "target": step.get("target"),
+        "confidence": step.get("confidence"),
+        "executed": step.get("executed"),
+        "blocked": step.get("blocked"),
+        "done": step.get("done"),
+        "message": step.get("message"),
+        "reason": step.get("reason"),
+    }
 
 
 def _execute_payload(payload: dict[str, Any], instruction: str) -> dict[str, object]:
@@ -295,6 +322,20 @@ async def navigate_screen(
         try:
             capture = capture_screen()
         except ScreenReaderError as exc:
+            if steps:
+                steps.append(
+                    {
+                        "index": index,
+                        "action": "none",
+                        "target": "capture",
+                        "confidence": 0.0,
+                        "executed": False,
+                        "blocked": True,
+                        "done": False,
+                        "message": f"Capture impossible apres action precedente: {exc}",
+                    }
+                )
+                break
             raise ScreenNavigationError(str(exc)) from exc
 
         path = Path(str(capture["path"]))
@@ -302,7 +343,7 @@ async def navigate_screen(
             f"{SCREEN_NAVIGATION_PROMPT}\n\n"
             f"Instruction de Victor:\n{instruction.strip()}\n\n"
             f"Etapes deja executees:\n"
-            f"{json.dumps(steps[-5:], ensure_ascii=False)}"
+            f"{json.dumps([_safe_step_for_prompt(step) for step in steps[-5:]], ensure_ascii=False)}"
         )
 
         try:
@@ -312,6 +353,21 @@ async def navigate_screen(
                 model=settings.eva_screen_vision_model,
             )
         except OllamaClientError as exc:
+            if steps:
+                steps.append(
+                    {
+                        "index": index,
+                        "capture": capture,
+                        "action": "none",
+                        "target": "vision",
+                        "confidence": 0.0,
+                        "executed": False,
+                        "blocked": True,
+                        "done": False,
+                        "message": f"Vision Ollama indisponible apres action precedente: {exc}",
+                    }
+                )
+                break
             raise ScreenNavigationError(str(exc)) from exc
 
         decision = _extract_json(raw)
@@ -346,6 +402,11 @@ async def navigate_screen(
         "blocked": bool(blocked),
         "done": done,
         "status": "blocked" if blocked else ("done" if done else ("partial" if executed else "no_action")),
+        "next_hint": (
+            "relancer avec /pilot en gardant la fenetre visible"
+            if blocked
+            else ("continuer la navigation ecran" if executed and not done else "")
+        ),
     }
 
 
@@ -380,5 +441,8 @@ def format_screen_navigation_response(result: dict[str, object]) -> str:
     if result.get("blocked"):
         lines.append("")
         lines.append("Navigation stoppee avant action risquee ou incertaine.")
+        next_hint = str(result.get("next_hint", "")).strip()
+        if next_hint:
+            lines.append(f"Prochaine piste: {next_hint}.")
 
     return "\n".join(lines).strip()

@@ -812,6 +812,8 @@ Fonctions Telegram V4 ajoutees:
 - envoyer un message texte a Eva depuis l'iPhone;
 - recevoir une reponse du chat local Ollama;
 - creer des actions depuis un message;
+- lancer la Project Factory depuis un message naturel, pas seulement avec `/project`;
+- piloter l'ecran local avec vision + clics via `/pilot`;
 - voir les actions en attente;
 - approuver ou refuser une action;
 - executer l'action approuvee sur le PC.
@@ -831,6 +833,8 @@ Commandes Telegram:
 /terminal ERREUR
 /screen
 /ecran
+/pilot INSTRUCTION
+/nav INSTRUCTION
 /open SITE
 /pending
 /approve ID
@@ -842,6 +846,7 @@ Commandes projet depuis iPhone:
 ```text
 /project cree une app SaaS pour suivre mes prospects DreamLense
 /idea un outil local pour analyser mes devis
+j'ai une nouvelle idee de projet: un dashboard F1 avec machine learning
 /cursor Eva optimise le README et propose une checklist de tests
 /codex DreamLense corrige le bug de formulaire et garde le style premium
 ```
@@ -885,6 +890,8 @@ Terminal Doctor:
 ```text
 /terminal colle ici l'erreur PowerShell complete
 /screen lis mon ecran et detecte les erreurs visibles
+/pilot ouvre youtube et clique dans le champ de recherche
+/pilot regarde mon ecran et clique sur le bouton connexion si tu es sur
 ```
 
 Eva reconnait deja certains motifs courants. Exemple: si PowerShell affiche `C:\Program n'est pas reconnu` apres une commande `C:\Program Files\GitHub CLI\gh.exe auth login`, Eva comprend que le chemin Windows n'etait pas quote et relance `gh auth login` avec le bon appel. La validation GitHub reste humaine dans le navigateur.

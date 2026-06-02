@@ -13,6 +13,7 @@ from app.actions.action_store import (
 )
 from app.actions.executor import ActionExecutionError, execute_action
 from app.agents.operator_journal import OperatorJournalError, record_operator_tick
+from app.agents.understanding import build_understanding_frame
 from app.chat_service import ChatServiceError, process_chat_messages
 from app.config import settings
 from app.cognition.output_sanitizer import sanitize_assistant_output
@@ -50,6 +51,12 @@ from app.project_factory.planner import ProjectFactoryError, create_project_fact
 from app.projects.project_chat import build_cursor_work_session_response
 from app.projects.project_store import ProjectStoreError
 from app.screen.screen_reader import ScreenReaderError, analyze_screen
+from app.screen.screen_navigator import (
+    ScreenNavigationError,
+    format_screen_navigation_response,
+    navigate_screen,
+    wants_screen_navigation,
+)
 from app.terminal.terminal_doctor import (
     analyze_terminal_error,
     format_terminal_diagnosis,
@@ -111,6 +118,37 @@ def _sanitize_outgoing_text(text: str) -> str:
             "Relance-moi avec la meme intention, ou envoie /jobs si tu veux voir les taches autonomes en cours.",
         ]
     )
+
+
+def _remember_telegram_exchange(
+    chat_id: int,
+    user_text: str,
+    assistant_text: str,
+    context: list[dict[str, str]] | None = None,
+) -> None:
+    try:
+        append_telegram_exchange(chat_id, user_text, assistant_text)
+    except (OSError, TypeError, ValueError):
+        pass
+    try:
+        append_chat_exchange(
+            f"telegram-{chat_id}",
+            user_text,
+            assistant_text,
+            channel="telegram",
+        )
+    except ChatHistoryError:
+        pass
+    try:
+        record_operator_tick(
+            user_text,
+            assistant_text,
+            channel="telegram",
+            trusted_actions=True,
+            conversation_context=context or [],
+        )
+    except OperatorJournalError:
+        pass
 
 
 def telegram_config_status() -> dict[str, object]:
@@ -203,6 +241,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/calendar - lire les prochains evenements Calendar\n"
                 "/history - revoir le fil Telegram recent\n"
                 "/screen - lire et interpreter l'ecran du PC\n"
+                "/pilot INSTRUCTION - piloter l'ecran local avec vision + clics\n"
                 "/terminal ERREUR - analyser/corriger une erreur terminal\n"
                 "/job TACHE - mettre une tache longue dans la queue autonome\n"
                 "/jobs - voir la queue autonome locale\n"
@@ -305,6 +344,25 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             chat_id,
             f"Analyse ecran via {result['vision_model']}:\n{result['analysis']}{suffix}",
         )
+        return True
+
+    if command in {"/pilot", "/nav", "/navigate", "/controle", "/control"}:
+        if not argument:
+            await _send_message(
+                client,
+                chat_id,
+                "Usage: /pilot ouvre youtube et clique dans le champ de recherche",
+            )
+            return True
+        try:
+            result = await navigate_screen(argument)
+        except ScreenNavigationError as exc:
+            await _send_message(client, chat_id, f"Pilotage ecran impossible: {exc}")
+            return True
+
+        assistant_text = format_screen_navigation_response(result)
+        _remember_telegram_exchange(chat_id, text, assistant_text, context=load_telegram_context(chat_id))
+        await _send_message(client, chat_id, assistant_text)
         return True
 
     if command in {"/terminal", "/error", "/fix"}:
@@ -489,17 +547,53 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
         if wants_cursor_agent_setup(text):
             setup_result = setup_cursor_agent(auto_install=True, open_docs_on_block=True)
             assistant_text = format_cursor_agent_setup_response(setup_result)
-            append_telegram_exchange(chat_id, text, assistant_text)
+            _remember_telegram_exchange(chat_id, text, assistant_text, context=load_telegram_context(chat_id))
             await _send_message(client, chat_id, assistant_text)
             return
 
         context = load_telegram_context(chat_id)
+        understanding = build_understanding_frame(
+            text,
+            conversation_context=context,
+            trusted_actions=True,
+        )
+        route = understanding.action_plan.route
+
+        if route == "project_factory":
+            bundle = create_project_factory_actions(text)
+            plan = bundle["plan"]
+            actions = bundle["actions"]
+            auto_status = project_factory_auto_status()
+            if auto_status["auto_execute"]:
+                results = auto_execute_project_factory_actions(actions)
+                assistant_text = format_project_factory_results(plan, results)
+            else:
+                assistant_text = "\n".join(
+                    [
+                        f"Project Factory pret: {plan['project_name']}",
+                        f"Dossier cible: {plan['workspace_path']}",
+                        f"Repo propose: {plan['repo_name']}",
+                        "",
+                        "Auto-execution desactivee: utilise /pending puis /approve ID.",
+                    ]
+                )
+            _remember_telegram_exchange(chat_id, text, assistant_text, context=context)
+            await _send_message(client, chat_id, assistant_text)
+            return
+
+        if wants_screen_navigation(text):
+            navigation_result = await navigate_screen(text)
+            assistant_text = format_screen_navigation_response(navigation_result)
+            _remember_telegram_exchange(chat_id, text, assistant_text, context=context)
+            await _send_message(client, chat_id, assistant_text)
+            return
+
         result = await process_chat_messages(
             [*context, {"role": "user", "content": text}],
             trusted_actions=True,
             channel="telegram",
         )
-    except (ChatServiceError, CursorAgentSetupError) as exc:
+    except (ChatServiceError, CursorAgentSetupError, ProjectFactoryError, ActionStoreError, ScreenNavigationError) as exc:
         await _send_message(
             client,
             chat_id,
@@ -517,26 +611,7 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
         user_message=text,
         channel="telegram",
     )
-    append_telegram_exchange(chat_id, text, assistant_text)
-    try:
-        append_chat_exchange(
-            f"telegram-{chat_id}",
-            text,
-            assistant_text,
-            channel="telegram",
-        )
-    except ChatHistoryError:
-        pass
-    try:
-        record_operator_tick(
-            text,
-            assistant_text,
-            channel="telegram",
-            trusted_actions=True,
-            conversation_context=context,
-        )
-    except OperatorJournalError:
-        pass
+    _remember_telegram_exchange(chat_id, text, assistant_text, context=context)
     await _send_message(client, chat_id, f"{assistant_text}{suffix}")
 
 
