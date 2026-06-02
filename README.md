@@ -1016,6 +1016,7 @@ Fonctionnement:
 - l'extension lit seulement la page visible dans Brave et envoie le resume DOM a `http://localhost:8000`;
 - Eva choisit une action locale: clic, focus, remplir un champ, touche, scroll ou attente;
 - l'extension execute l'action dans l'onglet visible puis renvoie le resultat;
+- chaque clic/focus/remplissage affiche un pulse bleu directement sur la page (`Eva clique`, `Eva cible`, `Eva remplit`) pour voir ou Eva agit;
 - si l'extension est connectee, Eva la prefere au mode pixels pour les entrainements navigateur;
 - si l'extension n'est pas connectee, Eva retombe sur `/screen/training`.
 
@@ -1047,6 +1048,8 @@ Continue l'exercice visible en mode entrainement
 ```
 
 Eva lance alors une boucle locale: observer la page, choisir une action, cliquer/remplir/scroller, verifier le resultat, puis continuer jusqu'a la fin detectee ou la limite de tours.
+
+Cette boucle suit le meme principe qu'un agent navigateur moderne: observation de l'etat visible, decision structuree, action locale, resultat, puis verification avant le tour suivant. La difference importante est qu'Eva reste local-first: elle utilise Ollama, le DOM de Brave et les outils locaux disponibles.
 
 Le pont reste local et gratuit. Il ne lit pas les messages prives ou les comptes caches; il voit ce qui est present dans le DOM de l'onglet actif. Les examens officiels, certifications et evaluations notees restent bloques.
 

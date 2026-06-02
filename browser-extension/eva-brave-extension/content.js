@@ -59,6 +59,91 @@ function elementLabel(element) {
   return cleanText([tag, type, aria, title, placeholder, alt, text].filter(Boolean).join(" | "), 260);
 }
 
+function ensureEvaVisualStyles() {
+  if (document.getElementById("eva-bridge-visual-style")) return;
+  const style = document.createElement("style");
+  style.id = "eva-bridge-visual-style";
+  style.textContent = `
+    @keyframes evaBridgePulse {
+      0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.35); }
+      55% { opacity: 0.9; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); }
+    }
+    @keyframes evaBridgeLabel {
+      0% { opacity: 0; transform: translateY(4px); }
+      18% { opacity: 1; transform: translateY(0); }
+      78% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-4px); }
+    }
+    .eva-bridge-click-pulse {
+      position: fixed;
+      width: 56px;
+      height: 56px;
+      border: 2px solid rgba(101, 216, 255, 0.98);
+      border-radius: 999px;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+        0 0 22px rgba(101, 216, 255, 0.75),
+        0 0 52px rgba(42, 145, 255, 0.35);
+      pointer-events: none;
+      z-index: 2147483647;
+      animation: evaBridgePulse 1150ms cubic-bezier(.2,.9,.25,1) forwards;
+    }
+    .eva-bridge-click-pulse::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: inherit;
+      background: rgba(101, 216, 255, 0.95);
+      box-shadow: 0 0 16px rgba(101, 216, 255, 0.95);
+    }
+    .eva-bridge-click-label {
+      position: fixed;
+      max-width: 220px;
+      padding: 8px 11px;
+      border: 1px solid rgba(101, 216, 255, 0.72);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(6, 28, 43, 0.94), rgba(10, 58, 86, 0.88));
+      color: #eaf8ff;
+      font: 700 12px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 28px rgba(101, 216, 255, 0.22);
+      pointer-events: none;
+      z-index: 2147483647;
+      animation: evaBridgeLabel 1150ms ease-out forwards;
+    }
+  `;
+  document.documentElement.appendChild(style);
+}
+
+function showEvaActionBubble(element, text) {
+  if (!element || typeof element.getBoundingClientRect !== "function") return;
+  ensureEvaVisualStyles();
+  const rect = element.getBoundingClientRect();
+  const x = Math.max(24, Math.min(window.innerWidth - 24, rect.left + rect.width / 2));
+  const y = Math.max(24, Math.min(window.innerHeight - 24, rect.top + rect.height / 2));
+  const labelX = Math.max(12, Math.min(window.innerWidth - 180, x + 22));
+  const labelY = Math.max(12, Math.min(window.innerHeight - 54, y - 20));
+
+  const pulse = document.createElement("div");
+  pulse.className = "eva-bridge-click-pulse";
+  pulse.style.left = `${x}px`;
+  pulse.style.top = `${y}px`;
+
+  const label = document.createElement("div");
+  label.className = "eva-bridge-click-label";
+  label.textContent = text;
+  label.style.left = `${labelX}px`;
+  label.style.top = `${labelY}px`;
+
+  document.documentElement.append(pulse, label);
+  window.setTimeout(() => {
+    pulse.remove();
+    label.remove();
+  }, 1300);
+}
+
 function collectElements() {
   const selectors = [
     "button",
@@ -167,6 +252,7 @@ async function executeAction(action) {
 
   if (name === "click") {
     const label = elementLabel(element);
+    showEvaActionBubble(element, "Eva clique");
     if (evaPendingClickTimer) {
       window.clearTimeout(evaPendingClickTimer);
     }
@@ -178,11 +264,13 @@ async function executeAction(action) {
   }
 
   if (name === "focus") {
+    showEvaActionBubble(element, "Eva cible");
     element.focus();
     return { ok: true, message: `Focused ${elementLabel(element)}` };
   }
 
   if (name === "set_value") {
+    showEvaActionBubble(element, "Eva remplit");
     element.focus();
     const text = String(action.text || "");
     if ("value" in element) {
