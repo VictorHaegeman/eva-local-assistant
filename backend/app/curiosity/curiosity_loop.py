@@ -14,10 +14,11 @@ import httpx
 
 from app.briefs.rss_brief import RssBriefError, fetch_rss_items
 from app.config import settings
-from app.llm.ollama_client import OllamaClientError, ask_ollama
+from app.llm.ollama_client import OllamaClientError, ask_ollama_json
 from app.memory.embedding_store import EmbeddingStoreError, rebuild_memory_embeddings
 from app.memory.memory_store import MemoryStoreError, add_memory
 from app.memory.obsidian_store import ObsidianMemoryError, ensure_obsidian_vault, mirror_memory_to_obsidian
+from app.web.web_search import WebSearchError, search_web
 
 
 class CuriosityError(Exception):
@@ -44,6 +45,23 @@ class CuriosityTopic:
     reason: str
 
 
+@dataclass(frozen=True)
+class SocialPublicQuery:
+    query: str
+    category: str
+    priority: int
+    reason: str
+
+
+@dataclass(frozen=True)
+class SocialPublicProfile:
+    handle: str
+    url: str
+    category: str
+    priority: int
+    reason: str
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
 CURIOUS_SOURCES_PATH = DATA_DIR / "eva_curiosity_sources.json"
@@ -62,6 +80,10 @@ DEFAULT_FOCUS = (
     "finance",
     "DreamLense",
     "LinkedIn",
+    "Twitter",
+    "X",
+    "social behavior",
+    "creator economy",
     "productivite",
     "machine learning",
 )
@@ -125,6 +147,64 @@ DEFAULT_WIKIPEDIA_TOPICS: tuple[CuriosityTopic, ...] = (
     ),
 )
 
+DEFAULT_SOCIAL_PUBLIC_QUERIES: tuple[SocialPublicQuery, ...] = (
+    SocialPublicQuery(
+        query='site:x.com ("AI agents" OR "autonomous agents") ("build" OR "workflow" OR "automation")',
+        category="social_ai_agents",
+        priority=30,
+        reason="comprendre comment les builders parlent des agents IA",
+    ),
+    SocialPublicQuery(
+        query='site:x.com ("local AI" OR Ollama OR "open source AI") ("agent" OR "assistant")',
+        category="social_local_ai",
+        priority=28,
+        reason="reperer les patterns autour de l'IA locale gratuite",
+    ),
+    SocialPublicQuery(
+        query='site:x.com (LinkedIn OR "personal brand") ("AI" OR "startup") ("hook" OR "post" OR "growth")',
+        category="social_content",
+        priority=24,
+        reason="ameliorer les angles de posts et la comprehension des reactions sociales",
+    ),
+    SocialPublicQuery(
+        query='site:x.com ("AI headshots" OR "professional portraits" OR "personal branding")',
+        category="social_dreamlense",
+        priority=34,
+        reason="surveiller des signaux utiles pour DreamLense",
+    ),
+)
+
+DEFAULT_SOCIAL_PUBLIC_PROFILES: tuple[SocialPublicProfile, ...] = (
+    SocialPublicProfile(
+        handle="OpenAI",
+        url="https://x.com/OpenAI",
+        category="social_ai_profile",
+        priority=18,
+        reason="observer le positionnement public d'un acteur IA majeur",
+    ),
+    SocialPublicProfile(
+        handle="GoogleDeepMind",
+        url="https://x.com/GoogleDeepMind",
+        category="social_ai_profile",
+        priority=18,
+        reason="observer comment un laboratoire IA presente ses avancees",
+    ),
+    SocialPublicProfile(
+        handle="ycombinator",
+        url="https://x.com/ycombinator",
+        category="social_startup_profile",
+        priority=18,
+        reason="observer le langage startup et opportunites business",
+    ),
+    SocialPublicProfile(
+        handle="levelsio",
+        url="https://x.com/levelsio",
+        category="social_builder_profile",
+        priority=20,
+        reason="observer les signaux indie builder, produit et distribution",
+    ),
+)
+
 KEYWORD_WEIGHTS = {
     "ia": 7,
     "ai": 7,
@@ -140,6 +220,16 @@ KEYWORD_WEIGHTS = {
     "startup": 4,
     "business": 4,
     "linkedin": 6,
+    "twitter": 5,
+    "x.com": 5,
+    "social": 4,
+    "post": 4,
+    "hook": 5,
+    "viral": 4,
+    "creator": 4,
+    "audience": 4,
+    "community": 4,
+    "growth": 5,
     "vente": 5,
     "prospect": 5,
     "portrait": 6,
@@ -292,6 +382,89 @@ def _configured_wikipedia_topics(config: dict[str, Any]) -> list[CuriosityTopic]
         return list(DEFAULT_WIKIPEDIA_TOPICS)
     topics = [topic for topic in (_topic_from_config(item) for item in raw_topics) if topic]
     return topics or list(DEFAULT_WIKIPEDIA_TOPICS)
+
+
+def _social_query_from_config(payload: Any) -> SocialPublicQuery | None:
+    if isinstance(payload, str):
+        query = payload.strip()
+        return SocialPublicQuery(
+            query=query,
+            category="social_public",
+            priority=18,
+            reason="requete sociale configuree",
+        ) if query else None
+    if not isinstance(payload, dict):
+        return None
+
+    query = str(payload.get("query", "")).strip()
+    if not query:
+        return None
+    category = str(payload.get("category", "social_public")).strip() or "social_public"
+    reason = str(payload.get("reason", "veille sociale publique")).strip() or "veille sociale publique"
+    priority = _int_from_config(payload, "priority", 24, 0, 100)
+    return SocialPublicQuery(
+        query=query,
+        category=category,
+        priority=priority,
+        reason=reason,
+    )
+
+
+def _configured_social_queries(config: dict[str, Any]) -> list[SocialPublicQuery]:
+    social_public = config.get("social_public", {})
+    if not isinstance(social_public, dict):
+        return list(DEFAULT_SOCIAL_PUBLIC_QUERIES)
+    raw_queries = social_public.get("queries", [])
+    if not isinstance(raw_queries, list):
+        return list(DEFAULT_SOCIAL_PUBLIC_QUERIES)
+    queries = [query for query in (_social_query_from_config(item) for item in raw_queries) if query]
+    return queries or list(DEFAULT_SOCIAL_PUBLIC_QUERIES)
+
+
+def _social_profile_from_config(payload: Any) -> SocialPublicProfile | None:
+    if isinstance(payload, str):
+        handle = payload.strip().lstrip("@")
+        if not handle:
+            return None
+        return SocialPublicProfile(
+            handle=handle,
+            url=f"https://x.com/{handle}",
+            category="social_public_profile",
+            priority=18,
+            reason="profil social public configure",
+        )
+    if not isinstance(payload, dict):
+        return None
+
+    handle = str(payload.get("handle", "")).strip().lstrip("@")
+    url = str(payload.get("url", "")).strip()
+    if not url and handle:
+        url = f"https://x.com/{handle}"
+    if not handle and url:
+        handle = url.rstrip("/").rsplit("/", 1)[-1].lstrip("@")
+    if not handle or not url.startswith(("https://x.com/", "https://twitter.com/")):
+        return None
+    category = str(payload.get("category", "social_public_profile")).strip() or "social_public_profile"
+    reason = str(payload.get("reason", "profil social public configure")).strip() or "profil social public configure"
+    priority = _int_from_config(payload, "priority", 18, 0, 100)
+    return SocialPublicProfile(
+        handle=handle,
+        url=url,
+        category=category,
+        priority=priority,
+        reason=reason,
+    )
+
+
+def _configured_social_profiles(config: dict[str, Any]) -> list[SocialPublicProfile]:
+    social_public = config.get("social_public", {})
+    if not isinstance(social_public, dict):
+        return list(DEFAULT_SOCIAL_PUBLIC_PROFILES)
+    raw_profiles = social_public.get("profiles", [])
+    if not isinstance(raw_profiles, list):
+        return list(DEFAULT_SOCIAL_PUBLIC_PROFILES)
+    profiles = [profile for profile in (_social_profile_from_config(item) for item in raw_profiles) if profile]
+    return profiles or list(DEFAULT_SOCIAL_PUBLIC_PROFILES)
 
 
 def _score_item(title: str, excerpt: str, category: str, focus: list[str]) -> tuple[int, tuple[str, ...]]:
@@ -477,12 +650,188 @@ async def _fetch_rss_curiosity_items(config: dict[str, Any], focus: list[str]) -
     return items
 
 
-async def _build_insight(item: CuriosityItem, focus: list[str]) -> str:
-    prompt = f"""
-Tu es Eva, assistante locale de Victor.
-Tu lis une source publique pour t'instruire et enrichir ta memoire.
-Ne stocke pas l'article complet. Extrais seulement une lecon courte, utile et reutilisable pour Victor.
+async def _fetch_social_public_items(config: dict[str, Any], focus: list[str]) -> list[CuriosityItem]:
+    social_public = config.get("social_public", {})
+    if not isinstance(social_public, dict) or not bool(social_public.get("enabled", False)):
+        return []
 
+    queries = _configured_social_queries(config)
+    max_queries = _int_from_config(social_public, "max_queries_per_run", 3, 0, 8)
+    results_per_query = _int_from_config(social_public, "results_per_query", 3, 1, 6)
+    profiles = _configured_social_profiles(config)
+    max_profiles = _int_from_config(social_public, "max_profiles_per_run", 3, 0, 8)
+
+    items: list[CuriosityItem] = []
+    for configured_query in queries[:max_queries]:
+        try:
+            results = await search_web(configured_query.query, limit=results_per_query)
+        except WebSearchError:
+            continue
+
+        for result in results:
+            url = str(result.url or "").strip()
+            title = _strip_text(result.title)
+            snippet = _strip_text(result.snippet)[:700]
+            if not url or not title or _already_seen(url, title):
+                continue
+            if "x.com" not in _normalize(url) and "twitter.com" not in _normalize(url):
+                continue
+
+            excerpt = _strip_text(
+                " ".join(
+                    [
+                        snippet,
+                        f"Signal social public detecte via recherche X/Twitter: {configured_query.query}.",
+                        f"Pourquoi Eva lit ce signal: {configured_query.reason}.",
+                        "Objectif: comprendre les comportements, hooks, objections, angles et idees qui circulent publiquement.",
+                    ]
+                )
+            )[:1400]
+            base_score, tags = _score_item(title, excerpt, configured_query.category, focus)
+            tags = tuple(
+                list(
+                    dict.fromkeys(
+                        (
+                            *tags,
+                            configured_query.category,
+                            "twitter",
+                            "x_public",
+                            "social_signal",
+                        )
+                    )
+                )[:10]
+            )
+            items.append(
+                CuriosityItem(
+                    source="X/Twitter public search",
+                    category=configured_query.category,
+                    title=title,
+                    url=url,
+                    excerpt=excerpt,
+                    score=min(base_score + configured_query.priority, 100),
+                    tags=tags,
+                )
+            )
+
+    if max_profiles > 0:
+        async with httpx.AsyncClient(timeout=16.0, follow_redirects=True) as client:
+            for profile in profiles[:max_profiles]:
+                day_key = datetime.now(UTC).date().isoformat()
+                stored_url = f"{profile.url}#eva-profile-{day_key}"
+                if _already_seen(stored_url, f"X/Twitter public profile @{profile.handle} {day_key}"):
+                    continue
+                try:
+                    response = await client.get(
+                        profile.url,
+                        headers={"User-Agent": "Mozilla/5.0 EvaLocalAssistant/1.0"},
+                    )
+                    response.raise_for_status()
+                except httpx.HTTPError:
+                    continue
+
+                profile_text = _extract_x_public_profile_text(response.text)
+                if not profile_text:
+                    continue
+                excerpt = _strip_text(
+                    " ".join(
+                        [
+                            f"Profil public X/Twitter observe: @{profile.handle}.",
+                            profile_text,
+                            f"Pourquoi Eva lit ce profil: {profile.reason}.",
+                            "Objectif: comprendre les signaux publics, positioning, hooks, audience et comportements.",
+                        ]
+                    )
+                )[:1400]
+                base_score, tags = _score_item(
+                    f"X/Twitter public profile @{profile.handle}",
+                    excerpt,
+                    profile.category,
+                    focus,
+                )
+                tags = tuple(
+                    list(
+                        dict.fromkeys(
+                            (
+                                *tags,
+                                profile.category,
+                                "twitter",
+                                "x_public",
+                                "social_profile",
+                            )
+                        )
+                    )[:10]
+                )
+                items.append(
+                    CuriosityItem(
+                        source="X/Twitter public profile",
+                        category=profile.category,
+                        title=f"X/Twitter public profile @{profile.handle}",
+                        url=stored_url,
+                        excerpt=excerpt,
+                        score=min(base_score + profile.priority, 100),
+                        tags=tags,
+                    )
+                )
+
+    return items
+
+
+def _extract_json_string_values(text: str, key: str, limit: int = 12) -> list[str]:
+    pattern = rf'"{re.escape(key)}"\s*:\s*"((?:\\.|[^"\\])*)"'
+    values: list[str] = []
+    for raw_value in re.findall(pattern, text)[:limit]:
+        try:
+            decoded = json.loads(f'"{raw_value}"')
+        except json.JSONDecodeError:
+            decoded = raw_value
+        clean_value = _strip_text(str(decoded))
+        if clean_value and clean_value not in values:
+            values.append(clean_value)
+    return values
+
+
+def _extract_x_public_profile_text(html_text: str) -> str:
+    descriptions = [
+        value
+        for value in _extract_json_string_values(html_text, "description", limit=18)
+        if 18 <= len(value) <= 320 and "opensearchdescription" not in _normalize(value)
+    ]
+    names = _extract_json_string_values(html_text, "name", limit=8)
+    screen_names = _extract_json_string_values(html_text, "screen_name", limit=8)
+    followers_match = re.search(r'"followers_count"\s*:\s*(\d+)', html_text)
+    followers = followers_match.group(1) if followers_match else ""
+
+    chunks: list[str] = []
+    if names:
+        chunks.append(f"Nom public: {names[0]}.")
+    if screen_names:
+        chunks.append(f"Handle detecte: @{screen_names[0]}.")
+    if descriptions:
+        chunks.append(f"Bio publique: {descriptions[0]}.")
+    if followers:
+        chunks.append(f"Followers publics detectes: {followers}.")
+
+    return " ".join(chunks)
+
+
+async def _build_insight(item: CuriosityItem, focus: list[str]) -> str:
+    social_instruction = ""
+    if item.source.startswith("X/Twitter"):
+        social_instruction = """
+Pour un signal X/Twitter public, ne resume pas seulement le contenu.
+Extrais surtout une lecon sociale utile: pourquoi ca attire l'attention, quel comportement humain on observe, quel angle de post ou de produit Victor peut reutiliser, et quelle limite verifier.
+""".strip()
+
+    system_prompt = f"""
+Tu es Eva, assistante locale de Victor.
+Tu transformes une source publique en micro-apprentissage local.
+Ne stocke jamais l'article complet.
+Retourne uniquement du JSON valide: {{"insight":"A retenir: ..."}}
+La valeur insight doit faire moins de 420 caracteres, en francais, utile et reutilisable.
+{social_instruction}
+""".strip()
+
+    user_prompt = f"""
 Axes Victor: {", ".join(focus)}
 
 Source: {item.source}
@@ -491,12 +840,19 @@ Titre: {item.title}
 URL: {item.url}
 Extrait:
 {item.excerpt[:2200]}
-
-Reponds en une seule phrase francaise de moins de 420 caracteres.
-Structure: "A retenir: ..."
 """.strip()
     try:
-        insight = await ask_ollama([{"role": "user", "content": prompt}], mode="chat")
+        payload = await ask_ollama_json(
+            system_prompt,
+            user_prompt,
+            timeout_seconds=min(settings.ollama_reasoning_timeout_seconds, 18.0),
+            temperature=0.2,
+        )
+        insight = str(payload.get("insight", "")).strip()
+        if not insight:
+            raise OllamaClientError("Insight vide.")
+        if not _normalize(insight).startswith("a retenir"):
+            insight = f"A retenir: {insight}"
     except OllamaClientError:
         insight = f"A retenir: {item.title} semble pertinent pour {', '.join(item.tags[:3]) or 'la veille de Victor'}."
     return " ".join(insight.split())[:520]
@@ -579,14 +935,15 @@ async def run_curiosity_once(force: bool = False) -> dict[str, Any]:
     config = load_curiosity_config()
     focus = _focus_terms(config)
     state = _load_state()
-    rss_items, wiki_items, targeted_result = await asyncio.gather(
+    rss_items, wiki_items, targeted_result, social_items = await asyncio.gather(
         _fetch_rss_curiosity_items(config, focus),
         _fetch_wikipedia_items(config, focus),
         _fetch_wikipedia_targeted_items(config, focus, state),
+        _fetch_social_public_items(config, focus),
     )
     targeted_items, next_wikipedia_offset = targeted_result
     candidates = sorted(
-        [*targeted_items, *rss_items, *wiki_items],
+        [*social_items, *targeted_items, *rss_items, *wiki_items],
         key=lambda item: item.score,
         reverse=True,
     )
@@ -649,6 +1006,7 @@ async def run_curiosity_once(force: bool = False) -> dict[str, Any]:
         "last_result": {
             "candidates": len(candidates),
             "targeted_candidates": len(targeted_items),
+            "social_candidates": len(social_items),
             "rss_candidates": len(rss_items),
             "random_wikipedia_candidates": len(wiki_items),
             "learned": len(learned),
@@ -663,6 +1021,7 @@ async def run_curiosity_once(force: bool = False) -> dict[str, Any]:
         "ran": True,
         "candidates": len(candidates),
         "targeted_candidates": len(targeted_items),
+        "social_candidates": len(social_items),
         "rss_candidates": len(rss_items),
         "random_wikipedia_candidates": len(wiki_items),
         "learned": learned,
@@ -737,6 +1096,30 @@ def curiosity_status(limit: int = 20) -> dict[str, Any]:
             }
             for topic in _configured_wikipedia_topics(config)
         ],
+        "social_public": {
+            "enabled": bool(config.get("social_public", {}).get("enabled", False))
+            if isinstance(config.get("social_public", {}), dict)
+            else False,
+            "queries": [
+                {
+                    "query": query.query,
+                    "category": query.category,
+                    "priority": query.priority,
+                    "reason": query.reason,
+                }
+                for query in _configured_social_queries(config)
+            ],
+            "profiles": [
+                {
+                    "handle": profile.handle,
+                    "url": profile.url,
+                    "category": profile.category,
+                    "priority": profile.priority,
+                    "reason": profile.reason,
+                }
+                for profile in _configured_social_profiles(config)
+            ],
+        },
         "total_items": int(total["count"]) if total else 0,
         "state": state,
         "recent": list_curiosity_items(limit=limit),

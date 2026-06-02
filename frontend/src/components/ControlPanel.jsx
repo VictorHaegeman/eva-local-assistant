@@ -1200,6 +1200,9 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
     const rules = Array.isArray(data?.rules) ? data.rules : [];
     const focus = Array.isArray(data?.focus) ? data.focus : [];
     const wikipediaTopics = Array.isArray(data?.wikipedia_topics) ? data.wikipedia_topics : [];
+    const socialPublic = data?.social_public || {};
+    const socialQueries = Array.isArray(socialPublic?.queries) ? socialPublic.queries : [];
+    const socialProfiles = Array.isArray(socialPublic?.profiles) ? socialPublic.profiles : [];
     const lastResult = data?.state?.last_result || {};
     const lastRunAt = data?.state?.last_run_at || "";
 
@@ -1225,6 +1228,7 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
           </p>
           <Field label="Dernier passage" value={lastRunAt ? new Date(lastRunAt).toLocaleString() : "jamais"} />
           <Field label="Candidats dernier passage" value={lastResult.candidates ?? 0} />
+          <Field label="Signaux X/Twitter publics" value={lastResult.social_candidates ?? 0} />
           <Field label="Self-study Wikipedia" value={lastResult.targeted_candidates ?? 0} />
           <Field label="RSS / veille" value={lastResult.rss_candidates ?? 0} />
           <Field label="Apprentissages dernier passage" value={lastResult.learned ?? 0} />
@@ -1239,6 +1243,40 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
               <BookOpen size={15} aria-hidden="true" />
               {runningJob === "curiosity_run" ? "Lecture..." : "Lire maintenant"}
             </button>
+          </div>
+        </section>
+        <section className="panel-card">
+          <div className="panel-card-heading">
+            <h3>Veille sociale publique</h3>
+            <StatusPill tone={socialPublic.enabled ? "ok" : "warning"}>
+              {socialPublic.enabled ? "active" : "off"}
+            </StatusPill>
+          </div>
+          <p>
+            Eva lit des signaux publics X/Twitter via recherche web locale, puis retient des patterns:
+            hooks, objections, angles de post, comportements et opportunites DreamLense.
+          </p>
+          <div className="panel-list compact">
+            {socialProfiles.slice(0, 4).map((profile) => (
+              <div key={`${profile.handle}-${profile.url}`} className="panel-row muted-row">
+                <div>
+                  <strong>@{profile.handle}</strong>
+                  <span>{profile.reason}</span>
+                  <span className="panel-row-note">{profile.url}</span>
+                </div>
+                <StatusPill tone="ok">profil</StatusPill>
+              </div>
+            ))}
+            {socialQueries.slice(0, 6).map((query) => (
+              <div key={`${query.category}-${query.query}`} className="panel-row muted-row">
+                <div>
+                  <strong>{query.category}</strong>
+                  <span>{query.reason}</span>
+                  <span className="panel-row-note">{query.query}</span>
+                </div>
+                <StatusPill tone="ok">{query.priority}</StatusPill>
+              </div>
+            ))}
           </div>
         </section>
         <section className="panel-card">

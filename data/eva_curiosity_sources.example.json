@@ -6,6 +6,10 @@
     "finance",
     "DreamLense",
     "LinkedIn",
+    "Twitter",
+    "X",
+    "social behavior",
+    "creator economy",
     "productivite",
     "machine learning"
   ],
@@ -14,8 +18,71 @@
     "Ne pas stocker d'article complet dans la memoire.",
     "Transformer les lectures en apprentissages courts et utiles.",
     "Ne jamais stocker de secrets, tokens ou donnees de compte.",
-    "Twitter/X n'est pas lu directement sans integration explicite."
+    "Lire X/Twitter uniquement via signaux publics configurables, sans DMs ni session privee.",
+    "Pour les signaux sociaux, extraire des comportements, hooks, objections et angles reutilisables."
   ],
+  "social_public": {
+    "enabled": true,
+    "max_queries_per_run": 3,
+    "results_per_query": 3,
+    "max_profiles_per_run": 3,
+    "profiles": [
+      {
+        "handle": "OpenAI",
+        "url": "https://x.com/OpenAI",
+        "category": "social_ai_profile",
+        "priority": 18,
+        "reason": "observer le positionnement public d'un acteur IA majeur"
+      },
+      {
+        "handle": "GoogleDeepMind",
+        "url": "https://x.com/GoogleDeepMind",
+        "category": "social_ai_profile",
+        "priority": 18,
+        "reason": "observer comment un laboratoire IA presente ses avancees"
+      },
+      {
+        "handle": "ycombinator",
+        "url": "https://x.com/ycombinator",
+        "category": "social_startup_profile",
+        "priority": 18,
+        "reason": "observer le langage startup et opportunites business"
+      },
+      {
+        "handle": "levelsio",
+        "url": "https://x.com/levelsio",
+        "category": "social_builder_profile",
+        "priority": 20,
+        "reason": "observer les signaux indie builder, produit et distribution"
+      }
+    ],
+    "queries": [
+      {
+        "query": "site:x.com (\"AI agents\" OR \"autonomous agents\") (\"build\" OR \"workflow\" OR \"automation\")",
+        "category": "social_ai_agents",
+        "priority": 30,
+        "reason": "comprendre comment les builders parlent des agents IA"
+      },
+      {
+        "query": "site:x.com (\"local AI\" OR Ollama OR \"open source AI\") (\"agent\" OR \"assistant\")",
+        "category": "social_local_ai",
+        "priority": 28,
+        "reason": "reperer les patterns autour de l'IA locale gratuite"
+      },
+      {
+        "query": "site:x.com (LinkedIn OR \"personal brand\") (\"AI\" OR \"startup\") (\"hook\" OR \"post\" OR \"growth\")",
+        "category": "social_content",
+        "priority": 24,
+        "reason": "ameliorer les angles de posts et la comprehension des reactions sociales"
+      },
+      {
+        "query": "site:x.com (\"AI headshots\" OR \"professional portraits\" OR \"personal branding\")",
+        "category": "social_dreamlense",
+        "priority": 34,
+        "reason": "surveiller des signaux utiles pour DreamLense"
+      }
+    ]
+  },
   "wikipedia": {
     "enabled": true,
     "languages": ["fr", "en"],

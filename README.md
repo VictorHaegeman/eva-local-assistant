@@ -490,9 +490,10 @@ Cette approche rend Eva plus intelligente par contexte, retrieval, clusters et f
 
 Eva peut aussi fonctionner comme une machine qui s'instruit en arriere-plan, sans attendre une demande de Victor. Cette V1 reste volontairement controlee:
 
-- lectures publiques uniquement: RSS deja configures et pages Wikipedia publiques;
-- deux canaux: `veille` pour les RSS/news et `self-study` pour un curriculum Wikipedia cible;
-- pas de scraping direct Twitter/X en V1, car c'est fragile, souvent bloque et mauvais pour une memoire propre;
+- lectures publiques uniquement: RSS deja configures, pages Wikipedia publiques et signaux sociaux publics configurables;
+- trois canaux: `veille` pour les RSS/news, `self-study` pour un curriculum Wikipedia cible, `social_public` pour X/Twitter public via recherche web;
+- pas de DMs, pas de compte prive et pas de stockage de session Twitter/X dans Eva;
+- pour X/Twitter, Eva retient des comportements, hooks, objections, angles de post et signaux utiles, pas des timelines entieres;
 - scoring local selon tes axes: IA, agents autonomes, business, finance, DreamLense, LinkedIn, productivite, machine learning;
 - stockage d'une lecon courte, pas de copie complete d'article;
 - ajout dans `data/eva_memory.sqlite`, miroir Obsidian et rapport dans `data/obsidian_vault/85 - Curiosity/`;
@@ -520,6 +521,35 @@ Le curriculum self-study est configurable dans `data/eva_curiosity_sources.json`
 
 ```json
 {
+  "social_public": {
+    "enabled": true,
+    "max_queries_per_run": 3,
+    "results_per_query": 3,
+    "max_profiles_per_run": 3,
+    "profiles": [
+      {
+        "handle": "OpenAI",
+        "url": "https://x.com/OpenAI",
+        "category": "social_ai_profile",
+        "priority": 18,
+        "reason": "observer le positionnement public d'un acteur IA majeur"
+      }
+    ],
+    "queries": [
+      {
+        "query": "site:x.com (\"AI agents\" OR \"autonomous agents\") (\"build\" OR \"workflow\" OR \"automation\")",
+        "category": "social_ai_agents",
+        "priority": 30,
+        "reason": "comprendre comment les builders parlent des agents IA"
+      },
+      {
+        "query": "site:x.com (\"AI headshots\" OR \"professional portraits\" OR \"personal branding\")",
+        "category": "social_dreamlense",
+        "priority": 34,
+        "reason": "surveiller des signaux utiles pour DreamLense"
+      }
+    ]
+  },
   "wikipedia": {
     "enabled": true,
     "pages_per_run": 1,
