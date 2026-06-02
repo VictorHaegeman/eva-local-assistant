@@ -264,6 +264,27 @@ def _selected_element_text(action: dict[str, Any], snapshot: dict[str, Any]) -> 
     return str(action.get("selector", "")).lower()
 
 
+def _looks_like_assessment_page(snapshot: dict[str, Any]) -> bool:
+    url = str(snapshot.get("tab_url") or snapshot.get("url") or "").lower()
+    title = str(snapshot.get("title") or "").lower()
+    text = str(snapshot.get("visible_text") or "").lower()
+    page_text = f"{title} {text}"
+
+    if any(marker in page_text for marker in ("certification", "examen officiel", "evaluation notee", "controle final")):
+        return True
+    if "noté sur" in page_text or "note sur" in page_text:
+        return True
+    if "terminer le test" in page_text or "navigation du test" in page_text:
+        return True
+    if ("exam" in title or "examen" in title) and "test" in title:
+        return True
+    if ("/mod/quiz/attempt" in url or "attempt.php" in url) and any(
+        marker in page_text for marker in ("test", "noté", "note", "question", "terminer")
+    ):
+        return True
+    return False
+
+
 def _safe_action_payload(action: dict[str, Any], snapshot: dict[str, Any], instruction: str) -> dict[str, Any]:
     payload = dict(action)
     name = str(payload.get("action", "none")).strip().lower()
@@ -290,17 +311,25 @@ def _safe_action_payload(action: dict[str, Any], snapshot: dict[str, Any], instr
         payload["blocked"] = True
         payload["official_assessment"] = True
         payload["reason"] = "Stop: examen/certification/evaluation officielle detectee."
-    elif any(marker in page_text for marker in ("certification", "examen officiel", "evaluation notee", "controle final")):
-        if not any(marker in instruction.lower() for marker in TRAINING_CONTEXT_MARKERS):
-            payload["action"] = "none"
-            payload["blocked"] = True
-            payload["official_assessment"] = True
-            payload["reason"] = "Stop: page d'evaluation officielle probable."
+    elif _looks_like_assessment_page(snapshot):
+        payload["action"] = "none"
+        payload["blocked"] = True
+        payload["official_assessment"] = True
+        payload["reason"] = (
+            "Stop: page de test/evaluation detectee. Eva peut aider a reviser ou expliquer, "
+            "mais ne repond pas automatiquement a un test note."
+        )
 
     if payload["action"] not in {"none", "wait"} and payload["confidence"] < 0.58:
         payload["action"] = "none"
         payload["blocked"] = True
         payload["reason"] = f"Confiance trop faible ({round(payload['confidence'] * 100)}%)."
+
+    if payload["action"] == "none" and not payload.get("done") and not payload.get("blocked") and not payload.get("reason"):
+        payload["reason"] = (
+            "Aucune action fiable choisie par le modele. Eva a observe la page, mais n'a pas trouve "
+            "un clic/remplissage suffisamment clair."
+        )
 
     return payload
 
