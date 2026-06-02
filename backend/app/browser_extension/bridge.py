@@ -59,7 +59,7 @@ Retourne uniquement un JSON valide:
   "choices": ["choix A", "choix B"],
   "hint": "indice utile sans blabla",
   "reasoning": "raisonnement court pour apprendre",
-  "likely_answer": "choix le plus probable si c'est une annale/mock/entrainement, sinon vide",
+  "likely_answer": "choix probable, mot fautif probable, ou 'aucune faute probable'",
   "confidence": 0.0,
   "warning": "limite ou prudence"
 }
@@ -69,6 +69,7 @@ Regles:
 - Ne propose pas de cliquer a la place de Victor.
 - Si la page ressemble a une certification/examen officiel/evaluation finale, donne seulement un indice et un rappel de cours.
 - Si la page indique annale, mock, entrainement ou sample, tu peux indiquer le choix le plus probable avec justification.
+- Pour Projet Voltaire ou un exercice "Cliquez sur la faute", analyse le texte visible et indique le mot/groupe de mots suspect, ou "aucune faute probable" si rien ne ressort.
 - Si tu n'es pas sur, laisse likely_answer vide et explique ce qu'il faut verifier.
 """.strip()
 
@@ -308,6 +309,10 @@ def _looks_like_assessment_page(snapshot: dict[str, Any]) -> bool:
         return True
     if "noté sur" in page_text or "note sur" in page_text:
         return True
+    if any(marker in page_text for marker in ("eval.", "éval.", "evaluation", "évaluation")) and any(
+        marker in page_text for marker in ("temps", "progression", "test", "question")
+    ):
+        return True
     if "terminer le test" in page_text or "navigation du test" in page_text:
         return True
     if ("exam" in title or "examen" in title) and "test" in title:
@@ -317,6 +322,32 @@ def _looks_like_assessment_page(snapshot: dict[str, Any]) -> bool:
     ):
         return True
     return False
+
+
+def _looks_like_study_page(snapshot: dict[str, Any]) -> bool:
+    url = str(snapshot.get("tab_url") or snapshot.get("url") or "").lower()
+    title = str(snapshot.get("title") or "").lower()
+    text = str(snapshot.get("visible_text") or "").lower()
+    page_text = f"{title} {text}"
+
+    return any(
+        marker in page_text or marker in url
+        for marker in (
+            "exercice",
+            "entrainement",
+            "entraînement",
+            "question",
+            "qcm",
+            "quiz",
+            "projet-voltaire",
+            "projet voltaire",
+            "cliquez sur la faute",
+            "choisis la bonne",
+            "choisissez la bonne",
+            "corriger",
+            "correction",
+        )
+    )
 
 
 def _safe_action_payload(action: dict[str, Any], snapshot: dict[str, Any], instruction: str) -> dict[str, Any]:
@@ -471,7 +502,7 @@ async def run_browser_training(
         executed = False
         result_message = ""
 
-        if blocked and payload.get("official_assessment"):
+        if (blocked or payload["action"] == "none") and _looks_like_study_page(snapshot):
             study_help = await _build_assessment_coach(snapshot, instruction)
 
         if not blocked and not done and payload["action"] != "none":

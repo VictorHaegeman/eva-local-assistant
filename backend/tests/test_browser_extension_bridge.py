@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.browser_extension.bridge import (
     _looks_like_assessment_page,
+    _looks_like_study_page,
     _safe_action_payload,
     browser_extension_status,
     format_browser_training_response,
@@ -39,6 +40,27 @@ SAMPLE_SNAPSHOT = {
             "text": "Payer maintenant",
             "selector": "button:nth-of-type(2)",
         },
+    ],
+}
+
+VOLTAIRE_SNAPSHOT = {
+    "tab_url": "https://apprentissage.appli3.projet-voltaire.fr/exercice",
+    "title": "Projet Voltaire v10.2.3",
+    "visible_text": (
+        "Progression Temps Courriel - Eval. 15 min Cliquez sur la faute. "
+        "Ce courriel professionnel va etre envoye. Bonjour Noe, Je vous adresse une nouvelle stagiaire."
+    ),
+    "viewport": {"width": 1200, "height": 800},
+    "elements": [
+        {
+            "index": 0,
+            "tag": "button",
+            "role": "button",
+            "type": "",
+            "label": "ENVOYER (IL N'Y A PAS DE FAUTE)",
+            "text": "ENVOYER (IL N'Y A PAS DE FAUTE)",
+            "selector": "button[data-testid='no-error']",
+        }
     ],
 }
 
@@ -87,6 +109,11 @@ def test_assessment_page_is_detected_and_blocked() -> None:
     assert payload["blocked"]
     assert payload["official_assessment"]
     assert "test/evaluation" in payload["reason"]
+
+
+def test_voltaire_page_is_study_page_and_assessment() -> None:
+    assert _looks_like_study_page(VOLTAIRE_SNAPSHOT)
+    assert _looks_like_assessment_page(VOLTAIRE_SNAPSHOT)
 
 
 def test_no_action_has_reason() -> None:
