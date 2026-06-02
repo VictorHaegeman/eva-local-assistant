@@ -1000,6 +1000,17 @@ Installation:
 6. Recharge la page web a piloter.
 ```
 
+Si le popup affiche `Backend OK, page non vue`:
+
+```text
+1. Va sur brave://extensions
+2. Clique Recharger sur Eva Browser Bridge
+3. Recharge l'onglet web a piloter
+4. Rouvre le popup Eva
+```
+
+Le popup force aussi une synchronisation de l'onglet actif: si la page etait deja ouverte avant l'installation de l'extension, Eva reinjecte le bridge localement puis envoie le DOM au backend.
+
 Fonctionnement:
 
 - l'extension lit seulement la page visible dans Brave et envoie le resume DOM a `http://localhost:8000`;
@@ -1020,6 +1031,14 @@ Depuis Telegram:
 ```text
 /training continue l'exercice visible dans Brave
 ```
+
+Depuis le popup Brave:
+
+```text
+Continue l'exercice visible en mode entrainement
+```
+
+Eva lance alors une boucle locale: observer la page, choisir une action, cliquer/remplir/scroller, verifier le resultat, puis continuer jusqu'a la fin detectee ou la limite de tours.
 
 Le pont reste local et gratuit. Il ne lit pas les messages prives ou les comptes caches; il voit ce qui est present dans le DOM de l'onglet actif. Les examens officiels, certifications et evaluations notees restent bloques.
 

@@ -3,7 +3,7 @@
   "name": "Eva Browser Bridge",
   "description": "Pont local Brave <-> Eva pour lire la page active et piloter les entrainements navigateur.",
   "version": "0.1.0",
-  "permissions": ["activeTab", "storage", "tabs"],
+  "permissions": ["activeTab", "storage", "tabs", "scripting"],
   "host_permissions": [
     "http://localhost:8000/*",
     "http://127.0.0.1:8000/*",

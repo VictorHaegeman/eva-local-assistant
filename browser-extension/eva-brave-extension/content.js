@@ -1,3 +1,9 @@
+(() => {
+if (window.__evaBridgeLoaded) {
+  return;
+}
+window.__evaBridgeLoaded = true;
+
 const EVA_API = "http://localhost:8000";
 const EVA_MAX_TEXT = 5000;
 const EVA_MAX_ELEMENTS = 140;
@@ -246,3 +252,4 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 setInterval(tick, 1800);
 tick();
+})();
