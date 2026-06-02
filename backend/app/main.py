@@ -242,6 +242,11 @@ from app.screen.screen_navigator import (
     format_screen_navigation_response,
     navigate_screen,
 )
+from app.screen.training_autopilot import (
+    ScreenTrainingError,
+    format_training_autopilot_response,
+    run_training_autopilot,
+)
 from app.screen.screen_watcher import (
     latest_screen_analysis,
     run_screen_watch_once,
@@ -522,6 +527,11 @@ class VisualActionRequest(BaseModel):
 class ScreenNavigationRequest(BaseModel):
     instruction: str = Field(min_length=1, max_length=3000)
     max_steps: int = Field(default=4, ge=1, le=8)
+
+
+class ScreenTrainingRequest(BaseModel):
+    instruction: str = Field(min_length=1, max_length=4000)
+    max_rounds: int = Field(default=14, ge=1, le=40)
 
 
 class GmailReplyDraftRequest(BaseModel):
@@ -1624,6 +1634,22 @@ async def screen_navigate(request: ScreenNavigationRequest) -> dict[str, object]
     return {
         **result,
         "summary": format_screen_navigation_response(result),
+    }
+
+
+@app.post("/screen/training", dependencies=[Depends(require_sensitive_access)])
+async def screen_training(request: ScreenTrainingRequest) -> dict[str, object]:
+    try:
+        result = await run_training_autopilot(
+            request.instruction,
+            max_rounds=request.max_rounds,
+        )
+    except ScreenTrainingError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        **result,
+        "summary": format_training_autopilot_response(result),
     }
 
 

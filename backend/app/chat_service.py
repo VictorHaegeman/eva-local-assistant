@@ -107,6 +107,12 @@ from app.screen.screen_navigator import (
     navigate_screen,
     wants_screen_navigation,
 )
+from app.screen.training_autopilot import (
+    ScreenTrainingError,
+    format_training_autopilot_response,
+    run_training_autopilot,
+    wants_training_autopilot,
+)
 from app.screen.screen_watcher import latest_screen_context
 from app.self_improvement.loop import (
     SelfImproveError,
@@ -450,6 +456,19 @@ async def process_chat_messages(
                         "decrire ou copier-coller l'erreur visible pour que je la diagnostique",
                     ),
                 )
+            if wants_training_autopilot(latest_user_message):
+                training_result = await run_training_autopilot(latest_user_message)
+                return {
+                    "message": {
+                        "role": "assistant",
+                        "content": (
+                            f"{intent_context}\n\n"
+                            f"{format_training_autopilot_response(training_result)}"
+                        ),
+                    },
+                    "saved_memory": None,
+                    "pending_action": None,
+                }
             if wants_screen_navigation(latest_user_message) or wants_visual_action(latest_user_message):
                 navigation_result = await navigate_screen(latest_user_message)
                 return {
@@ -694,6 +713,7 @@ async def process_chat_messages(
         CursorAgentSetupError,
         ProjectFactoryError,
         ScreenReaderError,
+        ScreenTrainingError,
         SelfImproveError,
     ) as exc:
         raise ChatServiceError(str(exc)) from exc
@@ -851,6 +871,17 @@ async def process_chat_messages(
                 "pending_action": None,
             }
 
+        if trusted_actions and wants_training_autopilot(latest_user_message):
+            training_result = await run_training_autopilot(latest_user_message)
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": format_training_autopilot_response(training_result),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+
         if trusted_actions and wants_visual_action(latest_user_message):
             if wants_screen_navigation(latest_user_message):
                 navigation_result = await navigate_screen(latest_user_message)
@@ -952,6 +983,7 @@ async def process_chat_messages(
         BeeperAssistantError,
         VisualActionError,
         ScreenNavigationError,
+        ScreenTrainingError,
         StitchDesignError,
     ) as exc:
         raise ChatServiceError(str(exc)) from exc

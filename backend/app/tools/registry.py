@@ -134,6 +134,13 @@ TOOLS = (
         description="Boucle observer, choisir, cliquer/coller/ouvrir, puis verifier pour naviguer dans l'UI locale.",
     ),
     ToolDescriptor(
+        key="screen_training_autopilot",
+        label="Autopilote entrainement",
+        category="system",
+        policy_level="draft_only",
+        description="Boucle visuelle longue pour exercices non officiels: observer, cliquer, verifier et continuer.",
+    ),
+    ToolDescriptor(
         key="beeper_assistant",
         label="Beeper",
         category="messaging",

@@ -57,6 +57,12 @@ from app.screen.screen_navigator import (
     navigate_screen,
     wants_screen_navigation,
 )
+from app.screen.training_autopilot import (
+    ScreenTrainingError,
+    format_training_autopilot_response,
+    run_training_autopilot,
+    wants_training_autopilot,
+)
 from app.self_improvement.loop import (
     SelfImproveError,
     detect_self_improvement_request,
@@ -248,6 +254,7 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
                 "/history - revoir le fil Telegram recent\n"
                 "/screen - lire et interpreter l'ecran du PC\n"
                 "/pilot INSTRUCTION - piloter l'ecran local avec vision + clics\n"
+                "/training INSTRUCTION - boucle visuelle d'entrainement non officiel\n"
                 "/learn CORRECTION - apprendre d'une erreur ou ameliorer Eva\n"
                 "/terminal ERREUR - analyser/corriger une erreur terminal\n"
                 "/job TACHE - mettre une tache longue dans la queue autonome\n"
@@ -368,6 +375,25 @@ async def _handle_command(client: httpx.AsyncClient, chat_id: int, text: str) ->
             return True
 
         assistant_text = format_screen_navigation_response(result)
+        _remember_telegram_exchange(chat_id, text, assistant_text, context=load_telegram_context(chat_id))
+        await _send_message(client, chat_id, assistant_text)
+        return True
+
+    if command in {"/training", "/train", "/exo", "/exercice"}:
+        if not argument:
+            await _send_message(
+                client,
+                chat_id,
+                "Usage: /training continue l'exercice visible a l'ecran en mode entrainement",
+            )
+            return True
+        try:
+            result = await run_training_autopilot(argument)
+        except ScreenTrainingError as exc:
+            await _send_message(client, chat_id, f"Autopilote entrainement impossible: {exc}")
+            return True
+
+        assistant_text = format_training_autopilot_response(result)
         _remember_telegram_exchange(chat_id, text, assistant_text, context=load_telegram_context(chat_id))
         await _send_message(client, chat_id, assistant_text)
         return True
@@ -622,6 +648,13 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
             await _send_message(client, chat_id, assistant_text)
             return
 
+        if wants_training_autopilot(text):
+            training_result = await run_training_autopilot(text)
+            assistant_text = format_training_autopilot_response(training_result)
+            _remember_telegram_exchange(chat_id, text, assistant_text, context=context)
+            await _send_message(client, chat_id, assistant_text)
+            return
+
         if wants_screen_navigation(text):
             navigation_result = await navigate_screen(text)
             assistant_text = format_screen_navigation_response(navigation_result)
@@ -640,6 +673,7 @@ async def _handle_text_message(client: httpx.AsyncClient, chat_id: int, text: st
         ProjectFactoryError,
         ActionStoreError,
         ScreenNavigationError,
+        ScreenTrainingError,
         SelfImproveError,
     ) as exc:
         await _send_message(

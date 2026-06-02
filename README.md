@@ -922,6 +922,7 @@ Terminal Doctor:
 /screen lis mon ecran et detecte les erreurs visibles
 /pilot ouvre youtube et clique dans le champ de recherche
 /pilot regarde mon ecran et clique sur le bouton connexion si tu es sur
+/training continue l'exercice visible a l'ecran en mode entrainement
 ```
 
 Eva reconnait deja certains motifs courants. Exemple: si PowerShell affiche `C:\Program n'est pas reconnu` apres une commande `C:\Program Files\GitHub CLI\gh.exe auth login`, Eva comprend que le chemin Windows n'etait pas quote et relance `gh auth login` avec le bon appel. La validation GitHub reste humaine dans le navigateur.
@@ -952,6 +953,8 @@ EVA_SCREEN_MAX_CAPTURES=20
 EVA_SCREEN_WATCH_ENABLED=true
 EVA_SCREEN_WATCH_INTERVAL_SECONDS=60
 EVA_SCREEN_WATCH_CONTEXT_MAX_AGE_SECONDS=180
+EVA_SCREEN_TRAINING_ENABLED=true
+EVA_SCREEN_TRAINING_MAX_ROUNDS=14
 ```
 
 Routes utiles:
@@ -962,6 +965,7 @@ GET /screen/latest
 POST /screen/capture
 POST /screen/analyze
 POST /screen/watch/run-once
+POST /screen/training
 ```
 
 Depuis Telegram:
@@ -969,9 +973,17 @@ Depuis Telegram:
 ```text
 /screen
 /screen analyse mon ecran et dis-moi pourquoi ca bloque
+/training continue l'exercice visible a l'ecran
 ```
 
 Limite importante: Eva lit ce qui est visible dans la capture. Si la fenetre d'erreur est cachee, minimisee ou sur un autre bureau virtuel, elle ne pourra pas l'interpreter correctement.
+
+Mode entrainement visuel:
+
+- Eva observe l'ecran, choisit une action, clique, recapture, verifie et continue jusqu'a la fin visible ou la limite de tours;
+- utilise-le pour des exercices/pratiques non officiels, par exemple une page d'entrainement;
+- si l'ecran ou la demande ressemble a un examen officiel, une certification ou une evaluation notee, Eva s'arrete;
+- le nombre de tours est regle par `EVA_SCREEN_TRAINING_MAX_ROUNDS`.
 
 Mode vision continue:
 

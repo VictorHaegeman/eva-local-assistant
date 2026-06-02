@@ -463,6 +463,7 @@ def _interpreted_goal(
     outcome: ExpectedOutcome,
 ) -> str:
     clean_message = " ".join(message.split())
+    normalized = normalize_understanding_text(message)
     if intent.name == "cursor_agent_setup":
         return "Installer ou activer Cursor Agent CLI globalement, sans demander de projet cible."
     if domain == "gmail" and outcome == "read_then_audit":
@@ -472,6 +473,20 @@ def _interpreted_goal(
     if domain == "gmail":
         return "Lire les mails reels pertinents avant d'ouvrir des liens ou de resumer."
     if domain == "screen":
+        if _has_any(
+            normalized,
+            (
+                "projet voltaire",
+                "exercice",
+                "exercices",
+                "exo",
+                "exos",
+                "entrainement",
+                "qcm",
+                "quiz",
+            ),
+        ):
+            return "Executer une boucle d'entrainement visuel: observer, choisir une reponse/action, cliquer, verifier et continuer."
         return "Observer l'ecran local, choisir l'action UI utile, executer puis verifier sans coordonnees manuelles."
     if domain == "browser":
         return "Ouvrir le bon site dans Brave uniquement apres avoir compris le besoin web."

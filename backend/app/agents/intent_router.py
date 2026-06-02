@@ -323,12 +323,22 @@ def classify_user_intent(message: str) -> UserIntent:
             "clique sur le bon bouton",
             "remplis le champ",
             "remplis le formulaire",
+            "projet voltaire",
+            "exercice visible",
+            "exercices visibles",
+            "fais l'exercice",
+            "fais les exercices",
+            "continue l'exercice",
+            "entrainement",
+            "entrainements",
+            "qcm",
+            "quiz",
         ),
     ):
         return UserIntent(
             name="screen_read",
             confidence=0.9,
-            summary="Lire les pixels de l'ecran local et interpreter ce qui est visible.",
+            summary="Lire les pixels de l'ecran local, interpreter ce qui est visible et piloter l'interface si la demande le permet.",
             caution="La capture reste locale et peut contenir des donnees privees.",
         )
 
