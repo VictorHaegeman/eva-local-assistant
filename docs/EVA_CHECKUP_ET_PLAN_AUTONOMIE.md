@@ -211,11 +211,109 @@ contrôle. Tout reste annulable et journalisé.
 |---|---|---|
 | 🔴 1 | Upgrade cerveau configurable (Groq/Gemini gratuit, fallback Ollama) | Règle 80 % du "je dois tout réexpliquer" |
 | 🔴 2 | Règles permanentes appliquées + vérif post-réponse | L'autre moitié de la frustration |
-| 🟠 3 | Boucle agentique tool-calling | Vraie autonomie de raisonnement |
+| 🟠 3 | Board CEO/CTO/CFO (vrais agents enchaînés) + Obsidian salle du conseil | Vraie autonomie de raisonnement, dépend du cerveau (Phase 0) |
 | 🟠 4 | Mémoire consolidée + récupération avant réponse | Continuité entre sessions |
 | 🟡 5 | Niveaux d'autonomie + zones d'écriture + audit | Plus de pouvoir, encadré |
 | 🟡 6 | Relais cloud gratuit + webhook Telegram + file distante | Téléphone PC éteint, 0 € |
 | 🟢 7 | Auto-amélioration par PR supervisées | Eva s'améliore seule, sous contrôle |
+
+---
+
+## 4 bis. Le "Board of Directors" : CEO / CFO / CTO comme cerveau d'Eva
+
+C'est exactement la bonne intuition pour rendre Eva moins "chatbot" et plus
+"processeur de réflexion". Mais il faut comprendre l'existant et le piège.
+
+### Ce qui existe déjà (et pourquoi ça ne suffit pas)
+
+`backend/app/agents/roles.py` contient déjà un "command deck" : CEO orchestrateur,
+CMO contenu, Memory Curator, Sales, Code Operator, Security Officer, etc.
+
+**Le piège :** ces rôles ne sont pas de vrais agents. `build_roles_prompt_context()`
+se contente de **coller du texte** ("tu as ces postures") dans le prompt système d'un
+**seul** appel à llama3.1:8b. Un 8B ne sait pas jouer un vrai conseil d'administration
+dans sa tête : il lit les rôles sans les incarner. D'où le ressenti actuel.
+
+Un vrai board = **plusieurs appels LLM distincts et enchaînés**, chacun avec son
+prompt focalisé, son domaine, et sa propre tranche de mémoire Obsidian. Ça ne devient
+réellement utile **qu'avec le cerveau upgradé** (Groq/Gemini) — sinon c'est 3× la
+lenteur d'un modèle faible pour peu de gain. C'est pourquoi le board dépend de la
+Phase 0.
+
+### Le board cible : 3 officiers, un flux clair
+
+Chaque demande **passe par chaque officier**, dans cet ordre, mais une demande triviale
+peut être court-circuitée par le CEO (sinon tout devient lent).
+
+```
+            ┌── recall mémoire (Obsidian + embeddings) ──┐
+message ──▶ CEO (cadre l'objectif) ──▶ CTO (comment faire) ──▶ CFO (coût/risque) ──▶ CEO (décide + agit)
+                         ▲                                                                │
+                         └──────────────── journal de décision écrit dans Obsidian ◀──────┘
+```
+
+- **CEO — Orchestrateur & décision finale.**
+  Reformule le vrai objectif, décide quels officiers consulter, fixe le critère de
+  réussite, puis **synthétise** les avis et tranche (réponse + prochaine action
+  concrète). C'est lui qui parle à Victor.
+
+- **CTO — Faisabilité, technique & exécution.**
+  Décide *comment* faire avec les outils disponibles (quel outil, quelles étapes,
+  risque technique), ou lit/écrit/diagnostique du code. Produit un plan d'exécution.
+  Remplace la logique figée de `cognitive_loop.py` par un vrai raisonnement d'ingénieur.
+
+- **CFO — Coût, risque, ressources & valeur.**
+  Évalue le coût (temps, argent, tokens API, irréversibilité), le risque, le ROID :
+  *est-ce que ça vaut le coup, est-ce sûr, est-ce que ça touche à l'argent/au business ?*
+  Il absorbe le rôle "Security Officer" actuel et devient le **garde-fou** avant toute
+  action critique (envoi, publication, suppression, push, dépense).
+
+> CMO, Sales, Analyst, etc. (déjà dans `roles.py`) deviennent des **conseillers que le
+> CEO convoque à la demande**, pas des étapes obligatoires. Le board fixe = CEO/CTO/CFO ;
+> les autres sont des spécialistes appelés au besoin.
+
+### Obsidian devient le cerveau partagé du board
+
+C'est le lien direct avec ta demande "penche-toi sur Obsidian". Aujourd'hui Obsidian
+est un **miroir lisible** de la mémoire. On le transforme en **salle du conseil** :
+un dossier par officier, que chaque agent **lit avant de décider** et **enrichit
+après** (journal de décisions). Tu peux ainsi lire et corriger le raisonnement de
+chaque "dirigeant" directement dans Obsidian.
+
+Nouvelle arborescence proposée (en plus de l'existante) :
+
+```
+01 - Board/
+  CEO/   → objectifs, priorités, décisions tranchées, critères de réussite
+  CTO/   → playbooks outils, décisions d'archi, pannes connues + correctifs
+  CFO/   → budgets, règles de risque, ce qui vaut la peine d'être automatisé,
+           contraintes business/finance, limites d'actions critiques
+```
+
+Chaque officier reçoit dans son prompt **uniquement sa tranche** d'Obsidian (le CTO ne
+se noie pas dans les notes marketing, le CFO voit les règles de risque, etc.).
+Résultat : chaque agent a un domaine net, une mémoire propre, et tu pilotes le cerveau
+d'Eva en éditant trois dossiers lisibles.
+
+### Pourquoi ça règle ton problème de fond
+
+- Tu n'expliques plus la démarche à chaque fois : le **CEO** porte la méthode, le
+  **CTO** porte le "comment", le **CFO** porte les limites — durablement, dans Obsidian.
+- Eva **raisonne en étapes** (cadrer → faire → vérifier le coût/risque → décider) au
+  lieu d'aiguiller sur des mots-clés.
+- Tu **corriges le cerveau** en éditant `01 - Board/*` plutôt qu'en répétant en chat.
+
+### Implémentation (nouveau module, sans casser l'existant)
+
+1. `backend/app/board/` : `ceo.py`, `cto.py`, `cfo.py` + `boardroom.py` (orchestrateur).
+2. Chaque officier = un appel `ask_brain_json()` (cerveau configurable) avec son prompt
+   et sa tranche Obsidian.
+3. `boardroom.run(message, context)` enchaîne CEO→CTO→CFO→CEO, écrit le journal dans
+   `01 - Board/`, et renvoie décision + plan d'action + trace (réutilise le
+   `cognitive_trace` du front pour afficher le conseil).
+4. Le CFO branche la politique de sécurité existante (`security/action_policy.py`) :
+   les actions critiques restent en file + confirmation.
+5. Garde-fou perf : court-circuit CEO pour les demandes triviales + cache mémoire.
 
 ---
 
