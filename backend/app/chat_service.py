@@ -86,6 +86,12 @@ from app.memory.memory_store import (
 )
 from app.memory.obsidian_store import ObsidianMemoryError, mirror_memory_to_obsidian
 from app.memory.obsidian_store import obsidian_status
+from app.memory.operating_rules_store import (
+    OperatingRulesError,
+    add_operating_rule,
+    detect_operating_rule_command,
+    list_operating_rules,
+)
 from app.projects.project_chat import (
     ProjectStoreError,
     attach_recent_project_context,
@@ -401,6 +407,42 @@ async def process_chat_messages(
     saved_memory = None
     latest_user_message = safe_messages[-1]["content"]
     conversation_context = safe_messages[:-1]
+
+    rule_text = detect_operating_rule_command(latest_user_message)
+    if rule_text is not None:
+        if not trusted_actions:
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "Enregistrer une regle permanente demande une session fiable "
+                        "(PC local ou Telegram autorise). Relance la depuis ce canal."
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+        try:
+            rule = add_operating_rule(rule_text)
+            total = len(list_operating_rules())
+        except OperatingRulesError as exc:
+            return {
+                "message": {"role": "assistant", "content": f"Regle non enregistree: {exc}"},
+                "saved_memory": None,
+                "pending_action": None,
+            }
+        return {
+            "message": {
+                "role": "assistant",
+                "content": (
+                    f"Regle permanente enregistree (#{rule.id}): {rule.text}\n"
+                    f"Je l'appliquerai par defaut a chaque reponse. ({total} regle(s) active(s))"
+                ),
+            },
+            "saved_memory": None,
+            "pending_action": None,
+        }
+
     understanding = build_understanding_frame(
         latest_user_message,
         conversation_context=conversation_context,

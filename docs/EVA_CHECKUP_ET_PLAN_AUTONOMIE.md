@@ -333,5 +333,46 @@ d'Eva en éditant trois dossiers lisibles.
 
 ---
 
-*Document de cadrage. Prochaine étape proposée : implémenter la Phase 0 (cerveau
-configurable + règles permanentes) sur la branche `claude/eva-autonomy-improvements`.*
+---
+
+## 6. Phase 0 — LIVRÉE (cerveau Groq + règles permanentes)
+
+Implémentée sur la branche `claude/eva-autonomy-improvements`. Choix validés par
+Victor : moteur **Groq** (gratuit), Phase 0 en premier.
+
+### Ce qui est en place
+
+**Cerveau configurable** (`backend/app/llm/brain.py`)
+- `EVA_BRAIN_PROVIDER = auto | groq | ollama` (défaut `auto`).
+- `auto` = Groq si `GROQ_API_KEY` est défini, sinon Ollama local.
+- En mode `auto`, si Groq échoue (réseau/clé/quota), Eva **retombe automatiquement
+  sur Ollama** pour continuer à répondre hors-ligne.
+- Les 16 modules qui appelaient `ask_ollama` / `ask_ollama_json` passent maintenant
+  par cette couche **sans modification** (signatures inchangées).
+- Modèles Groq par défaut : `llama-3.3-70b-versatile` (chat + raisonnement).
+
+**Règles permanentes** (`backend/app/memory/operating_rules_store.py`)
+- Stockées en local lisible : `data/eva_operating_rules.json` (hors Git, anti-secrets).
+- Injectées **en tête** du prompt système, marquées « non négociables ».
+- Ajout en langage naturel : `/regle ...` ou « retiens cette regle: ... » dans le chat
+  (session fiable requise).
+- API REST : `GET/POST /operating-rules`, `DELETE /operating-rules/{id}`.
+
+**Tests** : `tests/test_brain_provider.py` + `tests/test_operating_rules.py` (14 tests
+verts), aucune régression introduite sur la suite existante.
+
+### Comment l'activer (Victor)
+
+1. Crée une clé gratuite sur https://console.groq.com → copie-la.
+2. Dans `backend/.env` : `GROQ_API_KEY=gsk_...` (et laisse `EVA_BRAIN_PROVIDER=auto`).
+3. Relance Eva. Sans clé, rien ne change : Eva reste 100 % locale sur Ollama.
+4. Teste une règle : tape `/regle réponds toujours court et en français`.
+
+### Prochaine étape
+
+Phase 1 / 4 bis : construire le **board CEO/CTO/CFO** (`backend/app/board/`) par-dessus
+ce cerveau, avec la salle du conseil Obsidian (`01 - Board/`).
+
+---
+
+*Document de cadrage + suivi d'implémentation, branche `claude/eva-autonomy-improvements`.*

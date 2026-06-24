@@ -51,6 +51,16 @@ class Settings:
     ollama_timeout_seconds: float = _env_float("OLLAMA_TIMEOUT_SECONDS", 90.0)
     ollama_reasoning_timeout_seconds: float = _env_float("OLLAMA_REASONING_TIMEOUT_SECONDS", 24.0)
     ollama_temperature: float = _env_float("OLLAMA_TEMPERATURE", 0.7)
+    # Cerveau configurable: auto | groq | ollama. 'auto' choisit Groq si une clé existe.
+    eva_brain_provider: str = os.getenv("EVA_BRAIN_PROVIDER", "auto")
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    groq_base_url: str = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+    groq_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    groq_reasoning_model: str = os.getenv(
+        "GROQ_REASONING_MODEL",
+        os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+    )
+    groq_timeout_seconds: float = _env_float("GROQ_TIMEOUT_SECONDS", 45.0)
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     eva_api_token: str = os.getenv("EVA_API_TOKEN", "")
     eva_autonomy_mode: str = os.getenv("EVA_AUTONOMY_MODE", "operator")

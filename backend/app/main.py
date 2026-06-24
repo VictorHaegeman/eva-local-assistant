@@ -166,6 +166,13 @@ from app.memory.memory_store import (
     list_memories,
     memory_to_dict,
 )
+from app.memory.operating_rules_store import (
+    OperatingRulesError,
+    add_operating_rule,
+    list_operating_rules,
+    remove_operating_rule,
+    rule_to_dict,
+)
 from app.memory.cluster_store import list_memory_clusters
 from app.memory.embedding_store import (
     EmbeddingStoreError,
@@ -316,6 +323,10 @@ class ChatResponse(BaseModel):
 class MemoryCreateRequest(BaseModel):
     content: str = Field(min_length=1, max_length=600)
     category: str = Field(default="general", min_length=1, max_length=40)
+
+
+class OperatingRuleCreateRequest(BaseModel):
+    text: str = Field(min_length=4, max_length=320)
 
 
 class MemoryRouteRequest(BaseModel):
@@ -1239,6 +1250,48 @@ async def remove_memory(memory_id: int) -> dict[str, object]:
     return {
         "deleted": True,
         "id": memory_id,
+    }
+
+
+@app.get("/operating-rules", dependencies=[Depends(require_sensitive_access)])
+async def operating_rules() -> dict[str, object]:
+    try:
+        rules = list_operating_rules()
+    except OperatingRulesError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return {
+        "loaded": True,
+        "rules": [rule_to_dict(rule) for rule in rules],
+    }
+
+
+@app.post("/operating-rules", dependencies=[Depends(require_sensitive_access)])
+async def create_operating_rule(request: OperatingRuleCreateRequest) -> dict[str, object]:
+    try:
+        rule = add_operating_rule(request.text)
+    except OperatingRulesError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "saved": True,
+        "rule": rule_to_dict(rule),
+    }
+
+
+@app.delete("/operating-rules/{rule_id}", dependencies=[Depends(require_sensitive_access)])
+async def delete_operating_rule(rule_id: str) -> dict[str, object]:
+    try:
+        deleted = remove_operating_rule(rule_id)
+    except OperatingRulesError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Regle introuvable.")
+
+    return {
+        "deleted": True,
+        "id": rule_id,
     }
 
 
