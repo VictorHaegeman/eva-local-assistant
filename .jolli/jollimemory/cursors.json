@@ -1,10 +1,4 @@
 {
 	"version": 1,
-	"cursors": {
-		"plan:C:\\Users\\victo\\.claude\\projects\\C--Users-victo-Desktop-Cursor-eva-local-assistant\\bc504ff6-5961-419f-86d0-182c5627a7a0.jsonl": {
-			"transcriptPath": "plan:C:\\Users\\victo\\.claude\\projects\\C--Users-victo-Desktop-Cursor-eva-local-assistant\\bc504ff6-5961-419f-86d0-182c5627a7a0.jsonl",
-			"lineNumber": 250,
-			"updatedAt": "2026-06-09T21:28:51.458Z"
-		}
-	}
+	"cursors": {}
 }

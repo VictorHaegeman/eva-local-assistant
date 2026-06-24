@@ -3075,3 +3075,65 @@
 [2026-06-24T21:36:44.580Z] INFO  [SessionTracker] Pruning stale session bc504ff6-5961-419f-86d0-182c5627a7a0 (age: 360h)
 [2026-06-24T21:36:44.794Z] WARN  [SummaryStore] loadIndex: index.json unreadable from Wr (fresh repo or backend read failed)
 [2026-06-24T21:36:45.500Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=0, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/true, copilotChat=true
+[2026-06-24T21:47:59.466Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: message) ===
+[2026-06-24T21:47:59.706Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-06-24T21:48:01.346Z] INFO  [PostCommitHook] Detected operation: commit
+[2026-06-24T21:48:01.791Z] INFO  [PostCommitHook] Enqueued: type=commit hash=006ac7b5
+[2026-06-24T21:48:01.791Z] INFO  [QueueWorker] Launching background worker
+[2026-06-24T21:48:01.801Z] INFO  [QueueWorker] Background worker spawned (PID: 81148)
+[2026-06-24T21:48:01.961Z] INFO  [QueueWorker] === Queue worker started === node=24.13.0 kind=vscode-plugin source=cursor pkgVer=0.99.3 cliVer=0.99.3 dist=c:\Users\victo\.cursor\extensions\jolli.jollimemory-vscode-0.99.3-universal\dist
+[2026-06-24T21:48:01.988Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-06-24T21:48:02.484Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-06-24T21:48:02.487Z] INFO  [QueueWorker] Processing queue entry: type=commit hash=006ac7b5
+[2026-06-24T21:48:02.715Z] INFO  [GitOps] Commit 006ac7b5: main
+[2026-06-24T21:48:02.715Z] INFO  [QueueWorker] Commit: 006ac7b5 - main (218ms)
+[2026-06-24T21:48:02.716Z] INFO  [SessionTracker] Pruning stale session bc504ff6-5961-419f-86d0-182c5627a7a0 (age: 360h)
+[2026-06-24T21:48:02.829Z] INFO  [QueueWorker] No active sessions found — will infer topics from diff if available
+[2026-06-24T21:48:03.810Z] WARN  [GitOps] Diff exceeds 150000-char budget (192087 chars) — prepending --stat file list and truncating body
+[2026-06-24T21:48:04.142Z] INFO  [QueueWorker] Git diff: 12 files changed, +2133 -49 (1.3s)
+[2026-06-24T21:48:04.144Z] INFO  [QueueWorker] Prompt blocks: plans=0 notes=0 references=0
+[2026-06-24T21:48:04.145Z] INFO  [Summarizer] Generating summary for commit 006ac7b5
+[2026-06-24T21:48:04.145Z] INFO  [Summarizer] Context: transcript=0, files=12, lines=2133+49
+[2026-06-24T21:48:04.145Z] WARN  [QueueWorker] First API attempt failed: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).. Retrying in 2000ms...
+[2026-06-24T21:48:06.156Z] INFO  [Summarizer] Generating summary for commit 006ac7b5
+[2026-06-24T21:48:06.156Z] INFO  [Summarizer] Context: transcript=0, files=12, lines=2133+49
+[2026-06-24T21:48:06.157Z] ERROR [QueueWorker] API call failed after retry: No LLM provider available. Set an Anthropic API key (ANTHROPIC_API_KEY) or configure a Jolli Space API key (jolliApiKey).
+[2026-06-24T21:48:06.157Z] WARN  [QueueWorker] Saving summary with empty topics + summaryError marker for commit 006ac7b5
+[2026-06-24T21:48:06.157Z] INFO  [QueueWorker] API summary generated (2.0s)
+[2026-06-24T21:48:06.158Z] INFO  [QueueWorker] Plan registry scan: found 0 uncommitted slug(s) on main: []
+[2026-06-24T21:48:06.158Z] INFO  [QueueWorker] Plan association: detected 0 slug(s) from transcripts: []
+[2026-06-24T21:48:06.159Z] INFO  [QueueWorker] Note registry scan: found 0 uncommitted note(s) on main: []
+[2026-06-24T21:48:06.159Z] INFO  [QueueWorker] Note association: detected 0 note(s): []
+[2026-06-24T21:48:06.160Z] INFO  [QueueWorker] Reference association: detected 0 ref(s) for branch main
+[2026-06-24T21:48:06.160Z] INFO  [QueueWorker] Summary built for 006ac7b5: recap=no, topics=0, plans=absent, notes=absent, references=absent
+[2026-06-24T21:48:06.608Z] WARN  [SummaryStore] loadIndex: index.json unreadable from $d (fresh repo or backend read failed)
+[2026-06-24T21:48:07.170Z] INFO  [GitOps] Creating orphan branch 'jollimemory/summaries/v3' using plumbing commands
+[2026-06-24T21:48:08.001Z] INFO  [GitOps] Orphan branch 'jollimemory/summaries/v3' created successfully
+[2026-06-24T21:48:09.253Z] INFO  [GitOps] Updated branch 'jollimemory/summaries/v3': 3 written, 0 deleted (via fast-import)
+[2026-06-24T21:48:09.260Z] INFO  [MetadataManager] Branch mapping created: main → main
+[2026-06-24T21:48:09.385Z] INFO  [MetadataManager] Manifest updated: main/main-006ac7b5.md (commit)
+[2026-06-24T21:48:09.385Z] INFO  [FolderStorage] Markdown generated: main/main-006ac7b5.md
+[2026-06-24T21:48:09.387Z] INFO  [FolderStorage] Wrote 3 files, deleted 0 (Add summary for 006ac7b5: main)
+[2026-06-24T21:48:09.387Z] INFO  [SummaryStore] Summary stored successfully for commit 006ac7b5
+[2026-06-24T21:48:09.389Z] INFO  [QueueWorker] Summary stored successfully for commit 006ac7b5 (3.2s, 0 plans, 0 notes, 0 references)
+[2026-06-24T21:48:09.389Z] INFO  [QueueWorker] === Pipeline completed in 6.9s ===
+[2026-06-24T21:48:09.389Z] INFO  [QueueWorker] === Summary content (0 topics) ===
+[2026-06-24T21:48:09.627Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-06-24T21:48:09.630Z] INFO  [SessionTracker] Enqueued queue operation: type=ingest tag=ingest file=1782337689628-00000001-1f292031-ingest.json
+[2026-06-24T21:48:09.655Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-06-24T21:48:09.656Z] INFO  [QueueWorker] Queue has 1 remaining entries — spawning chain worker
+[2026-06-24T21:48:09.656Z] INFO  [QueueWorker] Launching background worker
+[2026-06-24T21:48:09.703Z] INFO  [QueueWorker] Background worker spawned (PID: 26012)
+[2026-06-24T21:48:09.833Z] INFO  [QueueWorker] === Queue worker started === node=24.13.0 kind=vscode-plugin source=cursor pkgVer=0.99.3 cliVer=0.99.3 dist=c:\Users\victo\.cursor\extensions\jolli.jollimemory-vscode-0.99.3-universal\dist
+[2026-06-24T21:48:09.857Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-06-24T21:48:09.864Z] INFO  [references] detectReferences(*) found 0 (0 in registry)
+[2026-06-24T21:48:09.865Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-06-24T21:48:09.867Z] INFO  [SessionTracker] Pruning stale session bc504ff6-5961-419f-86d0-182c5627a7a0 (age: 360h)
+[2026-06-24T21:48:09.842Z] INFO  [StorageFactory] StorageFactory.create: storageMode=dual-write, projectPath=C:\Users\victo\Desktop\Cursor\eva-local-assistant
+[2026-06-24T21:48:10.254Z] INFO  [StorageFactory] Storage mode: dual-write (primary=orphan, shadow=folder)
+[2026-06-24T21:48:10.258Z] INFO  [QueueWorker] Processing queue entry: type=ingest triggeredBy=post-commit
+[2026-06-24T21:48:10.261Z] INFO  [QueueWorker] No API key configured — skipping ingest (post-commit)
+[2026-06-24T21:48:10.284Z] INFO  [QueueWorker] Processed 1 queue entries
+[2026-06-24T21:48:10.286Z] INFO  [QueueWorker] === Queue worker finished ===
+[2026-06-24T21:48:16.846Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: ) ===
+[2026-06-24T21:48:17.046Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
