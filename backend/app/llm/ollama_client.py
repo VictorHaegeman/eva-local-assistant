@@ -7,12 +7,14 @@ import httpx
 from app.agents.modes import get_mode_prompt
 from app.agents.roles import build_roles_prompt_context
 from app.config import settings
+from app.llm.brain import BrainError, brain_chat
 from app.memory.memory_store import (
     MemoryStoreError,
     build_memory_prompt_context,
 )
 from app.memory.memory_router import build_relevant_memory_prompt_context
 from app.memory.obsidian_store import ObsidianMemoryError, build_obsidian_prompt_context
+from app.memory.operating_rules_store import build_operating_rules_prompt_context
 from app.memory.profile_store import ProfileStoreError, build_profile_prompt_context
 from app.prompts.system_prompt import EVA_SYSTEM_PROMPT
 from app.skills.registry import build_skills_prompt_context
@@ -82,7 +84,10 @@ async def ask_ollama(
             (message["content"] for message in reversed(messages) if message["role"] == "user"),
             "",
         )
+        operating_rules = build_operating_rules_prompt_context()
+        rules_block = f"{operating_rules}\n\n" if operating_rules else ""
         system_prompt = (
+            f"{rules_block}"
             f"{EVA_SYSTEM_PROMPT}\n\n"
             f"{get_mode_prompt(mode)}\n\n"
             f"{build_profile_prompt_context()}\n\n"
@@ -97,79 +102,20 @@ async def ask_ollama(
     except (ProfileStoreError, MemoryStoreError, ObsidianMemoryError) as exc:
         raise OllamaClientError(str(exc)) from exc
 
-    payload = {
-        "model": settings.ollama_model,
-        "stream": False,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            *messages,
-        ],
-        "options": {
-            "temperature": settings.ollama_temperature,
-        },
-    }
+    full_messages: list[dict[str, Any]] = [
+        {"role": "system", "content": system_prompt},
+        *messages,
+    ]
 
     try:
-        async with httpx.AsyncClient(
-            base_url=settings.ollama_base_url,
-            timeout=settings.ollama_timeout_seconds,
-        ) as client:
-            response = await client.post("/api/chat", json=payload)
-            response.raise_for_status()
-    except httpx.ConnectError as exc:
-        raise OllamaClientError(
-            "Ollama n'est pas lance ou n'est pas accessible sur "
-            f"{settings.ollama_base_url}. Lance Ollama, puis reessaie."
-        ) from exc
-    except httpx.TimeoutException as exc:
-        raise OllamaClientError(
-            "L'API Ollama ne repond pas dans le delai attendu. "
-            "Verifie qu'Ollama tourne correctement ou utilise un modele plus leger."
-        ) from exc
-    except httpx.HTTPStatusError as exc:
-        error_text = _extract_ollama_error(exc.response)
-        if exc.response.status_code == 404 or _looks_like_missing_model(error_text):
-            raise OllamaClientError(
-                f"Le modele Ollama '{settings.ollama_model}' n'est pas installe. "
-                f"Lance: ollama pull {settings.ollama_model}"
-            ) from exc
-
-        detail = f" Detail Ollama: {error_text}" if error_text else ""
-        raise OllamaClientError(
-            f"L'API Ollama a repondu avec une erreur HTTP "
-            f"{exc.response.status_code}.{detail}"
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise OllamaClientError(
-            "Impossible de contacter correctement l'API Ollama. "
-            "Verifie qu'Ollama est lance et accessible."
-        ) from exc
-
-    try:
-        data = response.json()
-    except ValueError as exc:
-        raise OllamaClientError(
-            "L'API Ollama a repondu, mais sa reponse n'est pas du JSON valide."
-        ) from exc
-
-    if isinstance(data, dict) and data.get("error"):
-        error_text = str(data["error"])
-        if _looks_like_missing_model(error_text):
-            raise OllamaClientError(
-                f"Le modele Ollama '{settings.ollama_model}' n'est pas installe. "
-                f"Lance: ollama pull {settings.ollama_model}"
-            )
-
-        raise OllamaClientError(f"Erreur Ollama: {error_text}")
-
-    if not isinstance(data, dict):
-        raise OllamaClientError("Ollama a renvoye une reponse inattendue.")
-
-    content = data.get("message", {}).get("content", "").strip()
-    if not content:
-        raise OllamaClientError("Ollama n'a pas renvoye de reponse exploitable.")
-
-    return content
+        return await brain_chat(
+            full_messages,
+            tier="chat",
+            temperature=settings.ollama_temperature,
+            json_mode=False,
+        )
+    except BrainError as exc:
+        raise OllamaClientError(str(exc)) from exc
 
 
 async def ask_ollama_json(
@@ -179,70 +125,21 @@ async def ask_ollama_json(
     timeout_seconds: float | None = None,
     temperature: float = 0.1,
 ) -> dict[str, Any]:
-    payload = {
-        "model": model or settings.ollama_reasoning_model,
-        "stream": False,
-        "format": "json",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "options": {
-            "temperature": temperature,
-        },
-    }
+    full_messages: list[dict[str, Any]] = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
 
     try:
-        async with httpx.AsyncClient(
-            base_url=settings.ollama_base_url,
-            timeout=timeout_seconds or settings.ollama_reasoning_timeout_seconds,
-        ) as client:
-            response = await client.post("/api/chat", json=payload)
-            response.raise_for_status()
-    except httpx.ConnectError as exc:
-        raise OllamaClientError(
-            "Ollama n'est pas lance ou n'est pas accessible pour l'interpretation locale."
-        ) from exc
-    except httpx.TimeoutException as exc:
-        raise OllamaClientError(
-            "Le modele de raisonnement Ollama ne repond pas assez vite."
-        ) from exc
-    except httpx.HTTPStatusError as exc:
-        error_text = _extract_ollama_error(exc.response)
-        selected_model = model or settings.ollama_reasoning_model
-        if exc.response.status_code == 404 or _looks_like_missing_model(error_text):
-            raise OllamaClientError(
-                f"Le modele de raisonnement Ollama '{selected_model}' n'est pas installe. "
-                f"Lance: ollama pull {selected_model}"
-            ) from exc
-        detail = f" Detail Ollama: {error_text}" if error_text else ""
-        raise OllamaClientError(
-            f"L'API Ollama a refuse l'interpretation JSON avec HTTP {exc.response.status_code}.{detail}"
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise OllamaClientError("Impossible de contacter l'API Ollama pour le JSON.") from exc
-
-    try:
-        data = response.json()
-    except ValueError as exc:
-        raise OllamaClientError("Ollama JSON a renvoye une reponse non JSON.") from exc
-
-    if isinstance(data, dict) and data.get("error"):
-        error_text = str(data["error"])
-        selected_model = model or settings.ollama_reasoning_model
-        if _looks_like_missing_model(error_text):
-            raise OllamaClientError(
-                f"Le modele de raisonnement Ollama '{selected_model}' n'est pas installe. "
-                f"Lance: ollama pull {selected_model}"
-            )
-        raise OllamaClientError(f"Erreur Ollama JSON: {error_text}")
-
-    if not isinstance(data, dict):
-        raise OllamaClientError("Ollama JSON a renvoye une reponse inattendue.")
-
-    content = data.get("message", {}).get("content", "").strip()
-    if not content:
-        raise OllamaClientError("Ollama JSON n'a pas renvoye de contenu exploitable.")
+        content = await brain_chat(
+            full_messages,
+            tier="reasoning",
+            temperature=temperature,
+            timeout_seconds=timeout_seconds,
+            json_mode=True,
+        )
+    except BrainError as exc:
+        raise OllamaClientError(str(exc)) from exc
 
     return _extract_json_object(content)
 
