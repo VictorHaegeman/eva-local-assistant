@@ -55,12 +55,16 @@ class Settings:
     eva_brain_provider: str = os.getenv("EVA_BRAIN_PROVIDER", "auto")
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     groq_base_url: str = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-    groq_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    # llama-3.3-70b-versatile a ete deprecie sur le free tier Groq (17 juin 2026).
+    # Defaut actuel: openai/gpt-oss-120b (fort en raisonnement agentique, JSON mode supporte).
+    groq_model: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     groq_reasoning_model: str = os.getenv(
         "GROQ_REASONING_MODEL",
-        os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
     )
     groq_timeout_seconds: float = _env_float("GROQ_TIMEOUT_SECONDS", 45.0)
+    # Board CEO/CTO/CFO: auto (actif si cerveau Groq) | true | false.
+    eva_board_enabled: str = os.getenv("EVA_BOARD_ENABLED", "auto")
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     eva_api_token: str = os.getenv("EVA_API_TOKEN", "")
     eva_autonomy_mode: str = os.getenv("EVA_AUTONOMY_MODE", "operator")

@@ -1253,6 +1253,19 @@ async def remove_memory(memory_id: int) -> dict[str, object]:
     }
 
 
+@app.get("/board/status")
+async def board_status() -> dict[str, object]:
+    from app.board.boardroom import board_enabled
+    from app.llm.brain import resolve_provider
+
+    return {
+        "enabled": board_enabled(),
+        "mode": settings.eva_board_enabled,
+        "brain_provider": resolve_provider(),
+        "officers": ["CEO", "CTO", "CFO"],
+    }
+
+
 @app.get("/operating-rules", dependencies=[Depends(require_sensitive_access)])
 async def operating_rules() -> dict[str, object]:
     try:

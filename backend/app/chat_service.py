@@ -5,6 +5,7 @@ from typing import Any
 from app.actions.action_detector import create_pending_action_from_message
 from app.actions.action_store import ActionStoreError, action_to_dict, list_actions
 from app.actions.executor import ActionExecutionError, execute_action
+from app.board.boardroom import board_enabled, run_board_deliberation
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.browser_extension.bridge import (
     BrowserExtensionError,
@@ -1157,6 +1158,31 @@ async def process_chat_messages(
     except ProjectStoreError as exc:
         raise ChatServiceError(str(exc)) from exc
 
+    board_deliberation = None
+    if board_enabled():
+        try:
+            board_deliberation = await run_board_deliberation(
+                latest_user_message,
+                conversation_summary=understanding.context_focus,
+                trusted_actions=trusted_actions,
+            )
+        except Exception:  # noqa: BLE001 - le board ne doit jamais casser le chat.
+            board_deliberation = None
+
+    if board_deliberation and board_deliberation.is_direct:
+        return {
+            "message": {
+                "role": "assistant",
+                "content": board_deliberation.direct_answer,
+                "cognitive_trace": board_deliberation.trace,
+            },
+            "saved_memory": saved_memory,
+            "pending_action": None,
+        }
+
+    if board_deliberation and board_deliberation.deliberation_context:
+        context_blocks.append(board_deliberation.deliberation_context)
+
     try:
         extra_context = "\n\n---\n\n".join(context_blocks) if context_blocks else None
         answer = await ask_ollama(safe_messages, extra_context=extra_context, mode=mode)
@@ -1167,13 +1193,18 @@ async def process_chat_messages(
     except OllamaClientError as exc:
         raise ChatServiceError(str(exc)) from exc
 
+    if board_deliberation and board_deliberation.confirmation_note:
+        answer = f"{board_deliberation.confirmation_note}\n\n{answer}"
+
+    cognitive_trace = build_reasoning_trace(understanding) if settings.eva_reasoning_force_structured_trace else None
+    if board_deliberation and board_deliberation.trace:
+        cognitive_trace = board_deliberation.trace
+
     return {
         "message": {
             "role": "assistant",
             "content": answer,
-            "cognitive_trace": build_reasoning_trace(understanding)
-            if settings.eva_reasoning_force_structured_trace
-            else None,
+            "cognitive_trace": cognitive_trace,
         },
         "saved_memory": saved_memory,
         "pending_action": None,

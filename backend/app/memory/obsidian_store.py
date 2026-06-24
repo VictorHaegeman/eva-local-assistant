@@ -1518,6 +1518,141 @@ def build_obsidian_prompt_context(query: str, max_chars: int = 6500) -> str:
     return "\n".join(sections)
 
 
+# --- Board of Directors (CEO / CTO / CFO) ---------------------------------
+
+BOARD_FOLDER = "01 - Board"
+BOARD_OFFICERS: dict[str, dict[str, str]] = {
+    "ceo": {"folder": "CEO", "title": "CEO"},
+    "cto": {"folder": "CTO", "title": "CTO"},
+    "cfo": {"folder": "CFO", "title": "CFO"},
+    "coo": {"folder": "COO", "title": "COO"},
+}
+
+
+def _board_officer_dir(vault: Path, officer: str) -> Path:
+    folder = BOARD_OFFICERS.get(officer, {}).get("folder", officer.upper())
+    return vault / BOARD_FOLDER / folder
+
+
+def _board_seed_notes() -> dict[Path, str]:
+    base = Path(BOARD_FOLDER)
+    return {
+        base / "CEO" / "Charter.md": _seed_note_markdown(
+            "CEO Charter",
+            ["[[01 - Board/CTO/Charter]]", "[[01 - Board/CFO/Charter]]"],
+            [
+                "Le CEO clarifie l'objectif reel de Victor avant toute action.",
+                "Le CEO choisit quels officiers (CTO, CFO, conseillers) consulter.",
+                "Le CEO tranche et donne une reponse + une prochaine action concrete.",
+                "Le CEO ne pose pas de question inutile si une suite evidente existe.",
+                "Le CEO exige une preuve de resultat avant d'affirmer qu'une action est faite.",
+            ],
+        ),
+        base / "CTO" / "Charter.md": _seed_note_markdown(
+            "CTO Charter",
+            ["[[01 - Board/CEO/Charter]]", "[[50 - Operating Rules/Eva Operating Rules]]"],
+            [
+                "Le CTO decide COMMENT faire: quel outil local, quelles etapes, quelle faisabilite.",
+                "Le CTO raisonne comme un senior engineer: petites etapes verifiables.",
+                "Le CTO signale le risque technique et ce qui peut echouer.",
+                "Le CTO ne pretend jamais qu'une action est faite sans preuve.",
+                "Le CTO prefere les outils locaux d'Eva (Brave, Gmail, ecran, projets, web).",
+            ],
+        ),
+        base / "CFO" / "Charter.md": _seed_note_markdown(
+            "CFO Charter",
+            ["[[01 - Board/CEO/Charter]]", "[[50 - Operating Rules/Eva Autonomy Rules]]"],
+            [
+                "Le CFO evalue le cout (temps, argent, tokens), le risque et l'irreversibilite.",
+                "Le CFO est le garde-fou: envoi, publication, suppression, push, depense = validation.",
+                "Le CFO juge si une action vaut le coup (ROI) avant de la recommander.",
+                "Le CFO garde Eva gratuite: pas de dependance payante obligatoire.",
+                "Le CFO protege les secrets et les actions critiques.",
+            ],
+        ),
+        base / "COO" / "Charter.md": _seed_note_markdown(
+            "COO Charter",
+            ["[[01 - Board/CEO/Charter]]", "[[01 - Board/CTO/Charter]]"],
+            [
+                "Le COO ferme la boucle: il transforme la decision en prochaine action concrete.",
+                "Le COO sequence les etapes et indique qui (quel outil local) execute.",
+                "Le COO ne lance une action que si le CFO a donne le feu vert.",
+                "Le COO prevoit comment verifier que l'action est reellement faite.",
+                "Le COO prefere une seule prochaine action claire plutot qu'une longue liste.",
+            ],
+        ),
+    }
+
+
+def ensure_board_vault() -> Path:
+    """Crée la salle du conseil Obsidian (01 - Board/CEO|CTO|CFO) si absente."""
+    vault = _vault_path()
+    if not settings.eva_obsidian_memory_enabled:
+        return vault
+    try:
+        for officer in BOARD_OFFICERS.values():
+            (vault / BOARD_FOLDER / officer["folder"]).mkdir(parents=True, exist_ok=True)
+        for relative, content in _board_seed_notes().items():
+            _write_if_missing(vault / relative, content)
+    except OSError as exc:
+        raise ObsidianMemoryError("Impossible d'initialiser la salle du conseil Obsidian.") from exc
+    return vault
+
+
+def build_board_officer_context(officer: str, query: str = "", max_chars: int = 2200) -> str:
+    """Tranche Obsidian propre à un officier (lue avant qu'il décide)."""
+    if not settings.eva_obsidian_memory_enabled:
+        return ""
+    officer = officer.lower()
+    if officer not in BOARD_OFFICERS:
+        return ""
+    vault = ensure_board_vault()
+    officer_dir = _board_officer_dir(vault, officer)
+    if not officer_dir.exists():
+        return ""
+
+    sections: list[str] = []
+    used = 0
+    for note_path in sorted(officer_dir.glob("*.md")):
+        excerpt = _read_note_excerpt(note_path, max_chars=900)
+        if not excerpt:
+            continue
+        block = f"Note {note_path.stem}:\n{excerpt}"
+        if used + len(block) > max_chars:
+            break
+        used += len(block)
+        sections.append(block)
+    if not sections:
+        return ""
+    title = BOARD_OFFICERS[officer]["title"]
+    header = f"Memoire {title} (salle du conseil Obsidian, editable par Victor):"
+    return header + "\n" + "\n---\n".join(sections)
+
+
+def append_board_decision(objective: str, decision: str, officers_summary: str = "") -> bool:
+    """Journalise une décision tranchée dans 01 - Board/CEO/Decisions.md."""
+    if not settings.eva_obsidian_memory_enabled:
+        return False
+    try:
+        vault = ensure_board_vault()
+        log_path = vault / BOARD_FOLDER / "CEO" / "Decisions.md"
+        stamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M")
+        clean_objective = " ".join(str(objective).split())[:200]
+        clean_decision = " ".join(str(decision).split())[:400]
+        entry_lines = [f"\n## {stamp}", f"- Objectif: {clean_objective}", f"- Decision: {clean_decision}"]
+        if officers_summary:
+            entry_lines.append(f"- Conseil: {' '.join(str(officers_summary).split())[:300]}")
+        entry = "\n".join(entry_lines) + "\n"
+        if not log_path.exists():
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_path.write_text("# CEO Decisions\n\n> Journal des decisions tranchees par le board Eva.\n", encoding="utf-8")
+        with log_path.open("a", encoding="utf-8") as handle:
+            handle.write(entry)
+        return True
+    except OSError:
+        return False
+
+
 def hydrate_obsidian_vault() -> dict[str, Any]:
     vault = ensure_obsidian_vault()
     inventory = _obsidian_note_inventory(vault)

@@ -166,6 +166,10 @@ async def _groq_chat(
     }
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
+    # Les modeles gpt-oss renvoient leur raisonnement dans un champ separe; on l'exclut
+    # pour garder un 'content' propre et economiser des tokens (param officiel Groq).
+    if model.startswith("openai/gpt-oss"):
+        payload["include_reasoning"] = False
 
     base_url = settings.groq_base_url.rstrip("/")
     try:

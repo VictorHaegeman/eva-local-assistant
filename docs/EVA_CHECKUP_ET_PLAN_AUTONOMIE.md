@@ -368,10 +368,47 @@ verts), aucune régression introduite sur la suite existante.
 3. Relance Eva. Sans clé, rien ne change : Eva reste 100 % locale sur Ollama.
 4. Teste une règle : tape `/regle réponds toujours court et en français`.
 
+## 7. Board CEO/CTO/CFO/COO — LIVRÉ
+
+Implémenté dans `backend/app/board/`. Modèle Groq par défaut mis à jour :
+**`openai/gpt-oss-120b`** (le `llama-3.3-70b-versatile` a été déprécié sur le free
+tier Groq le 17/06/2026 ; vérifié sur la doc Groq).
+
+### Les agents (chaque tour de réflexion les enchaîne)
+
+- **CEO** (`ceo.py`) — cadre l'objectif réel, décide quels officiers consulter, peut
+  répondre directement si la demande est triviale (court-circuit pour la rapidité).
+- **CTO** (`cto.py`) — faisabilité + plan d'exécution avec les outils locaux d'Eva.
+- **CFO** (`cfo.py`) — coût / risque / irréversibilité ; **garde-fou** : verdict
+  go / prudence / bloquer, et exige une validation pour les actions critiques.
+- **COO** (`coo.py`) — *agent ajouté pour bien orchestrer le tour* : ferme la boucle,
+  transforme la décision en **une prochaine action concrète** + séquencement, et
+  n'autorise l'exécution immédiate **que si le CFO a donné le feu vert**.
+
+> Les spécialistes métier (CMO, Sales, Analyst…) restent des **conseillers convoqués
+> à la demande** via le système de rôles existant (`agents/roles.py`), pas des étapes
+> obligatoires — pour ne pas alourdir chaque tour.
+
+### Salle du conseil Obsidian
+
+`obsidian_store.py` crée `01 - Board/CEO|CTO|CFO|COO` avec une charte par officier.
+Chaque agent lit **uniquement sa tranche** avant de décider, et les décisions tranchées
+sont journalisées dans `01 - Board/CEO/Decisions.md` (lisible/éditable par Victor).
+
+### Intégration & sécurité
+
+- Le board délibère juste avant la réponse finale du chat ; sa délibération est injectée
+  comme contexte, et la voix finale reste cohérente (passe par `ask_ollama`).
+- Le board **ne contourne jamais** la file d'actions ni la politique de sécurité : si le
+  CFO bloque/demande validation, Eva prépare sans exécuter et l'annonce.
+- Activation : `EVA_BOARD_ENABLED=auto` (actif si cerveau Groq) | `true` | `false`.
+  Endpoint `GET /board/status`. Le board ne casse jamais le chat (échec → repli normal).
+- Tests : `tests/test_board.py` (orchestration, garde-fous CFO/COO, court-circuit
+  trivial, résolution d'activation).
+
 ### Prochaine étape
 
-Phase 1 / 4 bis : construire le **board CEO/CTO/CFO** (`backend/app/board/`) par-dessus
-ce cerveau, avec la salle du conseil Obsidian (`01 - Board/`).
+Phase 2 (plus de pouvoir PC encadré) ou Phase 3 (relais cloud gratuit + téléphone).
 
 ---
 
