@@ -280,6 +280,14 @@ from app.terminal.terminal_doctor import (
 from app.tools.registry import list_tools
 from app.tools.rust_indexer import RustIndexerError, rust_indexer_status, scan_path
 from app.web.web_search import WebSearchError, format_web_results, search_web
+from app.proactive.store import (
+    ProactiveStoreError,
+    get_pending_proactive,
+    init_proactive_store,
+    mark_proactive_read,
+    proactive_store_status,
+    push_proactive,
+)
 
 
 class Message(BaseModel):
@@ -597,6 +605,16 @@ class LinkedInCommentDraftRequest(BaseModel):
     intent: str = Field(default="", max_length=1000)
 
 
+class ProactiveReadRequest(BaseModel):
+    ids: list[int] = Field(default_factory=list, max_length=50)
+
+
+class ProactivePushRequest(BaseModel):
+    source: str = Field(default="manual", min_length=1, max_length=80)
+    content: str = Field(min_length=1, max_length=4000)
+    kind: str = Field(default="info", max_length=40)
+
+
 app = FastAPI(title=settings.app_name)
 
 app.add_middleware(
@@ -628,6 +646,7 @@ init_curiosity_store()
 init_operator_journal()
 ensure_job_store()
 recover_running_jobs()
+init_proactive_store()
 
 telegram_task: asyncio.Task[None] | None = None
 heartbeat_task: asyncio.Task[None] | None = None
@@ -2198,6 +2217,38 @@ Donne:
     return {
         "plan": plan,
     }
+
+
+@app.get("/proactive/pending")
+async def proactive_pending(limit: int = Query(default=10, ge=1, le=50)) -> dict[str, object]:
+    try:
+        messages = get_pending_proactive(limit=limit)
+    except ProactiveStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"messages": messages, "count": len(messages)}
+
+
+@app.post("/proactive/read")
+async def proactive_read(request: ProactiveReadRequest) -> dict[str, object]:
+    try:
+        updated = mark_proactive_read(request.ids)
+    except ProactiveStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"marked_read": updated}
+
+
+@app.post("/proactive/push", dependencies=[Depends(require_sensitive_access)])
+async def proactive_push(request: ProactivePushRequest) -> dict[str, object]:
+    try:
+        msg = push_proactive(request.source, request.content, request.kind)
+    except ProactiveStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"queued": True, "message": msg}
+
+
+@app.get("/proactive/status", dependencies=[Depends(require_sensitive_access)])
+async def proactive_status_route() -> dict[str, object]:
+    return proactive_store_status()
 
 
 @app.post("/chat", response_model=ChatResponse)

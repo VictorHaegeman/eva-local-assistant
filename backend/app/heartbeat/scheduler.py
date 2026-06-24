@@ -1,7 +1,7 @@
 import asyncio
 import json
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +9,7 @@ from app.briefs.smart_brief import generate_smart_morning_brief
 from app.config import settings
 from app.integrations.gmail_auto_reply import GmailAutoReplyError, run_gmail_auto_reply_once
 from app.integrations.gmail_client import GmailIntegrationError, list_gmail_messages
+from app.integrations.google_calendar_client import list_calendar_events
 
 
 class HeartbeatError(Exception):
@@ -70,6 +71,14 @@ def heartbeat_status() -> dict[str, Any]:
     }
 
 
+def _push_if_available(source: str, content: str, kind: str = "info") -> None:
+    try:
+        from app.proactive.store import push_proactive
+        push_proactive(source, content, kind)
+    except Exception:
+        pass
+
+
 async def run_heartbeat_job(job_key: str) -> dict[str, Any]:
     jobs = load_heartbeats()
     job = next((item for item in jobs if str(item.get("key")) == job_key), None)
@@ -79,12 +88,25 @@ async def run_heartbeat_job(job_key: str) -> dict[str, Any]:
     if job_key == "morning_brief":
         brief = await generate_smart_morning_brief()
         result = f"Brief genere: {brief.title}"
+        _push_if_available(
+            "morning_brief",
+            f"**Brief du matin**\n\n{brief.content or brief.title}",
+            "brief",
+        )
     elif job_key == "inbox_triage":
         try:
-            messages = list_gmail_messages(max_results=5)
-            result = f"{len(messages)} mails recents lus pour triage."
-        except GmailIntegrationError as exc:
-            result = f"Gmail non disponible pour le triage: {exc}"
+            from app.integrations.email_autonomous_triage import (
+                build_triage_proactive_message,
+                run_autonomous_triage,
+            )
+            report = await run_autonomous_triage(max_emails=5)
+            drafted = report.get("drafted_count", 0)
+            checked = report.get("checked", 0)
+            result = f"Triage autonome: {checked} email(s) verifie(s), {drafted} brouillon(s) cree(s)."
+            proactive_msg = build_triage_proactive_message(report)
+            _push_if_available("inbox_triage", proactive_msg, "gmail")
+        except Exception as exc:
+            result = f"Triage autonome indisponible: {exc}"
     elif job_key == "gmail_auto_reply":
         try:
             report = await run_gmail_auto_reply_once()
@@ -96,10 +118,56 @@ async def run_heartbeat_job(job_key: str) -> dict[str, Any]:
             )
             if report.get("reason"):
                 result = f"{result} {report['reason']}"
+            sent = report.get("sent_count", 0)
+            drafted = report.get("drafted_count", 0)
+            if sent > 0 or drafted > 0:
+                _push_if_available(
+                    "gmail_auto_reply",
+                    f"**Auto-reponses Gmail** — {sent} envoyee(s), {drafted} brouillon(s) cree(s).",
+                    "gmail",
+                )
         except (GmailIntegrationError, GmailAutoReplyError) as exc:
             result = f"Auto-reponses Gmail indisponibles: {exc}"
+    elif job_key == "calendar_check":
+        try:
+            now = datetime.now()
+            events = list_calendar_events(days=1, max_results=10)
+            upcoming = []
+            for event in events:
+                start_str = event.get("start", {})
+                if isinstance(start_str, dict):
+                    dt_str = start_str.get("dateTime") or start_str.get("date", "")
+                else:
+                    dt_str = str(start_str)
+                try:
+                    from datetime import timezone
+                    event_dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+                    local_dt = event_dt.astimezone().replace(tzinfo=None)
+                    delta_min = (local_dt - now).total_seconds() / 60
+                    if 0 < delta_min <= 60:
+                        upcoming.append((local_dt, event.get("summary", "Evenement"), delta_min))
+                except (ValueError, TypeError):
+                    pass
+            if upcoming:
+                lines = "\n".join(
+                    f"- **{name}** dans {int(delta)}min ({dt.strftime('%H:%M')})"
+                    for dt, name, delta in sorted(upcoming)
+                )
+                _push_if_available(
+                    "calendar_check",
+                    f"**Agenda** — evenement(s) proche(s):\n{lines}",
+                    "calendar",
+                )
+            result = f"Calendrier verifie: {len(upcoming)} evenement(s) dans l'heure."
+        except Exception as exc:
+            result = f"Calendrier indisponible: {exc}"
     elif job_key == "end_of_day_log":
         result = "Journal du soir prepare: recap manuel a completer dans le chat."
+        _push_if_available(
+            "end_of_day_log",
+            "**Journal du soir** — Que veux-tu noter ou cloturer aujourd'hui ?",
+            "info",
+        )
     else:
         result = "Heartbeat placeholder execute sans action externe."
 

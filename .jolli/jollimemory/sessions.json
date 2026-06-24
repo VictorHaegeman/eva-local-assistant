@@ -1,4 +1,11 @@
 {
 	"version": 1,
-	"sessions": {}
+	"sessions": {
+		"bc504ff6-5961-419f-86d0-182c5627a7a0": {
+			"sessionId": "bc504ff6-5961-419f-86d0-182c5627a7a0",
+			"transcriptPath": "C:\\Users\\victo\\.claude\\projects\\C--Users-victo-Desktop-Cursor-eva-local-assistant\\bc504ff6-5961-419f-86d0-182c5627a7a0.jsonl",
+			"updatedAt": "2026-06-09T21:28:51.447Z",
+			"source": "claude"
+		}
+	}
 }

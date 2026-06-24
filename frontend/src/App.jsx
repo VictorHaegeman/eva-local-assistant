@@ -9,6 +9,8 @@ import {
   getModes,
   openBrowserTabs,
   sendChat,
+  getProactivePending,
+  markProactiveRead,
 } from "./api";
 import { ChatInput } from "./components/ChatInput";
 import { ChatWindow } from "./components/ChatWindow";
@@ -301,6 +303,54 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem("evaVoiceReplies", String(voiceReplies));
   }, [voiceReplies]);
+
+  // Polling proactif : Eva pousse des messages sans que tu aies rien demande
+  useEffect(() => {
+    if (backendStatus.state !== "ready") return undefined;
+
+    const POLL_INTERVAL_MS = 30_000;
+    const KIND_EMOJI = {
+      brief: "📰",
+      gmail: "📧",
+      calendar: "📅",
+      info: "🔔",
+    };
+
+    const poll = async () => {
+      try {
+        const data = await getProactivePending(10);
+        const msgs = data?.messages;
+        if (!Array.isArray(msgs) || msgs.length === 0) return;
+
+        const newMessages = msgs.map((msg) => ({
+          id: `proactive-${msg.id}`,
+          role: "assistant",
+          content: msg.content,
+          proactive: true,
+          proactiveSource: msg.source,
+          proactiveKind: msg.kind,
+          emoji: KIND_EMOJI[msg.kind] || "🔔",
+        }));
+
+        setMessages((prev) => [...prev, ...newMessages]);
+
+        // Lire le premier message proactif a voix haute
+        if (newMessages.length > 0) {
+          const firstText = newMessages[0].content.replace(/\*\*/g, "").slice(0, 300);
+          speakEva(firstText);
+        }
+
+        await markProactiveRead(msgs.map((m) => m.id));
+      } catch {
+        // Ne pas bloquer si le backend est temporairement indisponible
+      }
+    };
+
+    // Premier check immediat puis toutes les 30s
+    poll();
+    const interval = setInterval(poll, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [backendStatus.state, voiceReplies]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return undefined;

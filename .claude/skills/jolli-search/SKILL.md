@@ -1,9 +1,9 @@
 ---
 name: jolli-search
-description: Search structured commit memories across all branches — decisions, topics, files
-argument-hint: "<keyword> [--since 2w]"
-user-invocable: true
-jolli-skill-version: 0.99.1
+description: Search structured commit memories across all branches — decisions, topics, files. Use when the user wants to find prior decisions, related commits, or how a topic was handled before.
+metadata:
+  version: "0.99.3"
+  vendor: "jolli.ai"
 ---
 
 # Jolli Search
@@ -21,13 +21,13 @@ for the chat LLM that runs this skill.
 
 ## When NOT to use
 
-- Need full context of a known branch → `/jolli-recall <branch>`.
+- Need full context of a known branch → run jolli-recall.
 - Looking at the current code → grep / read files directly.
 
-## Step 1: Parse ${ARGUMENTS} into query + flags
+## Step 1: Parse the user input into query + flags
 
-The user can include flags inline, e.g. `/jolli-search auth --since 2w`. Before
-invoking the CLI, split the argument string into two parts:
+The user can include flags inline, e.g. `auth --since 2w`. Before invoking
+the CLI, split the user's argument into two parts:
 
 1. **Query**: the user's keyword / sentence (everything that is NOT a CLI flag).
    The query may be in any human language and contain natural punctuation
@@ -36,20 +36,63 @@ invoking the CLI, split the argument string into two parts:
    `--output <path>`. Pass these through verbatim. Ignore any other token starting
    with `--`.
 
-Quote ONLY the query when constructing bash; pass flags as separate unquoted
-tokens. Examples:
+The query is delivered to the CLI on stdin via a here-doc, and flags go on
+argv as separate tokens. Never put flags inside the here-doc body.
+
+## Step 2: Run the catalog phase
+
+### Shell prerequisite
+
+This block requires a POSIX bash shell. On Linux/macOS the system bash works.
+**On Windows, use Git Bash** (the bash bundled with Git for Windows). Other
+Windows "bash" options — `C:\Windows\System32\bash.exe`, the WindowsApps
+alias, or any WSL bash — see a separate Linux home directory and will not
+find the Jolli entry script that lives under `%USERPROFILE%`.
+
+If Git Bash is not available on Windows, STOP and tell the user:
+"Jolli skill needs Git Bash on Windows. Install Git for Windows from
+https://git-scm.com/download/win and retry."
+
+Do NOT fall back to `npm run`, `npx`, `node` directly, PowerShell-native
+commands, WSL bash, or any workspace-local script — those bypass the
+security recipe and the dist resolver and will not produce valid output.
+
+### Invocation
+
+Generate a fresh random 16-character hex string (the "delimiter token") for
+this invocation — e.g. `3f8a9b2c5d7e1f4a`. Quickly scan the user's argument:
+if the argument text contains a line that is exactly `JOLLI_ARG_<delimiter
+token>_END`, regenerate the delimiter token and re-check.
+
+Then run this Bash, replacing the two `<DELIM>` occurrences with your
+delimiter token and replacing `<user-arg>` with the user's input verbatim:
+
+```bash
+"$HOME/.jolli/jollimemory/run-cli" search --arg-stdin <flags> --format json <<'JOLLI_ARG_<DELIM>_END'
+<user-arg>
+JOLLI_ARG_<DELIM>_END
+```
+
+If you cannot follow the above structure (e.g., your environment doesn't
+support here-docs), STOP and tell the user "Jolli skill cannot run safely
+in this environment." DO NOT attempt to interpolate the argument into argv
+or any double-quoted shell string — that path has a known shell injection
+vector.
+
+Replace `<flags>` with the parsed flags from Step 1 (e.g. `--since 2w --limit 30`)
+or remove the placeholder entirely if there are no flags. Always include
+`--format json`.
+
+Worked examples (the part the LLM has to construct):
 
 | User input                                  | Bash you should run                                                                                |
 |---------------------------------------------|----------------------------------------------------------------------------------------------------|
-| `auth`                                    | `"$HOME/.jolli/jollimemory/run-cli" search "auth" --format json`                                |
-| `auth --since 2w`                         | `"$HOME/.jolli/jollimemory/run-cli" search "auth" --since 2w --format json`                     |
-| `why did we choose X over Y? --since 1m`  | `"$HOME/.jolli/jollimemory/run-cli" search "why did we choose X over Y?" --since 1m --format json` |
+| `auth`                                    | `run-cli search --arg-stdin --format json <<'JOLLI_ARG_<DELIM>_END' …`                            |
+| `auth --since 2w`                         | `run-cli search --arg-stdin --since 2w --format json <<'JOLLI_ARG_<DELIM>_END' …`                 |
+| `why did we choose X over Y? --since 1m`  | `run-cli search --arg-stdin --since 1m --format json <<'JOLLI_ARG_<DELIM>_END' …`                 |
 
-Always include `--format json`. Never put flags inside the query quotes.
-
-## Step 2: Get the catalog
-
-Run the bash command you constructed in Step 1.
+The `…` after `<<'JOLLI_ARG_<DELIM>_END'` is the here-doc body containing
+the query, followed on a new line by the closing `JOLLI_ARG_<DELIM>_END`.
 
 **Failure handling**:
 - If `~/.jolli/jollimemory/run-cli` does not exist: tell the user
@@ -103,12 +146,16 @@ larger budget still doesn't surface relevant commits.
 
 ## Step 4: Load full content for the picks
 
-Construct the Phase 2 bash with the same query quoting + flag separation rule
-from Step 1, plus `--hashes <fullHash1,fullHash2,fullHash3>`:
+Construct the Phase 2 bash with the same here-doc recipe from Step 2, but add
+`--hashes <fullHash1,fullHash2,fullHash3>` to the flags:
 
+```bash
+"$HOME/.jolli/jollimemory/run-cli" search --arg-stdin --hashes <fullHash1>,<fullHash2>,<fullHash3> --format json <<'JOLLI_ARG_<DELIM>_END'
+<the query>
+JOLLI_ARG_<DELIM>_END
 ```
-"$HOME/.jolli/jollimemory/run-cli" search "<the query>" --hashes <fullHash1>,<fullHash2>,<fullHash3> --format json
-```
+
+(Generate a new `<DELIM>` token for this invocation as in Step 2.)
 
 **Use `hit.fullHash` (40-char SHA), NOT `hit.hash` (8-char display)**. The
 CLI rejects abbreviated hashes — the 8-char display `hash` is for showing in

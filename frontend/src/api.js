@@ -461,3 +461,17 @@ export async function sendChat(messages, mode = "chat", sessionId = "") {
     body: JSON.stringify({ messages, mode, session_id: sessionId }),
   });
 }
+
+
+export async function getProactivePending(limit = 10) {
+  return request(`/proactive/pending?limit=${limit}`);
+}
+
+
+export async function markProactiveRead(ids) {
+  return request("/proactive/read", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+}

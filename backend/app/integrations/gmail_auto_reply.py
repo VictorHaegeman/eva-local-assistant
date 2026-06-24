@@ -370,6 +370,32 @@ def _decision_to_dict(decision: AutoReplyDecision) -> dict[str, object]:
     }
 
 
+def _push_proactive_send(message: GmailMessage, decision: AutoReplyDecision) -> None:
+    try:
+        from app.proactive.store import push_proactive
+        sender = message.sender_name or message.sender_email
+        push_proactive(
+            "gmail_sent",
+            f"**Gmail — reponse envoyee** a {sender}\nObjet: {decision.subject}\n\n_{decision.body[:180]}_",
+            "gmail",
+        )
+    except Exception:
+        pass
+
+
+def _push_proactive_draft(message: GmailMessage, decision: AutoReplyDecision) -> None:
+    try:
+        from app.proactive.store import push_proactive
+        sender = message.sender_name or message.sender_email
+        push_proactive(
+            "gmail_draft",
+            f"**Gmail — brouillon prepare** pour {sender}\nObjet: {decision.subject}\n\n_{decision.body[:180]}_\n\nVerifie et envoie depuis Gmail.",
+            "gmail",
+        )
+    except Exception:
+        pass
+
+
 async def run_gmail_auto_reply_once(max_results: int = 10, dry_run: bool = False) -> dict[str, object]:
     status = gmail_status()
     if not status.get("enabled"):
@@ -426,7 +452,8 @@ async def run_gmail_auto_reply_once(max_results: int = 10, dry_run: bool = False
                 skipped.append({**entry, "reason": str(exc)})
                 continue
             sent.append({**entry, "delivery": delivery})
-        elif decision.action == "draft" and decision.confidence >= 0.72:
+            _push_proactive_send(original, decision)
+        elif decision.action == "draft" and decision.confidence >= 0.45:
             try:
                 draft = create_gmail_reply_draft(
                     original,
@@ -435,6 +462,7 @@ async def run_gmail_auto_reply_once(max_results: int = 10, dry_run: bool = False
                     open_in_browser=False,
                 )
                 drafted.append({**entry, "draft": draft})
+                _push_proactive_draft(original, decision)
             except GmailIntegrationError as exc:
                 skipped.append({**entry, "reason": str(exc)})
         else:

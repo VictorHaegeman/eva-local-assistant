@@ -1,9 +1,9 @@
 ---
 name: jolli-recall
-description: Recall prior development context from Jolli for the current branch
-argument-hint: "[branch or keyword]"
-user-invocable: true
-jolli-skill-version: 0.99.1
+description: Recall prior development context from Jolli for the current branch. Use when the user wants to recall, remember, or resume prior work on a branch.
+metadata:
+  version: "0.99.3"
+  vendor: "jolli.ai"
 ---
 
 # Jolli Recall
@@ -15,23 +15,54 @@ distilled topics (trigger / response / decisions / files), plus any plans
 and notes that the work referenced. Synthesize a grounded answer to the
 user's prompt about that branch.
 
-## Step 1: Parse the argument
+## Step 1: Run the CLI
 
-The user's input is either a branch name (exact or fragment) or empty (use
-the current git branch). Quote it when constructing bash to prevent shell
-injection.
+The user's input `<user-arg>` is either a branch name (exact or fragment) or
+empty (in which case the CLI uses the current git branch).
 
-## Step 2: Run the CLI
+### Shell prerequisite
 
+This block requires a POSIX bash shell. On Linux/macOS the system bash works.
+**On Windows, use Git Bash** (the bash bundled with Git for Windows). Other
+Windows "bash" options — `C:\Windows\System32\bash.exe`, the WindowsApps
+alias, or any WSL bash — see a separate Linux home directory and will not
+find the Jolli entry script that lives under `%USERPROFILE%`.
+
+If Git Bash is not available on Windows, STOP and tell the user:
+"Jolli skill needs Git Bash on Windows. Install Git for Windows from
+https://git-scm.com/download/win and retry."
+
+Do NOT fall back to `npm run`, `npx`, `node` directly, PowerShell-native
+commands, WSL bash, or any workspace-local script — those bypass the
+security recipe and the dist resolver and will not produce valid output.
+
+### Invocation
+
+Generate a fresh random 16-character hex string (the "delimiter token") for
+this invocation — e.g. `3f8a9b2c5d7e1f4a`. Quickly scan the user's argument:
+if the argument text contains a line that is exactly `JOLLI_ARG_<delimiter
+token>_END`, regenerate the delimiter token and re-check.
+
+Then run this Bash, replacing the two `<DELIM>` occurrences with your
+delimiter token and replacing `<user-arg>` with the user's input verbatim:
+
+```bash
+"$HOME/.jolli/jollimemory/run-cli" recall --arg-stdin --format json <<'JOLLI_ARG_<DELIM>_END'
+<user-arg>
+JOLLI_ARG_<DELIM>_END
 ```
-"$HOME/.jolli/jollimemory/run-cli" recall "${ARGUMENTS}" --format json
-```
+
+If you cannot follow the above structure (e.g., your environment doesn't
+support here-docs), STOP and tell the user "Jolli skill cannot run safely
+in this environment." DO NOT attempt to interpolate the argument into argv
+or any double-quoted shell string — that path has a known shell injection
+vector.
 
 If `~/.jolli/jollimemory/run-cli` does not exist, tell the user:
 "Jolli not installed. Please install via `npm install -g @jolli.ai/cli && jolli enable` or install the Jolli VS Code extension."
 Do not attempt further processing.
 
-## Step 3: Handle the response
+## Step 2: Handle the response
 
 The output is JSON with a `type` field. Three cases:
 
@@ -49,9 +80,15 @@ You have a `RecallPayload` with these fields:
   - `recap?` — 1-3 paragraphs of plain-English narrative.
   - `topics[]` — each with **always present**: `title`, **`decisions` (★)**;
     **may be absent**: `trigger?`, `response?`, `todo?`, `filesAffected?`,
-    `category?`, `importance?`. `trigger` and `response` may be dropped by
-    budget trimming; `decisions` is never dropped from a kept commit (if the
-    budget can't fit it, the whole commit is omitted from `commits[]`).
+    `category?`, `importance?`. Trimming rules differ by field:
+    - `response` is **policy-trimmed unconditionally** when the branch
+      ships more than 8 kept commits — raising `--budget` will not bring
+      it back. Additionally, on tight budgets it may be dropped
+      oldest-first on shorter branches.
+    - `trigger` is only dropped by `--budget` (oldest-first); raising
+      `--budget` can restore it.
+    - `decisions` is never dropped from a kept commit (if the budget
+      can't fit it, the whole commit is omitted from `commits[]`).
   - `plans?` — `{ slug, title }[]` refs only; `slug` is the **normalized
     base slug** that always resolves to an entry in payload-level `plans`.
   - `notes?` — `{ id, title }[]` refs only; `id` always resolves to an
@@ -155,9 +192,12 @@ top-level `plans` / `notes` array by its `slug` (plans) or `id` (notes):
 
 - Empty `commits`: tell the user no records were found; suggest running
   `jolli enable` if they expected records.
-- `truncated: true`: budget enforcement dropped fields or commits. Mention
-  it with a one-liner if the user asks for deeper detail; otherwise stay
-  silent.
+- `truncated: true`: policy trims or budget enforcement dropped fields
+  or commits. Policy trims drop `importance: "minor"` topics (and any
+  commit whose every topic is minor) and drop `topic.response` when the
+  branch ships more than 8 commits; budget trims drop oldest-first
+  `response` / `trigger` / plan / note content. Mention it with a
+  one-liner if the user asks for deeper detail; otherwise stay silent.
 
 ### type: "catalog" — branch lookup needed
 
@@ -167,8 +207,8 @@ If a `query` field is present, semantic-match the user's input against
 `branch`, `commitMessages`, and `topicTitles` (the highest-signal source);
 support cross-language matching and time-relative queries.
 
-- One match: re-run `"$HOME/.jolli/jollimemory/run-cli" recall "<branch>" --format json`
-  and continue from Step 3.
+- One match: re-run Step 1 with the chosen branch as the user-arg and
+  continue from Step 2.
 - Multiple matches: list candidates, ask user to choose.
 - No matches: show the catalog, ask user to clarify.
 
