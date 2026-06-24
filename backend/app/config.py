@@ -63,7 +63,22 @@ class Settings:
         os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
     )
     groq_timeout_seconds: float = _env_float("GROQ_TIMEOUT_SECONDS", 45.0)
-    # Board CEO/CTO/CFO: auto (actif si cerveau Groq) | true | false.
+    # OpenRouter: une seule cle, beaucoup de modeles gratuits (peu de depreciation).
+    openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
+    openrouter_base_url: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    openrouter_model: str = os.getenv("OPENROUTER_MODEL", "")
+    openrouter_reasoning_model: str = os.getenv("OPENROUTER_REASONING_MODEL", "")
+    openrouter_timeout_seconds: float = _env_float("OPENROUTER_TIMEOUT_SECONDS", 60.0)
+    # Google Gemini (AI Studio), endpoint compatible OpenAI.
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    gemini_base_url: str = os.getenv(
+        "GEMINI_BASE_URL",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+    gemini_model: str = os.getenv("GEMINI_MODEL", "")
+    gemini_reasoning_model: str = os.getenv("GEMINI_REASONING_MODEL", "")
+    gemini_timeout_seconds: float = _env_float("GEMINI_TIMEOUT_SECONDS", 45.0)
+    # Board CEO/CTO/CFO: auto (actif si cerveau cloud) | true | false.
     eva_board_enabled: str = os.getenv("EVA_BOARD_ENABLED", "auto")
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     eva_api_token: str = os.getenv("EVA_API_TOKEN", "")

@@ -39,8 +39,8 @@ def board_enabled() -> bool:
         return True
     if raw in {"0", "false", "no", "off"}:
         return False
-    # auto: actif seulement si le cerveau effectif est Groq (multi-appels rapides).
-    return resolve_provider() == "groq"
+    # auto: actif seulement si le cerveau effectif est un cloud rapide (pas Ollama 8B).
+    return resolve_provider() != "ollama"
 
 
 _RISK_STATUS = {"faible": "done", "moyen": "partial", "eleve": "blocked"}

@@ -1,14 +1,20 @@
-"""Couche cerveau configurable d'Eva.
+"""Couche cerveau configurable et auto-réparable d'Eva.
 
-Cette couche choisit le moteur LLM (Groq gratuit ou Ollama local) sans changer le
-reste du code: les modules continuent d'appeler `ask_ollama` / `ask_ollama_json`,
-qui délèguent maintenant à `brain_chat`.
+Eva choisit le moteur LLM sans changer le reste du code (les modules appellent
+toujours `ask_ollama` / `ask_ollama_json`, qui délèguent à `brain_chat`).
 
-Principe:
-- `EVA_BRAIN_PROVIDER=auto` (défaut): Groq si une clé est configurée, sinon Ollama.
-- `EVA_BRAIN_PROVIDER=groq`: force Groq si la clé existe, sinon retombe sur Ollama.
-- `EVA_BRAIN_PROVIDER=ollama`: force le local hors-ligne.
-- En mode auto, si Groq échoue (réseau/clé), Eva retombe automatiquement sur Ollama.
+Fournisseurs supportés:
+- groq        (gratuit, rapide)            cle: GROQ_API_KEY
+- openrouter  (gratuit, ~beaucoup de modeles, peu de depreciation)  cle: OPENROUTER_API_KEY
+- gemini      (gratuit, Google AI Studio)  cle: GEMINI_API_KEY
+- ollama      (100% local, sans cle)
+
+EVA_BRAIN_PROVIDER = auto | groq | openrouter | gemini | ollama
+- auto: prend le premier fournisseur cloud dont la cle est definie, sinon Ollama local.
+- En mode auto, si le cloud echoue (reseau/cle/quota), Eva retombe sur Ollama.
+
+Auto-reparation: si un modele est deprecie/introuvable (ex: Groq retire un modele),
+Eva tente automatiquement le suivant dans une liste de modeles connus, sans intervention.
 """
 
 from typing import Any, Literal
@@ -22,30 +28,82 @@ class BrainError(Exception):
     """Raised when Eva's brain provider cannot return a usable answer."""
 
 
+class BrainModelError(BrainError):
+    """Raised when a specific model is unavailable (deprecated / not found)."""
+
+
 Tier = Literal["chat", "reasoning"]
+
+# Fournisseurs cloud, par ordre de priorite en mode auto.
+CLOUD_PROVIDERS: tuple[str, ...] = ("groq", "openrouter", "gemini")
+
+# Modeles connus-bons par fournisseur (juin 2026), utilises pour l'auto-reparation.
+PROVIDER_FALLBACK_MODELS: dict[str, tuple[str, ...]] = {
+    # llama-3.3-70b-versatile deprecie le 17/06/2026 -> gpt-oss puis qwen.
+    "groq": ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b"),
+    # OpenRouter: une cle, beaucoup de modeles gratuits (suffixe :free).
+    "openrouter": (
+        "deepseek/deepseek-chat-v3:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "qwen/qwen3-coder:free",
+    ),
+    # Gemini 2.0 deprecie le 01/06/2026 -> 2.5 / 3 Flash.
+    "gemini": ("gemini-2.5-flash", "gemini-3-flash"),
+}
+
+
+def _provider_config(provider: str) -> tuple[str, str]:
+    """Retourne (api_key, base_url) pour un fournisseur cloud."""
+    if provider == "groq":
+        return settings.groq_api_key, settings.groq_base_url
+    if provider == "openrouter":
+        return (
+            getattr(settings, "openrouter_api_key", ""),
+            getattr(settings, "openrouter_base_url", "https://openrouter.ai/api/v1"),
+        )
+    if provider == "gemini":
+        return (
+            getattr(settings, "gemini_api_key", ""),
+            getattr(settings, "gemini_base_url", "https://generativelanguage.googleapis.com/v1beta/openai"),
+        )
+    return "", ""
 
 
 def resolve_provider() -> str:
-    """Retourne le moteur effectif: 'groq' ou 'ollama'."""
+    """Retourne le moteur effectif: 'groq' | 'openrouter' | 'gemini' | 'ollama'."""
     provider = (settings.eva_brain_provider or "auto").strip().lower()
-    has_groq = bool(settings.groq_api_key.strip())
-    if provider == "groq":
-        return "groq" if has_groq else "ollama"
+    if provider in CLOUD_PROVIDERS:
+        key, _ = _provider_config(provider)
+        return provider if key.strip() else "ollama"
     if provider == "ollama":
         return "ollama"
-    # auto
-    return "groq" if has_groq else "ollama"
+    # auto: premier fournisseur cloud configure, sinon local.
+    for candidate in CLOUD_PROVIDERS:
+        key, _ = _provider_config(candidate)
+        if key.strip():
+            return candidate
+    return "ollama"
 
 
 def model_for_tier(tier: Tier, provider: str) -> str:
     """Mappe un niveau de réflexion vers le modèle concret du moteur choisi."""
-    if provider == "groq":
-        if tier == "reasoning":
-            return settings.groq_reasoning_model or settings.groq_model
-        return settings.groq_model
-    if tier == "reasoning":
-        return settings.ollama_reasoning_model
-    return settings.ollama_model
+    if provider == "ollama":
+        return settings.ollama_reasoning_model if tier == "reasoning" else settings.ollama_model
+    attr = f"{provider}_reasoning_model" if tier == "reasoning" else f"{provider}_model"
+    configured = str(getattr(settings, attr, "") or "").strip()
+    if configured:
+        return configured
+    fallbacks = PROVIDER_FALLBACK_MODELS.get(provider, ())
+    return fallbacks[0] if fallbacks else ""
+
+
+def _candidate_models(provider: str, model: str) -> list[str]:
+    """Modèle demandé d'abord, puis les autres modèles connus (auto-réparation)."""
+    candidates = [model] if model else []
+    for fallback in PROVIDER_FALLBACK_MODELS.get(provider, ()):
+        if fallback not in candidates:
+            candidates.append(fallback)
+    return candidates or [model]
 
 
 def _looks_like_missing_model(error_text: str) -> bool:
@@ -56,6 +114,7 @@ def _looks_like_missing_model(error_text: str) -> bool:
         or "does not exist" in normalized
         or "introuvable" in normalized
         or "decommissioned" in normalized
+        or "deprecated" in normalized
     )
 
 
@@ -112,8 +171,7 @@ async def _ollama_chat(
         error_text = _extract_error_text(exc.response)
         if exc.response.status_code == 404 or _looks_like_missing_model(error_text):
             raise BrainError(
-                f"Le modele Ollama '{model}' n'est pas installe. "
-                f"Lance: ollama pull {model}"
+                f"Le modele Ollama '{model}' n'est pas installe. Lance: ollama pull {model}"
             ) from exc
         detail = f" Detail Ollama: {error_text}" if error_text else ""
         raise BrainError(
@@ -133,9 +191,7 @@ async def _ollama_chat(
     if isinstance(data, dict) and data.get("error"):
         error_text = str(data["error"])
         if _looks_like_missing_model(error_text):
-            raise BrainError(
-                f"Le modele Ollama '{model}' n'est pas installe. Lance: ollama pull {model}"
-            )
+            raise BrainError(f"Le modele Ollama '{model}' n'est pas installe. Lance: ollama pull {model}")
         raise BrainError(f"Erreur Ollama: {error_text}")
 
     if not isinstance(data, dict):
@@ -147,17 +203,16 @@ async def _ollama_chat(
     return content
 
 
-async def _groq_chat(
-    messages: list[dict[str, Any]],
+async def _openai_compatible_chat(
+    provider: str,
+    base_url: str,
+    api_key: str,
     model: str,
+    messages: list[dict[str, Any]],
     temperature: float,
     timeout_seconds: float,
     json_mode: bool,
 ) -> str:
-    api_key = settings.groq_api_key.strip()
-    if not api_key:
-        raise BrainError("Clé Groq absente: configure GROQ_API_KEY pour utiliser le cerveau Groq.")
-
     payload: dict[str, Any] = {
         "model": model,
         "messages": messages,
@@ -166,55 +221,100 @@ async def _groq_chat(
     }
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
-    # Les modeles gpt-oss renvoient leur raisonnement dans un champ separe; on l'exclut
-    # pour garder un 'content' propre et economiser des tokens (param officiel Groq).
-    if model.startswith("openai/gpt-oss"):
+    # Les modeles gpt-oss (Groq) renvoient leur raisonnement dans un champ separe.
+    if provider == "groq" and model.startswith("openai/gpt-oss"):
         payload["include_reasoning"] = False
 
-    base_url = settings.groq_base_url.rstrip("/")
+    url = f"{base_url.rstrip('/')}/chat/completions"
     try:
         async with httpx.AsyncClient(timeout=timeout_seconds) as client:
             response = await client.post(
-                f"{base_url}/chat/completions",
+                url,
                 json=payload,
                 headers={"Authorization": f"Bearer {api_key}"},
             )
             response.raise_for_status()
     except httpx.ConnectError as exc:
-        raise BrainError("Le cerveau Groq n'est pas joignable (réseau). Repli local possible.") from exc
+        raise BrainError(f"Le cerveau {provider} n'est pas joignable (réseau).") from exc
     except httpx.TimeoutException as exc:
-        raise BrainError("Le cerveau Groq ne répond pas assez vite.") from exc
+        raise BrainError(f"Le cerveau {provider} ne répond pas assez vite.") from exc
     except httpx.HTTPStatusError as exc:
         error_text = _extract_error_text(exc.response)
-        if exc.response.status_code in {401, 403}:
-            raise BrainError("Clé Groq invalide ou refusée (401/403). Vérifie GROQ_API_KEY.") from exc
-        if exc.response.status_code == 429:
-            raise BrainError("Quota Groq atteint pour le moment (429). Réessaie plus tard ou repli local.") from exc
-        detail = f" Detail Groq: {error_text}" if error_text else ""
-        raise BrainError(
-            f"Le cerveau Groq a répondu avec une erreur HTTP {exc.response.status_code}.{detail}"
-        ) from exc
+        status = exc.response.status_code
+        if status == 404 or _looks_like_missing_model(error_text):
+            raise BrainModelError(f"Modele '{model}' indisponible chez {provider}: {error_text}") from exc
+        if status in {401, 403}:
+            raise BrainError(f"Clé {provider} invalide ou refusée ({status}). Vérifie la clé.") from exc
+        if status == 429:
+            raise BrainError(f"Quota {provider} atteint pour le moment (429). Réessaie plus tard.") from exc
+        detail = f" Detail {provider}: {error_text}" if error_text else ""
+        raise BrainError(f"Le cerveau {provider} a répondu avec une erreur HTTP {status}.{detail}") from exc
     except httpx.HTTPError as exc:
-        raise BrainError("Impossible de contacter correctement l'API Groq.") from exc
+        raise BrainError(f"Impossible de contacter correctement l'API {provider}.") from exc
 
     try:
         data = response.json()
     except ValueError as exc:
-        raise BrainError("Le cerveau Groq a renvoyé une réponse non JSON.") from exc
+        raise BrainError(f"Le cerveau {provider} a renvoyé une réponse non JSON.") from exc
 
     if not isinstance(data, dict):
-        raise BrainError("Le cerveau Groq a renvoyé une réponse inattendue.")
+        raise BrainError(f"Le cerveau {provider} a renvoyé une réponse inattendue.")
 
     choices = data.get("choices")
     if not isinstance(choices, list) or not choices:
-        raise BrainError("Le cerveau Groq n'a pas renvoyé de choix exploitable.")
+        # Certaines erreurs arrivent en 200 avec un champ error.
+        err = data.get("error")
+        if isinstance(err, dict) and _looks_like_missing_model(str(err.get("message", ""))):
+            raise BrainModelError(f"Modele '{model}' indisponible chez {provider}.")
+        raise BrainError(f"Le cerveau {provider} n'a pas renvoyé de choix exploitable.")
 
     message = choices[0].get("message") if isinstance(choices[0], dict) else None
     content = (message or {}).get("content", "") if isinstance(message, dict) else ""
     content = content.strip() if isinstance(content, str) else ""
     if not content:
-        raise BrainError("Le cerveau Groq n'a pas renvoyé de contenu exploitable.")
+        raise BrainError(f"Le cerveau {provider} n'a pas renvoyé de contenu exploitable.")
     return content
+
+
+async def _cloud_chat(
+    provider: str,
+    messages: list[dict[str, Any]],
+    model: str,
+    temperature: float,
+    timeout_seconds: float,
+    json_mode: bool,
+) -> str:
+    api_key, base_url = _provider_config(provider)
+    if not api_key.strip():
+        raise BrainError(f"Clé {provider} absente.")
+
+    last_error: BrainError | None = None
+    for candidate in _candidate_models(provider, model):
+        try:
+            return await _openai_compatible_chat(
+                provider, base_url, api_key.strip(), candidate, messages, temperature, timeout_seconds, json_mode
+            )
+        except BrainModelError as exc:
+            # Modele deprecie/introuvable: on tente le suivant (auto-reparation).
+            last_error = exc
+            continue
+    raise last_error or BrainError(f"Aucun modele {provider} disponible.")
+
+
+def _cloud_timeout(provider: str, tier: Tier, override: float | None) -> float:
+    if override:
+        return override
+    return float(getattr(settings, f"{provider}_timeout_seconds", settings.groq_timeout_seconds))
+
+
+def _ollama_timeout(tier: Tier, override: float | None) -> float:
+    if override:
+        return override
+    return (
+        settings.ollama_reasoning_timeout_seconds
+        if tier == "reasoning"
+        else settings.ollama_timeout_seconds
+    )
 
 
 async def brain_chat(
@@ -227,47 +327,37 @@ async def brain_chat(
 ) -> str:
     """Envoie une conversation au moteur choisi et renvoie le contenu texte.
 
-    En mode `auto`, un échec Groq (réseau/clé/quota) bascule automatiquement sur
-    Ollama pour qu'Eva continue de répondre hors-ligne.
+    En mode `auto`, un échec cloud (réseau/clé/quota/modèle) bascule sur Ollama
+    pour qu'Eva continue de répondre hors-ligne.
     """
     provider = resolve_provider()
     raw_provider = (settings.eva_brain_provider or "auto").strip().lower()
 
-    if provider == "groq":
-        groq_timeout = timeout_seconds or settings.groq_timeout_seconds
+    if provider in CLOUD_PROVIDERS:
         try:
-            return await _groq_chat(
+            return await _cloud_chat(
+                provider,
                 messages,
-                model_for_tier(tier, "groq"),
+                model_for_tier(tier, provider),
                 temperature,
-                groq_timeout,
+                _cloud_timeout(provider, tier, timeout_seconds),
                 json_mode,
             )
         except BrainError:
             if raw_provider == "auto":
-                ollama_timeout = timeout_seconds or (
-                    settings.ollama_reasoning_timeout_seconds
-                    if tier == "reasoning"
-                    else settings.ollama_timeout_seconds
-                )
                 return await _ollama_chat(
                     messages,
                     model_for_tier(tier, "ollama"),
                     temperature,
-                    ollama_timeout,
+                    _ollama_timeout(tier, timeout_seconds),
                     json_mode,
                 )
             raise
 
-    ollama_timeout = timeout_seconds or (
-        settings.ollama_reasoning_timeout_seconds
-        if tier == "reasoning"
-        else settings.ollama_timeout_seconds
-    )
     return await _ollama_chat(
         messages,
         model_for_tier(tier, "ollama"),
         temperature,
-        ollama_timeout,
+        _ollama_timeout(tier, timeout_seconds),
         json_mode,
     )
