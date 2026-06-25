@@ -3137,3 +3137,9 @@
 [2026-06-24T21:48:10.286Z] INFO  [QueueWorker] === Queue worker finished ===
 [2026-06-24T21:48:16.846Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook started (source: ) ===
 [2026-06-24T21:48:17.046Z] INFO  [PrepareMsgHook] === Prepare-commit-msg hook finished ===
+[2026-06-25T14:37:21.797Z] INFO  [Installer] Checking Jolli Memory status
+[2026-06-25T14:37:21.797Z] INFO  [plans] detectPlans found 0 plans (0 in registry)
+[2026-06-25T14:37:21.798Z] INFO  [notes] detectNotes found 0 notes (0 in registry)
+[2026-06-25T14:37:21.798Z] INFO  [references] detectReferences(*) found 0 (0 in registry)
+[2026-06-25T14:37:21.803Z] INFO  [SessionTracker] Pruning stale session bc504ff6-5961-419f-86d0-182c5627a7a0 (age: 377h)
+[2026-06-25T14:37:24.722Z] INFO  [Installer] Status: enabled=true, claude=true, git=true, geminiHook=false, worktreeHooks=true, sessions=0, summaries=3, codex=true/true, gemini=false/undefined, enabledWorktrees=1, opencode=false/undefined, cursor=true/true, copilot=false/true, copilotChat=true
