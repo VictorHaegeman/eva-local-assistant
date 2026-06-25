@@ -101,6 +101,7 @@ from app.project_factory.automation import (
     project_factory_auto_status,
 )
 from app.project_factory.planner import ProjectFactoryError, create_project_factory_actions
+from app.cards.card_builder import build_cards
 from app.screen.screen_reader import ScreenReaderError, analyze_screen
 from app.screen.visual_action import (
     VisualActionError,
@@ -1125,10 +1126,17 @@ async def process_chat_messages(
     except OllamaClientError as exc:
         raise ChatServiceError(str(exc)) from exc
 
+    route_name = str(understanding.action_plan.route)
+    try:
+        cards = build_cards(answer, route_name)
+    except Exception:
+        cards = []
+
     return {
         "message": {
             "role": "assistant",
             "content": answer,
+            "cards": cards or None,
             "cognitive_trace": build_reasoning_trace(understanding)
             if settings.eva_reasoning_force_structured_trace
             else None,

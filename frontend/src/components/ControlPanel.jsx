@@ -289,6 +289,17 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
   const meta = panelMeta[panel] || panelMeta.doctor;
   const Icon = meta.icon;
 
+  useEffect(() => {
+    if (panel !== "roles") return;
+    const id = setInterval(async () => {
+      try {
+        const payload = await getRoles();
+        setData(payload);
+      } catch (_) {}
+    }, 8000);
+    return () => clearInterval(id);
+  }, [panel]);
+
   async function fetchPanelData(panelName) {
     if (panelName === "memory") {
       const [memory, obsidian, embeddings, learning, knowledge, mlAdaptation] = await Promise.all([
@@ -1105,54 +1116,88 @@ export function ControlPanel({ panel, doctor, onPrompt = () => {}, onLoadChatSes
 
   function renderRoles() {
     const roles = data?.roles || [];
-    const selected = data?.selected || [];
-    const lanes = new Set(roles.map((role) => role.lane));
-    const orchestrator = data?.orchestrator || selected[0] || {};
+    const orchestrator = data?.orchestrator || {};
+    const activeCount = roles.filter((r) => r.active).length;
+    const totalRuns = roles.reduce((s, r) => s + (r.run_count || 0), 0);
+
+    function formatAgo(secondsAgo) {
+      if (secondsAgo == null) return "jamais";
+      if (secondsAgo < 60) return `${secondsAgo}s`;
+      if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)}m`;
+      return `${Math.floor(secondsAgo / 3600)}h`;
+    }
+
+    const LANE_COLOR = {
+      orchestration: "#73d6ff",
+      memory: "#a78bfa",
+      growth: "#f59e0b",
+      research: "#34d399",
+      sales: "#f97316",
+      followup: "#60a5fa",
+      analytics: "#e879f9",
+      projects: "#22d3ee",
+      execution: "#4ade80",
+      security: "#f43f5e",
+    };
 
     return (
       <>
         <div className="panel-metrics">
-          <Metric label="roles" value={roles.length} tone={roles.length ? "ok" : "warning"} />
-          <Metric label="lanes" value={lanes.size} />
-          <Metric label="selection active" value={selected.length} tone={selected.length ? "ok" : "neutral"} />
+          <Metric label="agents" value={roles.length} tone="ok" />
+          <Metric label="actifs (5 min)" value={activeCount} tone={activeCount ? "ok" : "neutral"} />
+          <Metric label="appels total" value={totalRuns} tone={totalRuns ? "ok" : "neutral"} />
         </div>
-        <section className="panel-card role-orchestrator-card">
-          <div className="panel-card-heading">
+
+        <section className="agent-board-orchestrator">
+          <div className="agent-board-orchestrator-left">
+            <span className={`agent-status-dot ${orchestrator.active ? "working" : "idle"}`} />
             <div>
-              <span className="panel-section-kicker">Orchestrateur</span>
-              <h3>{orchestrator.label || "Chief Executive Officer"}</h3>
+              <span className="agent-board-kicker">Orchestrateur</span>
+              <h3 className="agent-board-name">{orchestrator.label}</h3>
+              <p className="agent-board-mission">{orchestrator.mission}</p>
             </div>
-            <StatusPill tone="ok">{data?.active_model || "local_roles"}</StatusPill>
           </div>
-          <p>{orchestrator.mission || "Eva choisit une posture avant de repondre ou d'agir."}</p>
-          <div className="panel-chip-list">
-            {selected.map((role) => (
-              <StatusPill key={role.key} tone="ok">
-                {role.label}
-              </StatusPill>
-            ))}
+          <div className="agent-board-orchestrator-right">
+            <div className="agent-board-model-pill">{data?.active_model || "local"}</div>
+            <div className="agent-board-stat">
+              <span className="agent-board-stat-num">{orchestrator.run_count || 0}</span>
+              <span className="agent-board-stat-label">appels</span>
+            </div>
+            {orchestrator.seconds_ago != null && (
+              <div className="agent-board-stat">
+                <span className="agent-board-stat-num">{formatAgo(orchestrator.seconds_ago)}</span>
+                <span className="agent-board-stat-label">dernier appel</span>
+              </div>
+            )}
           </div>
         </section>
-        <div className="panel-grid roles-grid">
-          {roles.map((role) => (
-            <section key={role.key} className={`panel-card role-card ${role.selected ? "selected" : ""}`}>
-              <div className="panel-card-heading">
-                <h3>{role.label}</h3>
-                <StatusPill tone={role.selected ? "ok" : "neutral"}>{role.selected ? "active" : role.lane}</StatusPill>
-              </div>
-              <p>{role.mission}</p>
-              <div className="skill-card-meta">
-                <Field label="Lane" value={role.lane} />
-                <Field label="Model hint" value={role.model_hint} />
-                <Field label="Score" value={role.score || 0} />
-              </div>
-              <div className="panel-chip-list">
-                {(role.triggers || []).slice(0, 6).map((trigger) => (
-                  <StatusPill key={trigger}>{trigger}</StatusPill>
-                ))}
-              </div>
-            </section>
-          ))}
+
+        <div className="agent-board-grid">
+          {roles.filter((r) => r.key !== "ceo_orchestrator").map((role) => {
+            const laneColor = LANE_COLOR[role.lane] || "#73d6ff";
+            return (
+              <section
+                key={role.key}
+                className={`agent-board-card ${role.active ? "working" : ""} ${role.selected ? "selected" : ""}`}
+                style={{ "--lane-color": laneColor }}
+              >
+                <div className="agent-board-card-top">
+                  <span className={`agent-status-dot ${role.active ? "working" : "idle"}`} />
+                  <span className="agent-board-lane-badge" style={{ color: laneColor }}>
+                    {role.lane}
+                  </span>
+                </div>
+                <h4 className="agent-board-card-name">{role.label}</h4>
+                <p className="agent-board-card-mission">{role.mission}</p>
+                <div className="agent-board-card-footer">
+                  <span className="agent-board-run-count">{role.run_count || 0} runs</span>
+                  {role.seconds_ago != null && (
+                    <span className="agent-board-last-run">{formatAgo(role.seconds_ago)} ago</span>
+                  )}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </>
     );

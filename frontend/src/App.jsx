@@ -426,6 +426,7 @@ export default function App() {
         createMessage("assistant", assistantMessage.content, {
           webPreview: assistantMessage.web_preview || assistantMessage.webPreview || null,
           cognitiveTrace: assistantMessage.cognitive_trace || assistantMessage.cognitiveTrace || null,
+          cards: assistantMessage.cards || null,
         }),
       ]);
       speakEva(assistantMessage.content);

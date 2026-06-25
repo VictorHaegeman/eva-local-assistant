@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { CardList } from "./Cards.jsx";
 
 
 function isMarkdownBoundary(line) {
@@ -425,6 +426,7 @@ export function MessageBubble({ message }) {
   const isUser = message.role === "user";
   const briefItems = Array.isArray(message.briefItems) ? message.briefItems : [];
   const suggestedTabs = Array.isArray(message.suggestedTabs) ? message.suggestedTabs : [];
+  const cards = Array.isArray(message.cards) ? message.cards : [];
   const webPreview = message.webPreview || message.web_preview || null;
   const cognitiveTrace = message.cognitiveTrace || message.cognitive_trace || null;
   const isMapPreview = webPreview?.type === "map" && webPreview?.embed_url;
@@ -444,6 +446,8 @@ export function MessageBubble({ message }) {
           {isUser ? message.content : <MarkdownContent content={message.content} />}
 
           {!isUser && cognitiveTrace && <CognitiveTrace trace={cognitiveTrace} />}
+
+          {!isUser && cards.length > 0 && <CardList cards={cards} />}
 
           {briefItems.length > 0 && (
             <div className="brief-source-grid">

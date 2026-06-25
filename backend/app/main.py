@@ -681,9 +681,10 @@ async def shutdown_event() -> None:
 
 @app.get("/health")
 async def health() -> dict[str, str]:
+    model_label = f"Groq · {settings.groq_model}" if settings.groq_enabled else settings.ollama_model
     return {
         "status": "ok",
-        "model": settings.ollama_model,
+        "model": model_label,
     }
 
 

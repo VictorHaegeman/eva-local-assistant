@@ -222,6 +222,13 @@ class Settings:
     eva_telegram_enabled: bool = _env_bool("EVA_TELEGRAM_ENABLED", False)
     eva_telegram_bot_token: str = os.getenv("EVA_TELEGRAM_BOT_TOKEN", "")
     eva_telegram_allowed_chat_id: str = os.getenv("EVA_TELEGRAM_ALLOWED_CHAT_ID", "")
+    groq_api_key: str = os.getenv("GROQ_API_KEY", os.getenv("GROK_API_KEY", ""))
+    groq_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    groq_timeout_seconds: float = _env_float("GROQ_TIMEOUT_SECONDS", 30.0)
+
+    @property
+    def groq_enabled(self) -> bool:
+        return bool(self.groq_api_key.strip())
 
     @property
     def parsed_cors_origins(self) -> list[str]:

@@ -3,6 +3,8 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Any
 
+from app.agents.role_stats import get_role_stats, record_role_selection
+
 
 @dataclass(frozen=True)
 class EvaRole:
@@ -153,7 +155,13 @@ def _contains_term(haystack: str, term: str) -> bool:
     return re.search(rf"(?<![a-z0-9]){re.escape(normalized_term)}(?![a-z0-9])", haystack) is not None
 
 
-def role_to_dict(role: EvaRole, score: int = 0, selected: bool = False) -> dict[str, Any]:
+def role_to_dict(
+    role: EvaRole,
+    score: int = 0,
+    selected: bool = False,
+    stats: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    stat = (stats or {}).get(role.key, {})
     return {
         "key": role.key,
         "label": role.label,
@@ -163,6 +171,10 @@ def role_to_dict(role: EvaRole, score: int = 0, selected: bool = False) -> dict[
         "triggers": list(role.triggers),
         "score": score,
         "selected": selected,
+        "run_count": stat.get("run_count", 0),
+        "last_run_at": stat.get("last_run_at"),
+        "active": stat.get("active", False),
+        "seconds_ago": stat.get("seconds_ago"),
     }
 
 
@@ -198,18 +210,22 @@ def select_roles(message: str, mode: str = "chat", max_specialists: int = 3) -> 
 
 
 def list_roles(message: str = "", mode: str = "chat") -> dict[str, Any]:
+    from app.config import settings
+
     selected = select_roles(message, mode)
     selected_keys = {role.key for role, _ in selected}
     scores = {role.key: score for role, score in score_roles(message, mode)}
+    stats = get_role_stats()
+    active_model = f"Groq · {settings.groq_model}" if settings.groq_enabled else settings.ollama_model
     return {
-        "active_model": "local_roles",
-        "orchestrator": role_to_dict(selected[0][0], selected[0][1], True),
+        "active_model": active_model,
+        "orchestrator": role_to_dict(selected[0][0], selected[0][1], True, stats),
         "selected": [
-            role_to_dict(role, score, True)
+            role_to_dict(role, score, True, stats)
             for role, score in selected
         ],
         "roles": [
-            role_to_dict(role, scores.get(role.key, 0), role.key in selected_keys)
+            role_to_dict(role, scores.get(role.key, 0), role.key in selected_keys, stats)
             for role in ROLE_CATALOG
         ],
     }
@@ -217,6 +233,10 @@ def list_roles(message: str = "", mode: str = "chat") -> dict[str, Any]:
 
 def build_roles_prompt_context(message: str, mode: str = "chat") -> str:
     selected = select_roles(message, mode)
+    try:
+        record_role_selection([role.key for role, _ in selected])
+    except Exception:
+        pass
     lines = [
         "Command deck interne Eva:",
         "Eva doit choisir une posture avant de repondre ou d'agir. Roles actifs:",

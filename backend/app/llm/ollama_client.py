@@ -16,6 +16,7 @@ from app.memory.obsidian_store import ObsidianMemoryError, build_obsidian_prompt
 from app.memory.profile_store import ProfileStoreError, build_profile_prompt_context
 from app.prompts.system_prompt import EVA_SYSTEM_PROMPT
 from app.skills.registry import build_skills_prompt_context
+from app.llm.groq_client import GroqClientError, ask_groq, ask_groq_json
 
 
 class OllamaClientError(Exception):
@@ -96,6 +97,12 @@ async def ask_ollama(
             system_prompt = f"{system_prompt}\n\nContexte supplementaire:\n{extra_context}"
     except (ProfileStoreError, MemoryStoreError, ObsidianMemoryError) as exc:
         raise OllamaClientError(str(exc)) from exc
+
+    if settings.groq_enabled:
+        try:
+            return await ask_groq(messages, system_prompt)
+        except GroqClientError:
+            pass
 
     payload = {
         "model": settings.ollama_model,
@@ -179,6 +186,17 @@ async def ask_ollama_json(
     timeout_seconds: float | None = None,
     temperature: float = 0.1,
 ) -> dict[str, Any]:
+    if settings.groq_enabled:
+        try:
+            return await ask_groq_json(
+                system_prompt,
+                user_prompt,
+                timeout_seconds=timeout_seconds,
+                temperature=temperature,
+            )
+        except GroqClientError:
+            pass
+
     payload = {
         "model": model or settings.ollama_reasoning_model,
         "stream": False,

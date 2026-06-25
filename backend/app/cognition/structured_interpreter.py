@@ -448,6 +448,12 @@ def _should_accept_interpretation(
         return False
 
     if base_route == "generic_chat" and interpretation.route != "generic_chat":
+        is_status_question = bool(re.match(
+            r"^(?:quels?|quelles?|comment|pourquoi|qu[ie ]|est-ce que|combien|qui |que |quel )",
+            normalized,
+        ))
+        if is_status_question and interpretation.route == "project_factory":
+            return False
         return True
 
     if interpretation.route != base_route and interpretation.confidence >= base_frame.intent.confidence:

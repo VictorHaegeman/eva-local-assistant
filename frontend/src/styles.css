@@ -3391,6 +3391,185 @@ button.nav-item:hover {
   animation: skillScan 4.8s ease-in-out infinite;
 }
 
+/* ── Agent Board ─────────────────────────────────── */
+
+.agent-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.agent-status-dot.idle {
+  background: rgba(255, 255, 255, 0.18);
+}
+.agent-status-dot.working {
+  background: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.7);
+  animation: agentPulse 1.6s ease-in-out infinite;
+}
+@keyframes agentPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(52, 211, 153, 0.6); }
+  50% { box-shadow: 0 0 18px rgba(52, 211, 153, 0.95); }
+}
+
+.agent-board-orchestrator {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(115, 214, 255, 0.3);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 16% 30%, rgba(115, 214, 255, 0.12), transparent 38%),
+    rgba(10, 17, 27, 0.88);
+  margin-bottom: 16px;
+}
+.agent-board-orchestrator-left {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex: 1;
+}
+.agent-board-orchestrator-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.agent-board-kicker {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 3px;
+}
+.agent-board-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.agent-board-mission {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+  max-width: 380px;
+}
+.agent-board-model-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(115, 214, 255, 0.12);
+  border: 1px solid rgba(115, 214, 255, 0.28);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.agent-board-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.agent-board-stat-num {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.agent-board-stat-label {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.agent-board-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .agent-board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.agent-board-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 14px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  background: rgba(10, 17, 27, 0.7);
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.agent-board-card.selected {
+  border-color: rgba(var(--lane-color, 115, 214, 255), 0.35);
+}
+.agent-board-card.working {
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.06);
+}
+.agent-board-card.working::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #34d399, transparent);
+  animation: skillScan 2.8s ease-in-out infinite;
+}
+.agent-board-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.agent-board-lane-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+.agent-board-card-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+.agent-board-card-mission {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.35;
+  flex: 1;
+}
+.agent-board-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.agent-board-run-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.agent-board-last-run {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+/* legacy role cards kept for backwards compat */
 .role-orchestrator-card {
   border-color: rgba(115, 214, 255, 0.32);
   background:
@@ -3398,19 +3577,11 @@ button.nav-item:hover {
     linear-gradient(135deg, rgba(115, 214, 255, 0.08), rgba(255, 255, 255, 0.022)),
     rgba(10, 17, 27, 0.86);
 }
-
-.role-card {
-  position: relative;
-  overflow: hidden;
-}
-
+.role-card { position: relative; overflow: hidden; }
 .role-card.selected {
   border-color: rgba(115, 214, 255, 0.42);
-  box-shadow:
-    inset 0 0 32px rgba(115, 214, 255, 0.052),
-    0 0 26px rgba(33, 156, 255, 0.075);
+  box-shadow: inset 0 0 32px rgba(115, 214, 255, 0.052), 0 0 26px rgba(33, 156, 255, 0.075);
 }
-
 .role-card.selected::after {
   content: "";
   position: absolute;
@@ -3419,6 +3590,152 @@ button.nav-item:hover {
   background: linear-gradient(90deg, transparent, rgba(115, 214, 255, 0.72), transparent);
   animation: skillScan 3.6s ease-in-out infinite;
 }
+
+/* ── Eva Cards ───────────────────────────────────── */
+
+.eva-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.eva-card {
+  border: 1px solid var(--card-border, rgba(115,214,255,0.25));
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 14% 18%, var(--card-glow, rgba(115,214,255,0.06)), transparent 40%),
+    rgba(10, 17, 27, 0.82);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.eva-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--card-accent, #73d6ff);
+}
+
+.eva-card-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 6px 14px 0;
+}
+
+.eva-card-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.eva-card-task-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.eva-card-task-item:last-child { border-bottom: none; }
+.eva-card-task-item:hover { background: rgba(255,255,255,0.03); }
+.eva-card-task-item.done {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.eva-card-task-item.done svg { color: var(--card-accent, #73d6ff); }
+.eva-card-task-item.urgent { color: #fbbf24; }
+.eva-card-task-item svg { flex-shrink: 0; color: rgba(255,255,255,0.25); }
+
+.eva-card-mail-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--card-accent, #fbbf24);
+  flex-shrink: 0;
+}
+
+.eva-card-events {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+.eva-card-event-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.eva-card-event-item:last-child { border-bottom: none; }
+.eva-card-event-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--card-accent, #34d399);
+  flex-shrink: 0;
+}
+
+.eva-card-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+}
+.eva-card-slot-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border, rgba(167,139,250,0.3));
+  background: rgba(167,139,250,0.06);
+  color: var(--card-accent, #a78bfa);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.eva-card-slot-btn:hover { background: rgba(167,139,250,0.14); }
+.eva-card-slot-btn.selected {
+  background: var(--card-accent, #a78bfa);
+  color: #0a1118;
+  border-color: var(--card-accent, #a78bfa);
+}
+
+.eva-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.eva-card-btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--card-accent, #73d6ff);
+  background: transparent;
+  color: var(--card-accent, #73d6ff);
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.eva-card-btn:hover { background: rgba(115,214,255,0.1); }
+.eva-card-btn.secondary {
+  border-color: rgba(255,255,255,0.15);
+  color: var(--text-muted);
+}
+.eva-card-btn.secondary:hover { background: rgba(255,255,255,0.05); }
+
+/* ── End Eva Cards ───────────────────────────────── */
 
 .skill-card-meta {
   display: grid;

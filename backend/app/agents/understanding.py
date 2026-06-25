@@ -562,7 +562,12 @@ def build_understanding_frame(
         )
         valid_routes = set(get_args(PlanRoute))
         if recommendation.should_switch and recommendation.selected_action in valid_routes:
-            route = cast(PlanRoute, recommendation.selected_action)
+            is_question = bool(re.match(
+                r"^(?:quels?|quelles?|comment|pourquoi|qu[ie' ’]|est-ce|combien|qui |que |quel |c\'est quoi|c'est quoi)",
+                normalized,
+            ))
+            if not (is_question and recommendation.selected_action == "project_factory"):
+                route = cast(PlanRoute, recommendation.selected_action)
     except Exception:
         reinforcement_summary = ""
         reinforcement_score = 0.0
