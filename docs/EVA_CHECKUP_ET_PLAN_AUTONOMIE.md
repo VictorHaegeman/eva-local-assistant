@@ -1,0 +1,415 @@
+# Eva — Check-up complet + plan d'autonomie (juin 2026)
+
+> Objectif de ce document : expliquer **pourquoi tu as l'impression de devoir tout
+> réexpliquer à Eva**, ce qu'il faut changer dans son "cerveau" pour qu'elle
+> raisonne vraiment, comment lui donner plus de pouvoir sur ton PC en toute
+> sécurité, et répondre honnêtement à la question "version cloud / téléphone /
+> compte Claude / gratuit".
+
+---
+
+## 1. Check-up : où en est Eva aujourd'hui
+
+Eva est déjà un projet costaud (≈ 218 fichiers, backend FastAPI + frontend React +
+extension Brave + bot Telegram + vision écran + Project Factory). Le socle est bon.
+Le problème n'est **pas** le manque de fonctionnalités — c'est **le cerveau**.
+
+### Ce qui marche bien
+- Backend solide, modulaire, beaucoup d'intégrations (Gmail, Spotify, Beeper,
+  LinkedIn, navigateur, écran, Cursor, Project Factory).
+- Mémoire locale existante : SQLite + miroir Obsidian + embeddings + profil.
+- Canal téléphone déjà présent : **bot Telegram** (polling, gratuit).
+- Politique de sécurité claire (read_only / draft / confirmation / blocked).
+- Bonne hygiène : pas de dépendance payante obligatoire, secrets hors Git.
+
+### Le vrai problème : le cerveau est un "aiguillage", pas un raisonneur
+
+Aujourd'hui le pipeline est :
+
+```
+message -> intent_router (mots-clés) -> understanding -> action_planner (routes figées)
+        -> cognitive_loop (séquence de routes try/catch) -> Ollama llama3.1:8b
+```
+
+Deux causes profondes expliquent ton ressenti "je dois tout réexpliquer" :
+
+1. **C'est un routeur à mots-clés, pas une intelligence.**
+   `intent_router.py` et `understanding.py` décident quoi faire avec des regex et
+   des listes de mots (`_has_mail_word`, `_has_project_word`, etc.). Si ta phrase
+   ne tombe pas pile sur les bons mots-clés, Eva prend la mauvaise route ou
+   retombe en `generic_chat`. Résultat : tu apprends à parler "comme le routeur
+   veut" → c'est toi qui t'adaptes à elle, pas l'inverse.
+
+2. **Le modèle est trop petit pour raisonner et généraliser.**
+   `llama3.1:8b` (chat + raisonnement) et `llava:7b` (vision) tournent en local.
+   Un 8B ne tient pas un raisonnement multi-étapes fiable, ne se sert pas bien de
+   la mémoire injectée, et oublie le contexte. Il n'a **pas de vrai tool-calling** :
+   les "outils" ne sont pas appelés par le modèle, ils sont déclenchés par le code
+   selon des mots-clés. Donc Eva ne décide jamais vraiment *elle-même* d'enchaîner
+   2-3 actions pour atteindre un but.
+
+3. **La mémoire est injectée mais pas "agie".**
+   Le profil, les `operating_rule`, Obsidian, les embeddings sont collés dans le
+   prompt système. Mais un 8B ne les exploite pas comme des règles permanentes :
+   il les "voit" sans les appliquer. D'où la sensation de répéter les mêmes
+   consignes. Il n'y a pas de boucle qui transforme une consigne ("fais toujours
+   X") en comportement par défaut vérifié.
+
+**Conclusion du check-up :** Eva a d'excellentes *mains* et une bonne *mémoire de
+stockage*, mais un *cortex* sous-dimensionné et trop rigide. Tout le plan ci-dessous
+attaque ce point en priorité.
+
+---
+
+## 2. Réponse directe à ta question cloud / téléphone / gratuit
+
+Tu poses 3 choses : (a) une version cloud pour parler depuis le téléphone même PC
+éteint, (b) la connecter à ton compte Claude, (c) que ça reste gratuit. Voici la
+vérité sans enrobage.
+
+### a) "Une version cloud, PC éteint" — partiellement possible, avec une limite physique
+
+Il faut séparer **le cerveau** (réfléchir, répondre, te parler) de **les mains**
+(ouvrir Brave, lire ton écran, piloter Spotify, écrire des fichiers).
+
+- **Les mains exigent que ton PC soit allumé.** Aucun cloud ne peut cliquer sur un
+  ordinateur éteint. C'est physique, pas une question d'argent. Donc "Eva agit sur
+  mon PC pendant qu'il est fermé" = impossible par nature.
+- **Le cerveau, lui, peut vivre dans le cloud** et te répondre depuis ton téléphone
+  24/7 (réfléchir, mémoriser, planifier, rédiger). Quand tu demandes une action qui
+  touche le PC, elle est **mise en file d'attente** et exécutée dès que le PC se
+  réveille.
+
+Donc le bon modèle = **cerveau cloud toujours joignable + mains locales différées**.
+
+### b) "La connecter à mon compte Claude" — non, pas gratuitement / pas officiellement
+
+- Un abonnement **Claude.ai (Pro/Max)** sert à l'app claude.ai et à Claude Code. Ce
+  n'est **pas** une clé API utilisable librement par une appli tierce comme Eva.
+- Faire d'Eva un "client de Claude" passe par l'**API Anthropic**, qui est
+  **payante au token** (facturation séparée de l'abonnement). Il n'existe pas de
+  pont gratuit officiel "mon abo Claude → API pour mon app".
+- Donc : brancher Claude = payant à l'usage. Honnête et net.
+
+### c) "Que ça reste gratuit" — oui, c'est faisable, voici les vraies options gratuites
+
+Pour avoir un cerveau **bien plus intelligent que llama3.1:8b**, joignable depuis le
+téléphone, **sans payer** :
+
+| Option | Cerveau | Joignable PC éteint ? | Coût | Verdict |
+|---|---|---|---|---|
+| **Telegram + PC allumé** (déjà codé) | Ollama local (ou API) | Non (PC doit tourner) | 0 € | Le plus simple, déjà là |
+| **Groq API (free tier)** | Llama 3.3 70B / autres, très rapide | Oui si relais cloud | 0 € (quotas généreux) | **Meilleur rapport gratuit/intelligence** |
+| **Google Gemini API (free tier)** | Gemini Flash | Oui si relais cloud | 0 € (quotas) | Très bon, multimodal |
+| **OpenRouter / Cerebras free models** | Modèles ouverts | Oui si relais cloud | 0 € (limité) | Bon plan B / rotation |
+| **Anthropic Claude API** | Claude (top qualité) | Oui | **Payant** | À garder optionnel |
+
+**Le combo gratuit recommandé :**
+1. Un **relais cloud minuscule** (Cloudflare Workers / Fly.io / Render free tier) qui
+   reçoit tes messages Telegram 24/7 et héberge le **cerveau via une clé Groq ou
+   Gemini gratuite**. → Tu parles à Eva depuis ton tel même PC éteint, gratuitement,
+   avec un modèle ~70B (énorme saut vs 8B).
+2. Quand la demande touche le PC, le relais **dépose une action** ; ton PC, en se
+   réveillant, **récupère la file et exécute** (la file d'actions existe déjà côté
+   Eva : `action_store`, `/pending`, `/approve`).
+3. **Wake-on-LAN** optionnel pour réveiller le PC à distance avant une action.
+
+> En clair : on garde Ollama local comme option hors-ligne, mais on ajoute un
+> "cerveau distant gratuit" (Groq/Gemini) qui rend Eva nettement plus maligne et
+> joignable depuis le téléphone — le tout à 0 €.
+
+---
+
+## 3. Le plan d'autonomie (phasé, du plus utile au plus ambitieux)
+
+Principe : **chaque phase est livrable seule** et améliore tout de suite ton quotidien.
+
+### Phase 0 — "Arrête de me faire répéter" (le plus gros gain, le plus vite)
+
+Cible directe de ta frustration.
+
+1. **Mémoire de règles permanentes ("operating rules") réellement appliquée.**
+   - Une page UI + commande Telegram `/regle ...` pour ajouter une consigne durable.
+   - Ces règles sont injectées **en tête** du prompt, marquées comme non négociables,
+     et un mini-vérificateur post-réponse coche qu'elles ont été respectées.
+   - Effet : tu dis une fois "réponds toujours court et en français", elle le garde.
+
+2. **Mémoire de conversation persistante et résumée.**
+   - Job de consolidation quotidien : transformer les conversations en souvenirs
+     courts (déjà identifié comme manquant dans `autonomy_readiness`).
+   - Avant chaque réponse importante : récupération sémantique des souvenirs
+     pertinents (les embeddings existent, il faut juste les *utiliser pour décider*,
+     pas juste les coller).
+
+3. **Upgrade du cerveau (le point n°1).**
+   - Rendre le modèle configurable : `EVA_BRAIN_PROVIDER = ollama | groq | gemini`.
+   - Par défaut Groq/Gemini gratuit si une clé est présente, sinon fallback Ollama.
+   - Gain immédiat : raisonnement multi-étapes, bien meilleure compréhension du
+     langage naturel → tu n'as plus à parler "comme le routeur".
+
+### Phase 1 — Vrai cerveau agentique (tool-calling)
+
+Remplacer l'aiguillage à mots-clés par une **vraie boucle d'agent** :
+
+1. **Exposer les intégrations comme des outils déclarés** (browser, gmail, spotify,
+   files, screen, desktop, project_factory, web_search…) au format function-calling.
+2. **Laisser le modèle choisir et enchaîner les outils** (plan → agir → observer →
+   re-décider), au lieu des routes figées de `cognitive_loop.py`.
+3. **Garder `understanding`/`intent_router` comme garde-fou rapide et hors-ligne**
+   (fallback quand pas de réseau / pas de clé), mais le cerveau agentique prime.
+4. **Conserver la politique de sécurité** : l'agent propose, la file d'actions et la
+   confirmation humaine restent obligatoires pour les actions critiques.
+
+Effet : Eva devient un "processeur de réflexion" — elle décompose un but flou en
+étapes, tente, observe le résultat réel, corrige. Plus besoin de tout détailler.
+
+### Phase 2 — Plus de liberté et de pouvoir sur le PC (encadré)
+
+Aujourd'hui `EVA_ALLOW_WRITE_ANY_PATH`, `AUTO_DELETE`, `AUTO_GIT_PUSH`,
+`AUTO_EXTERNAL_SEND` sont à `False` (sain). On élargit le pouvoir **par paliers
+réversibles**, jamais en tout-ou-rien :
+
+1. **Niveaux d'autonomie nommés** : `prudent` / `actif` / `confiance` / `libre`,
+   sélectionnables d'un clic, qui ajustent en bloc ces flags.
+2. **Zones d'écriture autorisées élargies** (ex : Desktop, Downloads, dossiers
+   projets) au lieu d'un seul chemin, avec liste noire (Windows, System32, clés,
+   `.env`, `.git/config`).
+3. **Exécution de commandes shell sûres en allowlist** (git status, ls, npm test…)
+   sans confirmation ; le reste passe par la file d'actions.
+4. **Journal d'audit consultable** (qui/quoi/quand) déjà esquissé par
+   `operator_journal.py` → exposer une page + `/audit` Telegram.
+5. **Watchdog** : redémarre backend/frontend si un port tombe (manque identifié).
+
+Règle d'or maintenue : **plus de pouvoir = plus de traçabilité**, pas moins de
+contrôle. Tout reste annulable et journalisé.
+
+### Phase 3 — Cerveau cloud + téléphone 24/7 (la partie "PC éteint")
+
+1. **Relais cloud gratuit** (Cloudflare Workers / Fly.io / Render free) qui héberge :
+   - le webhook Telegram (au lieu du polling local),
+   - le cerveau via clé **Groq/Gemini gratuite**,
+   - la **mémoire partagée** (un petit store — Turso/SQLite cloud gratuit, ou
+     simple fichier chiffré synchronisé).
+2. **File d'actions distante** : les demandes "touche le PC" sont stockées ; le PC,
+   quand il tourne, fait un long-poll et exécute.
+3. **Sécurité** : `EVA_API_TOKEN` obligatoire pour le relais (déjà prévu mais vide
+   aujourd'hui — c'est un point bloquant actuel pour l'usage hors PC), HTTPS, et
+   restriction au `chat_id` Telegram autorisé.
+
+### Phase 4 — Auto-amélioration supervisée
+
+`self_improvement/loop.py` existe déjà. On le rend utile et sûr :
+- Eva ouvre des PR sur **son propre repo** (jamais de push direct sur `main`).
+- Tu valides depuis le téléphone (`/approve`).
+- Tests obligatoires verts avant proposition de merge.
+
+---
+
+## 4. Ordre recommandé (impact / effort)
+
+| Priorité | Action | Pourquoi |
+|---|---|---|
+| 🔴 1 | Upgrade cerveau configurable (Groq/Gemini gratuit, fallback Ollama) | Règle 80 % du "je dois tout réexpliquer" |
+| 🔴 2 | Règles permanentes appliquées + vérif post-réponse | L'autre moitié de la frustration |
+| 🟠 3 | Board CEO/CTO/CFO (vrais agents enchaînés) + Obsidian salle du conseil | Vraie autonomie de raisonnement, dépend du cerveau (Phase 0) |
+| 🟠 4 | Mémoire consolidée + récupération avant réponse | Continuité entre sessions |
+| 🟡 5 | Niveaux d'autonomie + zones d'écriture + audit | Plus de pouvoir, encadré |
+| 🟡 6 | Relais cloud gratuit + webhook Telegram + file distante | Téléphone PC éteint, 0 € |
+| 🟢 7 | Auto-amélioration par PR supervisées | Eva s'améliore seule, sous contrôle |
+
+---
+
+## 4 bis. Le "Board of Directors" : CEO / CFO / CTO comme cerveau d'Eva
+
+C'est exactement la bonne intuition pour rendre Eva moins "chatbot" et plus
+"processeur de réflexion". Mais il faut comprendre l'existant et le piège.
+
+### Ce qui existe déjà (et pourquoi ça ne suffit pas)
+
+`backend/app/agents/roles.py` contient déjà un "command deck" : CEO orchestrateur,
+CMO contenu, Memory Curator, Sales, Code Operator, Security Officer, etc.
+
+**Le piège :** ces rôles ne sont pas de vrais agents. `build_roles_prompt_context()`
+se contente de **coller du texte** ("tu as ces postures") dans le prompt système d'un
+**seul** appel à llama3.1:8b. Un 8B ne sait pas jouer un vrai conseil d'administration
+dans sa tête : il lit les rôles sans les incarner. D'où le ressenti actuel.
+
+Un vrai board = **plusieurs appels LLM distincts et enchaînés**, chacun avec son
+prompt focalisé, son domaine, et sa propre tranche de mémoire Obsidian. Ça ne devient
+réellement utile **qu'avec le cerveau upgradé** (Groq/Gemini) — sinon c'est 3× la
+lenteur d'un modèle faible pour peu de gain. C'est pourquoi le board dépend de la
+Phase 0.
+
+### Le board cible : 3 officiers, un flux clair
+
+Chaque demande **passe par chaque officier**, dans cet ordre, mais une demande triviale
+peut être court-circuitée par le CEO (sinon tout devient lent).
+
+```
+            ┌── recall mémoire (Obsidian + embeddings) ──┐
+message ──▶ CEO (cadre l'objectif) ──▶ CTO (comment faire) ──▶ CFO (coût/risque) ──▶ CEO (décide + agit)
+                         ▲                                                                │
+                         └──────────────── journal de décision écrit dans Obsidian ◀──────┘
+```
+
+- **CEO — Orchestrateur & décision finale.**
+  Reformule le vrai objectif, décide quels officiers consulter, fixe le critère de
+  réussite, puis **synthétise** les avis et tranche (réponse + prochaine action
+  concrète). C'est lui qui parle à Victor.
+
+- **CTO — Faisabilité, technique & exécution.**
+  Décide *comment* faire avec les outils disponibles (quel outil, quelles étapes,
+  risque technique), ou lit/écrit/diagnostique du code. Produit un plan d'exécution.
+  Remplace la logique figée de `cognitive_loop.py` par un vrai raisonnement d'ingénieur.
+
+- **CFO — Coût, risque, ressources & valeur.**
+  Évalue le coût (temps, argent, tokens API, irréversibilité), le risque, le ROID :
+  *est-ce que ça vaut le coup, est-ce sûr, est-ce que ça touche à l'argent/au business ?*
+  Il absorbe le rôle "Security Officer" actuel et devient le **garde-fou** avant toute
+  action critique (envoi, publication, suppression, push, dépense).
+
+> CMO, Sales, Analyst, etc. (déjà dans `roles.py`) deviennent des **conseillers que le
+> CEO convoque à la demande**, pas des étapes obligatoires. Le board fixe = CEO/CTO/CFO ;
+> les autres sont des spécialistes appelés au besoin.
+
+### Obsidian devient le cerveau partagé du board
+
+C'est le lien direct avec ta demande "penche-toi sur Obsidian". Aujourd'hui Obsidian
+est un **miroir lisible** de la mémoire. On le transforme en **salle du conseil** :
+un dossier par officier, que chaque agent **lit avant de décider** et **enrichit
+après** (journal de décisions). Tu peux ainsi lire et corriger le raisonnement de
+chaque "dirigeant" directement dans Obsidian.
+
+Nouvelle arborescence proposée (en plus de l'existante) :
+
+```
+01 - Board/
+  CEO/   → objectifs, priorités, décisions tranchées, critères de réussite
+  CTO/   → playbooks outils, décisions d'archi, pannes connues + correctifs
+  CFO/   → budgets, règles de risque, ce qui vaut la peine d'être automatisé,
+           contraintes business/finance, limites d'actions critiques
+```
+
+Chaque officier reçoit dans son prompt **uniquement sa tranche** d'Obsidian (le CTO ne
+se noie pas dans les notes marketing, le CFO voit les règles de risque, etc.).
+Résultat : chaque agent a un domaine net, une mémoire propre, et tu pilotes le cerveau
+d'Eva en éditant trois dossiers lisibles.
+
+### Pourquoi ça règle ton problème de fond
+
+- Tu n'expliques plus la démarche à chaque fois : le **CEO** porte la méthode, le
+  **CTO** porte le "comment", le **CFO** porte les limites — durablement, dans Obsidian.
+- Eva **raisonne en étapes** (cadrer → faire → vérifier le coût/risque → décider) au
+  lieu d'aiguiller sur des mots-clés.
+- Tu **corriges le cerveau** en éditant `01 - Board/*` plutôt qu'en répétant en chat.
+
+### Implémentation (nouveau module, sans casser l'existant)
+
+1. `backend/app/board/` : `ceo.py`, `cto.py`, `cfo.py` + `boardroom.py` (orchestrateur).
+2. Chaque officier = un appel `ask_brain_json()` (cerveau configurable) avec son prompt
+   et sa tranche Obsidian.
+3. `boardroom.run(message, context)` enchaîne CEO→CTO→CFO→CEO, écrit le journal dans
+   `01 - Board/`, et renvoie décision + plan d'action + trace (réutilise le
+   `cognitive_trace` du front pour afficher le conseil).
+4. Le CFO branche la politique de sécurité existante (`security/action_policy.py`) :
+   les actions critiques restent en file + confirmation.
+5. Garde-fou perf : court-circuit CEO pour les demandes triviales + cache mémoire.
+
+---
+
+## 5. Réponses courtes à tes questions
+
+- **"Son cerveau me fait tout réexpliquer"** → cause = routeur à mots-clés + modèle
+  8B + mémoire non appliquée. Fix prioritaire : cerveau plus fort (Groq/Gemini
+  gratuit) + règles permanentes + boucle agentique. (Phases 0 et 1.)
+- **"Plus de liberté/pouvoir sur mon PC"** → oui, via niveaux d'autonomie, zones
+  d'écriture élargies, commandes allowlistées, le tout journalisé. (Phase 2.)
+- **"Version cloud pour mon téléphone, PC éteint"** → le **cerveau** oui (relais
+  cloud gratuit) ; les **actions sur le PC** non tant qu'il est éteint (elles sont
+  mises en file et exécutées au réveil). (Phase 3.)
+- **"La connecter à mon compte Claude, gratuit ?"** → non : l'abo Claude.ai n'est pas
+  une API ; passer par l'API Anthropic est **payant**. Pour rester **gratuit** :
+  Groq ou Gemini (free tier), bien plus malins que le 8B actuel.
+
+---
+
+---
+
+## 6. Phase 0 — LIVRÉE (cerveau Groq + règles permanentes)
+
+Implémentée sur la branche `claude/eva-autonomy-improvements`. Choix validés par
+Victor : moteur **Groq** (gratuit), Phase 0 en premier.
+
+### Ce qui est en place
+
+**Cerveau configurable** (`backend/app/llm/brain.py`)
+- `EVA_BRAIN_PROVIDER = auto | groq | ollama` (défaut `auto`).
+- `auto` = Groq si `GROQ_API_KEY` est défini, sinon Ollama local.
+- En mode `auto`, si Groq échoue (réseau/clé/quota), Eva **retombe automatiquement
+  sur Ollama** pour continuer à répondre hors-ligne.
+- Les 16 modules qui appelaient `ask_ollama` / `ask_ollama_json` passent maintenant
+  par cette couche **sans modification** (signatures inchangées).
+- Modèles Groq par défaut : `llama-3.3-70b-versatile` (chat + raisonnement).
+
+**Règles permanentes** (`backend/app/memory/operating_rules_store.py`)
+- Stockées en local lisible : `data/eva_operating_rules.json` (hors Git, anti-secrets).
+- Injectées **en tête** du prompt système, marquées « non négociables ».
+- Ajout en langage naturel : `/regle ...` ou « retiens cette regle: ... » dans le chat
+  (session fiable requise).
+- API REST : `GET/POST /operating-rules`, `DELETE /operating-rules/{id}`.
+
+**Tests** : `tests/test_brain_provider.py` + `tests/test_operating_rules.py` (14 tests
+verts), aucune régression introduite sur la suite existante.
+
+### Comment l'activer (Victor)
+
+1. Crée une clé gratuite sur https://console.groq.com → copie-la.
+2. Dans `backend/.env` : `GROQ_API_KEY=gsk_...` (et laisse `EVA_BRAIN_PROVIDER=auto`).
+3. Relance Eva. Sans clé, rien ne change : Eva reste 100 % locale sur Ollama.
+4. Teste une règle : tape `/regle réponds toujours court et en français`.
+
+## 7. Board CEO/CTO/CFO/COO — LIVRÉ
+
+Implémenté dans `backend/app/board/`. Modèle Groq par défaut mis à jour :
+**`openai/gpt-oss-120b`** (le `llama-3.3-70b-versatile` a été déprécié sur le free
+tier Groq le 17/06/2026 ; vérifié sur la doc Groq).
+
+### Les agents (chaque tour de réflexion les enchaîne)
+
+- **CEO** (`ceo.py`) — cadre l'objectif réel, décide quels officiers consulter, peut
+  répondre directement si la demande est triviale (court-circuit pour la rapidité).
+- **CTO** (`cto.py`) — faisabilité + plan d'exécution avec les outils locaux d'Eva.
+- **CFO** (`cfo.py`) — coût / risque / irréversibilité ; **garde-fou** : verdict
+  go / prudence / bloquer, et exige une validation pour les actions critiques.
+- **COO** (`coo.py`) — *agent ajouté pour bien orchestrer le tour* : ferme la boucle,
+  transforme la décision en **une prochaine action concrète** + séquencement, et
+  n'autorise l'exécution immédiate **que si le CFO a donné le feu vert**.
+
+> Les spécialistes métier (CMO, Sales, Analyst…) restent des **conseillers convoqués
+> à la demande** via le système de rôles existant (`agents/roles.py`), pas des étapes
+> obligatoires — pour ne pas alourdir chaque tour.
+
+### Salle du conseil Obsidian
+
+`obsidian_store.py` crée `01 - Board/CEO|CTO|CFO|COO` avec une charte par officier.
+Chaque agent lit **uniquement sa tranche** avant de décider, et les décisions tranchées
+sont journalisées dans `01 - Board/CEO/Decisions.md` (lisible/éditable par Victor).
+
+### Intégration & sécurité
+
+- Le board délibère juste avant la réponse finale du chat ; sa délibération est injectée
+  comme contexte, et la voix finale reste cohérente (passe par `ask_ollama`).
+- Le board **ne contourne jamais** la file d'actions ni la politique de sécurité : si le
+  CFO bloque/demande validation, Eva prépare sans exécuter et l'annonce.
+- Activation : `EVA_BOARD_ENABLED=auto` (actif si cerveau Groq) | `true` | `false`.
+  Endpoint `GET /board/status`. Le board ne casse jamais le chat (échec → repli normal).
+- Tests : `tests/test_board.py` (orchestration, garde-fous CFO/COO, court-circuit
+  trivial, résolution d'activation).
+
+### Prochaine étape
+
+Phase 2 (plus de pouvoir PC encadré) ou Phase 3 (relais cloud gratuit + téléphone).
+
+---
+
+*Document de cadrage + suivi d'implémentation, branche `claude/eva-autonomy-improvements`.*

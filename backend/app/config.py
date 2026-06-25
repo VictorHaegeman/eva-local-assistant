@@ -51,6 +51,35 @@ class Settings:
     ollama_timeout_seconds: float = _env_float("OLLAMA_TIMEOUT_SECONDS", 90.0)
     ollama_reasoning_timeout_seconds: float = _env_float("OLLAMA_REASONING_TIMEOUT_SECONDS", 24.0)
     ollama_temperature: float = _env_float("OLLAMA_TEMPERATURE", 0.7)
+    # Cerveau configurable: auto | groq | ollama. 'auto' choisit Groq si une clé existe.
+    eva_brain_provider: str = os.getenv("EVA_BRAIN_PROVIDER", "auto")
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    groq_base_url: str = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+    # llama-3.3-70b-versatile a ete deprecie sur le free tier Groq (17 juin 2026).
+    # Defaut actuel: openai/gpt-oss-120b (fort en raisonnement agentique, JSON mode supporte).
+    groq_model: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    groq_reasoning_model: str = os.getenv(
+        "GROQ_REASONING_MODEL",
+        os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
+    )
+    groq_timeout_seconds: float = _env_float("GROQ_TIMEOUT_SECONDS", 45.0)
+    # OpenRouter: une seule cle, beaucoup de modeles gratuits (peu de depreciation).
+    openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
+    openrouter_base_url: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    openrouter_model: str = os.getenv("OPENROUTER_MODEL", "")
+    openrouter_reasoning_model: str = os.getenv("OPENROUTER_REASONING_MODEL", "")
+    openrouter_timeout_seconds: float = _env_float("OPENROUTER_TIMEOUT_SECONDS", 60.0)
+    # Google Gemini (AI Studio), endpoint compatible OpenAI.
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    gemini_base_url: str = os.getenv(
+        "GEMINI_BASE_URL",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+    )
+    gemini_model: str = os.getenv("GEMINI_MODEL", "")
+    gemini_reasoning_model: str = os.getenv("GEMINI_REASONING_MODEL", "")
+    gemini_timeout_seconds: float = _env_float("GEMINI_TIMEOUT_SECONDS", 45.0)
+    # Board CEO/CTO/CFO: auto (actif si cerveau cloud) | true | false.
+    eva_board_enabled: str = os.getenv("EVA_BOARD_ENABLED", "auto")
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     eva_api_token: str = os.getenv("EVA_API_TOKEN", "")
     eva_autonomy_mode: str = os.getenv("EVA_AUTONOMY_MODE", "operator")

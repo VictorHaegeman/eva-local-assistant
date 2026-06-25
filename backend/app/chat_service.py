@@ -5,6 +5,7 @@ from typing import Any
 from app.actions.action_detector import create_pending_action_from_message
 from app.actions.action_store import ActionStoreError, action_to_dict, list_actions
 from app.actions.executor import ActionExecutionError, execute_action
+from app.board.boardroom import board_enabled, run_board_deliberation
 from app.briefs.smart_brief import SmartBriefError, generate_smart_brief_payload
 from app.browser_extension.bridge import (
     BrowserExtensionError,
@@ -86,6 +87,12 @@ from app.memory.memory_store import (
 )
 from app.memory.obsidian_store import ObsidianMemoryError, mirror_memory_to_obsidian
 from app.memory.obsidian_store import obsidian_status
+from app.memory.operating_rules_store import (
+    OperatingRulesError,
+    add_operating_rule,
+    detect_operating_rule_command,
+    list_operating_rules,
+)
 from app.projects.project_chat import (
     ProjectStoreError,
     attach_recent_project_context,
@@ -402,6 +409,42 @@ async def process_chat_messages(
     saved_memory = None
     latest_user_message = safe_messages[-1]["content"]
     conversation_context = safe_messages[:-1]
+
+    rule_text = detect_operating_rule_command(latest_user_message)
+    if rule_text is not None:
+        if not trusted_actions:
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "Enregistrer une regle permanente demande une session fiable "
+                        "(PC local ou Telegram autorise). Relance la depuis ce canal."
+                    ),
+                },
+                "saved_memory": None,
+                "pending_action": None,
+            }
+        try:
+            rule = add_operating_rule(rule_text)
+            total = len(list_operating_rules())
+        except OperatingRulesError as exc:
+            return {
+                "message": {"role": "assistant", "content": f"Regle non enregistree: {exc}"},
+                "saved_memory": None,
+                "pending_action": None,
+            }
+        return {
+            "message": {
+                "role": "assistant",
+                "content": (
+                    f"Regle permanente enregistree (#{rule.id}): {rule.text}\n"
+                    f"Je l'appliquerai par defaut a chaque reponse. ({total} regle(s) active(s))"
+                ),
+            },
+            "saved_memory": None,
+            "pending_action": None,
+        }
+
     understanding = build_understanding_frame(
         latest_user_message,
         conversation_context=conversation_context,
@@ -1115,6 +1158,31 @@ async def process_chat_messages(
                 context_blocks.append(project_context)
     except ProjectStoreError as exc:
         raise ChatServiceError(str(exc)) from exc
+
+    board_deliberation = None
+    if board_enabled():
+        try:
+            board_deliberation = await run_board_deliberation(
+                latest_user_message,
+                conversation_summary=understanding.context_focus,
+                trusted_actions=trusted_actions,
+            )
+        except Exception:  # noqa: BLE001 - le board ne doit jamais casser le chat.
+            board_deliberation = None
+
+    if board_deliberation and board_deliberation.is_direct:
+        return {
+            "message": {
+                "role": "assistant",
+                "content": board_deliberation.direct_answer,
+                "cognitive_trace": board_deliberation.trace,
+            },
+            "saved_memory": saved_memory,
+            "pending_action": None,
+        }
+
+    if board_deliberation and board_deliberation.deliberation_context:
+        context_blocks.append(board_deliberation.deliberation_context)
 
     try:
         extra_context = "\n\n---\n\n".join(context_blocks) if context_blocks else None
